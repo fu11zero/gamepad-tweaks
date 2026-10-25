@@ -65,6 +65,23 @@ public final class Settings {
             # and need none). Log every change of the raw trigger value (what the
             # controller driver reports, before any game code), to find jumps.
             triggers.debugLog=false
+
+            # --- Map --------------------------------------------------------------
+            # World map and paper maps: past the game's stick dead zone the map pans
+            # at a speed that follows the stick deflection, the triggers zoom at a
+            # speed that follows how far they are pressed (vanilla: on/off steps).
+            # Pan speed at full deflection, map heights per second.
+            map.panSpeed=1.0
+            # Pan speed = deflection ^ exponent (1 = linear, 2 = finer at small deflections).
+            map.panExponent=2.0
+            # D-pad = this stick deflection.
+            map.dpadDeflection=0.5
+            # Zoom speed with a trigger fully pressed, zoom levels per second
+            # (one vanilla trigger click = 1 level, each level = x2).
+            map.zoomSpeed=3.0
+            map.zoomExponent=1.5
+            # Trigger travel (0..1) ignored as noise.
+            map.triggerDeadZone=0.05
             """;
 
     public static volatile boolean scaleToSpeedClamp = true;
@@ -82,6 +99,12 @@ public final class Settings {
     public static volatile float recenterRate = 0.1f;
     public static volatile float noiseDeadZone = 0.01f;
     public static volatile boolean triggersDebugLog = false;
+    public static volatile float mapPanSpeed = 1.0f;
+    public static volatile float mapPanExponent = 2.0f;
+    public static volatile float mapDpadDeflection = 0.5f;
+    public static volatile float mapZoomSpeed = 3.0f;
+    public static volatile float mapZoomExponent = 1.5f;
+    public static volatile float mapTriggerDeadZone = 0.05f;
 
     private static Path path;
     private static long lastCheck;
@@ -137,6 +160,12 @@ public final class Settings {
         recenterRate = num(p, "steering.recenterRate", 0.1f, 0f, 10f);
         noiseDeadZone = num(p, "steering.noiseDeadZone", 0.01f, 0f, 0.2f);
         triggersDebugLog = bool(p, "triggers.debugLog", false);
+        mapPanSpeed = num(p, "map.panSpeed", 1.0f, 0.01f, 20f);
+        mapPanExponent = num(p, "map.panExponent", 2.0f, 0.1f, 5f);
+        mapDpadDeflection = num(p, "map.dpadDeflection", 0.5f, 0.01f, 1f);
+        mapZoomSpeed = num(p, "map.zoomSpeed", 3.0f, 0.01f, 20f);
+        mapZoomExponent = num(p, "map.zoomExponent", 1.5f, 0.1f, 5f);
+        mapTriggerDeadZone = num(p, "map.triggerDeadZone", 0.05f, 0f, 0.5f);
         Log.info("settings loaded: scaleToSpeedClamp=" + scaleToSpeedClamp
                 + " exponent=" + lowSpeedExponent + ".." + highSpeedExponent
                 + " @" + highSpeedKmh + "km/h turnRate=" + turnRate + ".." + highSpeedTurnRate
@@ -144,7 +173,9 @@ public final class Settings {
                 + " recenter=" + recenter + " zone=" + recenterZone
                 + " still=" + recenterStillRange + "/" + recenterStillMs + "ms rate=" + recenterRate
                 + " noiseDeadZone=" + noiseDeadZone
-                + " triggers.debugLog=" + triggersDebugLog);
+                + " triggers.debugLog=" + triggersDebugLog
+                + " map: pan=" + mapPanSpeed + "^" + mapPanExponent + " dpad=" + mapDpadDeflection
+                + " zoom=" + mapZoomSpeed + "^" + mapZoomExponent + " triggerDeadZone=" + mapTriggerDeadZone);
     }
 
     private static boolean bool(Properties p, String key, boolean def) {

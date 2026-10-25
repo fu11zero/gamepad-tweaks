@@ -55,6 +55,20 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - enter/exit vehicle: vanilla also does it on an Interact click for any nearby vehicle,
     on top of the A prompt (on press); for the gamepad only the prompt is left.
 
+- **Smooth map controls** (`MapControls.java`, called from the Lua override of
+  `ISWorldMap:updateJoypad` / `ISMap:updateJoypad` in `media/lua/client/GamepadTweaks/MapControls.lua`).
+  Vanilla treats the stick and triggers as buttons: stick below 0.5 per axis is ignored (on top
+  of the game's dead zone), the map then waits 150 ms, the center snaps to whole squares (jumps
+  at high zoom), isometric view drops diagonals; LT/RT (> 0.7) zoom one level per press, holding
+  repeats only after the zoom animation ends; the paper map ignores the stick. Instead:
+  - past the game's radial stick dead zone, pan speed = `map.panSpeed` map heights per second
+    x deflection^`map.panExponent`, in screen directions (screen offset converted to world through
+    the map projection, so isometric works too); D-pad = deflection `map.dpadDeflection`;
+  - zoom speed = `map.zoomSpeed` levels per second x trigger^`map.zoomExponent` (RT in, LT out),
+    `setZoom` around the map center, no step animation;
+  - while rotating an annotation the stick keeps rotating it (no panning);
+  - without the jar (`GamepadTweaks_updateMap` missing) vanilla runs.
+
 Settings live in `~/Zomboid/GamepadTweaks.properties` (created with defaults on first
 launch, re-read while the game runs).
 
