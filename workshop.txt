@@ -6,6 +6,7 @@ description=
 description=[h2]Features[/h2]
 description=[list]
 description=[*][b]Steering without dead zones.[/b] In a vehicle the raw stick X is used: no stick dead zone, no diagonal stretch, no 0.1 wheel dead zone.
+description=[*][b]No more driving in arcs.[/b] A released stick rarely rests at exactly zero, and that tiny offset slowly pulls the car to one side. While the stick stands still near the center, the mod glides the center to where it rests, so the car goes straight without you holding the stick off-center. No dead zone: fine steering stays intact.
 description=[*][b]Speed-sensitive steering.[/b] Soft center at speed, full stick = maximum wheel angle allowed at the current speed.
 description=[*][b]Wheel without lag.[/b] The wheel follows the stick at a constant rate instead of a slow exponential (up to ~3 s lag at top speed). Keyboard steering stays vanilla.
 description=[*][b]Triggers without dead zone.[/b] LT/RT use the raw axis; the options screen dead zone still applies to the sticks.

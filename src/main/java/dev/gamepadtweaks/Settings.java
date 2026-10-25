@@ -46,6 +46,20 @@ public final class Settings {
             # Log stick and wheel angle once a second (for tuning).
             steering.debugLog=false
 
+            # Drifting center: a released stick rests slightly off zero and the car
+            # drives in an arc. While the stick stands still (range below
+            # recenterStillRange over recenterStillMs) within recenterZone of zero,
+            # its center glides to the current value at recenterRate per second.
+            # Steering moves the stick much more than that, so it isn't eaten.
+            steering.recenter=true
+            steering.recenterZone=0.08
+            steering.recenterStillRange=0.012
+            steering.recenterStillMs=250
+            steering.recenterRate=0.1
+            # Distance from the center ignored as stick noise (output is rescaled,
+            # so it starts from 0 just past it and full deflection is still 1).
+            steering.noiseDeadZone=0.01
+
             # --- Triggers ---------------------------------------------------------
             # The game's dead zone is not applied to the triggers (they rest at zero
             # and need none). Log every change of the raw trigger value (what the
@@ -61,6 +75,12 @@ public final class Settings {
     public static volatile float highSpeedTurnRate = 0.03f;
     public static volatile float returnRate = 0.06f;
     public static volatile boolean debugLog = false;
+    public static volatile boolean recenter = true;
+    public static volatile float recenterZone = 0.08f;
+    public static volatile float recenterStillRange = 0.012f;
+    public static volatile float recenterStillMs = 250f;
+    public static volatile float recenterRate = 0.1f;
+    public static volatile float noiseDeadZone = 0.01f;
     public static volatile boolean triggersDebugLog = false;
 
     private static Path path;
@@ -110,11 +130,20 @@ public final class Settings {
         highSpeedTurnRate = num(p, "steering.highSpeedTurnRate", 0.03f, 0.001f, 1f);
         returnRate = num(p, "steering.returnRate", 0.06f, 0.001f, 1f);
         debugLog = bool(p, "steering.debugLog", false);
+        recenter = bool(p, "steering.recenter", true);
+        recenterZone = num(p, "steering.recenterZone", 0.08f, 0f, 0.5f);
+        recenterStillRange = num(p, "steering.recenterStillRange", 0.012f, 0f, 0.2f);
+        recenterStillMs = num(p, "steering.recenterStillMs", 250f, 20f, 5000f);
+        recenterRate = num(p, "steering.recenterRate", 0.1f, 0f, 10f);
+        noiseDeadZone = num(p, "steering.noiseDeadZone", 0.01f, 0f, 0.2f);
         triggersDebugLog = bool(p, "triggers.debugLog", false);
         Log.info("settings loaded: scaleToSpeedClamp=" + scaleToSpeedClamp
                 + " exponent=" + lowSpeedExponent + ".." + highSpeedExponent
                 + " @" + highSpeedKmh + "km/h turnRate=" + turnRate + ".." + highSpeedTurnRate
                 + " returnRate=" + returnRate + " debugLog=" + debugLog
+                + " recenter=" + recenter + " zone=" + recenterZone
+                + " still=" + recenterStillRange + "/" + recenterStillMs + "ms rate=" + recenterRate
+                + " noiseDeadZone=" + noiseDeadZone
                 + " triggers.debugLog=" + triggersDebugLog);
     }
 

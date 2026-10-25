@@ -10,6 +10,19 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - the wheel angle is computed by the mod (below), so the `Math.abs(steering) > 0.1F`
     dead zone in `CarController.update` no longer matters.
 
+- **Drifting stick center** (`StickCenter`, applied to the raw X in `Patches.SteeringInput`).
+  A released stick doesn't return to exactly 0: the spring leaves it a bit off, a different
+  spot after every move (measured -0.01..-0.05 on a Vader 5 Pro, up to +-0.077 on a Vader 3).
+  Without a dead zone that offset steers, and at highway speed even a 0.0003 wheel angle
+  (stick -0.03) drives the car in a long arc, so the player has to hold the stick slightly
+  off to go straight. A plain dead zone fixes it but kills fine steering. Instead:
+  - while the stick stands still (range < `recenterStillRange` over `recenterStillMs`)
+    within `recenterZone` of zero, its center glides to the current value at
+    `recenterRate` per second. Thumb resting on the stick or not doesn't matter;
+    steering moves the stick far more than the jitter, so it isn't eaten;
+  - output = distance from the center minus a tiny `noiseDeadZone` (stick jitter),
+    rescaled so it starts from 0 and full deflection is still +-1.
+
 - **Speed-sensitive steering** (`Steering.shape`). Vanilla clamps the wheel angle at speed
   (`VehicleScript.getSteeringClamp`: 0.9 standing still, ~0.4 at max speed) but maps the
   stick 1:1, so at speed the outer stick travel does nothing and small deflections are too

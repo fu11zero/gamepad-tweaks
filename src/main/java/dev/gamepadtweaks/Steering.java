@@ -23,6 +23,9 @@ import zombie.vehicles.BaseVehicle;
 // towards the target at a constant rate, faster when going back to center.
 public final class Steering {
     private static long lastDebugLog;
+    private static float lastRaw;
+    private static float lastStick;
+    private static int lastJoypad;
 
     // Wheel angle at the start of the current CarController.update() call.
     private static CarController updating;
@@ -30,8 +33,12 @@ public final class Steering {
 
     private Steering() {}
 
-    public static float shape(CarController car, float stick) {
+    /** raw: stick X as read, for the debug log; stick: after StickCenter. */
+    public static float shape(CarController car, float raw, float stick, int joypad) {
         Settings.refresh();
+        lastRaw = raw;
+        lastStick = stick;
+        lastJoypad = joypad;
         if (stick == 0.0f) {
             return 0.0f;
         }
@@ -77,8 +84,9 @@ public final class Steering {
             long now = System.currentTimeMillis();
             if (now - lastDebugLog >= 1000) {
                 lastDebugLog = now;
-                Log.info(String.format("steering: speed=%.0fkm/h control=%.3f wheel=%.3f (vanilla %.3f)",
-                        speed, car.clientControls.steering, angle, vanilla));
+                Log.info(String.format("steering: speed=%.0fkm/h raw=%.4f center=%.4f stick=%.4f control=%.5f wheel=%.5f (vanilla %.5f)",
+                        speed, lastRaw, StickCenter.center(lastJoypad), lastStick,
+                        car.clientControls.steering, angle, vanilla));
             }
         }
         return angle;

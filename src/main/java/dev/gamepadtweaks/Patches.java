@@ -12,7 +12,8 @@ public final class Patches {
 
     // Vanilla: clientControls.steering = JoypadManager.getMovementAxisX(joypad),
     // which applies the stick dead zone and stretches diagonals up to x1.41.
-    // Replace it with the raw stick X, shaped by speed (see Steering).
+    // Replace it with the raw stick X, recentered (see StickCenter) and shaped by
+    // speed (see Steering).
     @Patch(className = "zombie.core.physics.CarController", methodName = "updateControls")
     public static class SteeringInput {
         @Patch.OnExit
@@ -24,8 +25,9 @@ public final class Patches {
             if (joypad == -1) {
                 return;
             }
-            float stick = RawStick.movementX(joypad, car.clientControls.steering);
-            car.clientControls.steering = Steering.shape(car, stick);
+            float raw = RawStick.movementX(joypad, car.clientControls.steering);
+            float stick = StickCenter.apply(joypad, raw);
+            car.clientControls.steering = Steering.shape(car, raw, stick, joypad);
         }
     }
 
