@@ -1,0 +1,25 @@
+version=1
+id=3825951874
+title=Gamepad Tweaks
+description=Java mod (ZombieBuddy) that fixes gamepad handling in Build 42.
+description=
+description=[h2]Features[/h2]
+description=[list]
+description=[*][b]Steering without dead zones.[/b] In a vehicle the raw stick X is used: no stick dead zone, no diagonal stretch, no 0.1 wheel dead zone.
+description=[*][b]Speed-sensitive steering.[/b] Soft center at speed, full stick = maximum wheel angle allowed at the current speed.
+description=[*][b]Wheel without lag.[/b] The wheel follows the stick at a constant rate instead of a slow exponential (up to ~3 s lag at top speed). Keyboard steering stays vanilla.
+description=[*][b]Triggers without dead zone.[/b] LT/RT use the raw axis; the options screen dead zone still applies to the sticks.
+description=[*][b]UI presses don't leak to the character.[/b] Closing a menu with B no longer makes your character crouch etc. when B is released.
+description=[*][b]Actions on press, not on release.[/b] Crouch toggle and toggle-to-sprint react on press; entering a vehicle only via the A prompt.
+description=[/list]
+description=
+description=[h2]Settings[/h2]
+description=~/Zomboid/GamepadTweaks.properties (created on first launch, re-read while the game runs).
+description=
+description=[h2]Requirements[/h2]
+description=[list]
+description=[*]Build 42.21+
+description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3619862853]ZombieBuddy[/url] 2.3.4+ installed as a Java agent. On first launch ZombieBuddy asks to approve the mod's jar.
+description=[/list]
+tags=Build 42;Interface;Vehicles;QoL
+visibility=public

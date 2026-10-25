@@ -3,6 +3,7 @@ id=GamepadTweaks
 description=Gamepad handling fixes: steering and triggers without dead zones, speed-sensitive steering without lag, UI presses no longer leak to the character, crouch/sprint toggles on press.
 author=fullzero
 category=interface
+poster=poster.png
 versionMin=42.21.0
 require=\ZombieBuddy
 javaJarFile=media/java/client/GamepadTweaks.jar

@@ -54,8 +54,11 @@ Stick axis indices and inversion come from `~/Zomboid/joypads/<guid>.config`
 src/main/java/dev/gamepadtweaks/   mod source
 Contents/mods/GamepadTweaks/       the mod itself (Workshop layout; the game loads it from ~/Zomboid/Workshop)
   42/mod.info
+  42/poster.png                    mod list poster (512x512)
   42/media/java/client/GamepadTweaks.jar   <- build.sh output
 build.sh                           build
+preview.png                        Workshop preview (256x256 or 512x512, <= 1 MB)
+workshop.txt                       Workshop title, description (BBCode), tags, visibility
 tools/decompile.sh                 decompile game classes into decompiled/ (not in git)
 ```
 
@@ -67,6 +70,15 @@ Requires JDK 25 (game classes are Java 25):
 sudo pacman -S jdk25-openjdk
 ./build.sh
 ```
+
+## Publishing
+
+Build first (the jar is not in git), then in the game: main menu -> Workshop -> upload,
+pick GamepadTweaks. The game uploads only `Contents/` plus `preview.png` and checks
+(`SteamWorkshopItem.validateContents`): preview present and square 256/512 px, no
+`*.sh *.so *.dll *.exe *.zip ...` inside `Contents/`, a `mod.info` with `id=` in a version
+folder. Allowed tags: `media/WorkshopTags.txt` in the game folder. After the first upload the
+game writes the item id into `workshop.txt`.
 
 ## Reading game code
 
