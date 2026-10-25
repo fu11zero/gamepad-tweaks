@@ -144,6 +144,15 @@ for _, action in ipairs(Bindings.actions) do
 	actionById[action.id] = action
 end
 
+local loadedVersion = nil
+
+-- Registers an action (other files, e.g. KeyActions.lua). button = nil: unbound by default.
+function Bindings.add(action)
+	table.insert(Bindings.actions, action)
+	actionById[action.id] = action
+	loadedVersion = nil -- rebuild on the next lookup
+end
+
 -- Settings ---------------------------------------------------------------------
 
 local buttonByName = {}
@@ -152,7 +161,6 @@ for _, b in ipairs(JoypadButton.getButtons()) do
 end
 
 local actionByButton = {} -- [layer][button] = action
-local loadedVersion = nil
 
 local function readSetting(key)
 	if not GamepadTweaks_getSetting then return nil end
@@ -312,6 +320,7 @@ end
 -- The back button wheel is created once (getPlayerBackButtonWheel) and sets it only
 -- in new(), so gtVanillaHide remembers the vanilla button for the next opening.
 local function retargetHide(jd, vanillaButton, button)
+	if not vanillaButton then return end
 	local focus = jd.focus
 	if type(focus) == "table" and (focus.hideWhenButtonReleased == vanillaButton
 			or focus.gtVanillaHide == vanillaButton) then

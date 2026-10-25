@@ -117,6 +117,18 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     to the button that opened them; D-pad releases are also passed to the back button wheel;
   - without the jar the defaults are used.
 
+- **Keyboard-only actions on the gamepad** (`media/lua/client/GamepadTweaks/KeyActions.lua`,
+  registered with `Bindings.add`, world layer, unbound by default). Vanilla handles these keys in
+  `OnKeyPressed` handlers that act for `getSpecificPlayer(0)` / `getPlayer()` (and some return for
+  a controller player), so with a gamepad they are unavailable or only in a wheel. Each action does
+  what the key handler does, for the controller's player (splitscreen-safe):
+  - `lightSource`: `ItemBindingHandler.toggleLight` (off hand, main hand, attached, else equip the
+    strongest light);
+  - `dropPrimary`, `dropSecondary`, `dropBothHands`, `dropBag`, `dropHandsAndBag`:
+    `CFarming_Interact.FastDropItem` (favorites are kept);
+  - `grabCorpse`: `ISGrabCorpseAction.OnKeyPressed` / `PerformGrabCorpse` (let go, or grab the closest);
+  - `sharpenWeapon`: `ISFirearmRadialMenu.sharpenWeapon` for the main hand item.
+
 - **Cruise control and reload follow their bindings** (`Bindings.lua`). Vanilla puts the prompts of
   `CruiseControl` and `ReloadWeapon` on their bound buttons but hardcodes the rest: the cruise
   toggle happens on X release (`onReleaseButton` -> `ISVehicleRegulator.onJoypadReleaseX`), the
