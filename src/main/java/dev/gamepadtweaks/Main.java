@@ -5,5 +5,6 @@ package dev.gamepadtweaks;
 public class Main {
     public static void main(String[] args) {
         Log.info("loading");
+        SteeringHookTransformer.install();
     }
 }
