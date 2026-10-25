@@ -69,6 +69,15 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - while rotating an annotation the stick keeps rotating it (no panning);
   - without the jar (`GamepadTweaks_updateMap` missing) vanilla runs.
 
+- **Fliers work with a controller** (`media/lua/client/GamepadTweaks/PrintMedia.lua`).
+  Vanilla `ISReadABook:displayPrintMedia` calls `setJoypadFocus(playerNum, win)`, which evaluates
+  `uiToString(win)` for a log line before assigning the focus; `ISAtomUIJoypad:toString` then does
+  `self._ATOM_UI_CLASS.class:getSimpleName()`, which throws in Kahlua ("getSimpleName of non-table").
+  The focus stays on the inventory: B/X/Y do nothing, the window closes only with Esc. Instead:
+  `ISAtomUIJoypad.toString` that doesn't throw (Apply copies it into every PZAPI window); `close()`
+  doesn't leave the focus on a hidden element; a B prompt in the bottom bar. Splitscreen issues
+  of this window (shared `worldMapFlier`, `getPlayer()`) are fixed in SplitscreenFixes.
+
 Settings live in `~/Zomboid/GamepadTweaks.properties` (created with defaults on first
 launch, re-read while the game runs).
 
