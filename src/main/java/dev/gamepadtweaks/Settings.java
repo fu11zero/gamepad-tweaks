@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
+import se.krka.kahlua.integration.annotations.LuaMethod;
 import zombie.ZomboidFileSystem;
 
 // Tunables in ~/Zomboid/GamepadTweaks.properties.
@@ -93,6 +94,19 @@ public final class Settings {
             map.zoomExponent=1.5
             # Trigger travel (0..1) ignored as noise.
             map.triggerDeadZone=0.05
+
+            # --- Button actions ---------------------------------------------------
+            # Actions that vanilla hardcodes to buttons (media/lua/client/GamepadTweaks/Bindings.lua).
+            # bind.<action>=<button>: A B X Y LeftBump RightBump LeftStick RightStick
+            # Back Start Guide DPadUp DPadDown DPadLeft DPadRight, or none to free the
+            # button for the regular bindings (Options -> Controller).
+            # A missing line = the vanilla button.
+            #bind.vehicleWheel=DPadUp
+            #bind.emoteWheel=DPadDown
+            #bind.equipWheel=DPadLeft
+            #bind.extraWheel=DPadRight
+            #bind.commandWheel=Back
+            #bind.pause=Start
             """;
 
     public static volatile boolean scaleToSpeedClamp = true;
@@ -121,11 +135,29 @@ public final class Settings {
     public static volatile float mapZoomExponent = 1.5f;
     public static volatile float mapTriggerDeadZone = 0.05f;
 
+    // All values as read, for the Lua side (button actions).
+    private static volatile Properties raw = new Properties();
+    private static volatile int version;
+
     private static Path path;
     private static long lastCheck;
     private static long lastModified = Long.MIN_VALUE;
 
     private Settings() {}
+
+    /** Raw value of {@code key} or nil. */
+    @LuaMethod(name = "GamepadTweaks_getSetting", global = true)
+    public static String luaGet(String key) {
+        refresh();
+        return key == null ? null : raw.getProperty(key);
+    }
+
+    /** Changes every time the file is re-read, so Lua knows when to re-read its values. */
+    @LuaMethod(name = "GamepadTweaks_settingsVersion", global = true)
+    public static double luaVersion() {
+        refresh();
+        return version;
+    }
 
     /** Cheap to call every frame. */
     public static void refresh() {
@@ -185,6 +217,8 @@ public final class Settings {
         mapZoomSpeed = num(p, "map.zoomSpeed", 3.0f, 0.01f, 20f);
         mapZoomExponent = num(p, "map.zoomExponent", 1.5f, 0.1f, 5f);
         mapTriggerDeadZone = num(p, "map.triggerDeadZone", 0.05f, 0f, 0.5f);
+        raw = p;
+        version++;
         Log.info("settings loaded: scaleToSpeedClamp=" + scaleToSpeedClamp
                 + " exponent=" + lowSpeedExponent + ".." + highSpeedExponent
                 + " @" + highSpeedKmh + "km/h turnRate=" + turnRate + ".." + highSpeedTurnRate
