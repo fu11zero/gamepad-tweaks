@@ -30,6 +30,11 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   screen shows no trigger dead zone, the buttons still work for the sticks.
   `triggers.debugLog=true` logs every raw value change.
 
+- **UI presses don't leak to the character** (`ButtonLatch`). The UI reacts on press:
+  B closes a menu, the focus goes away, the character's buttons are turned back on with
+  B still held, and its release counts as a "click" (crouch toggle etc.). Buttons held
+  when the character's buttons get turned on are ignored by the character until released.
+
 Settings live in `~/Zomboid/GamepadTweaks.properties` (created with defaults on first
 launch, re-read while the game runs).
 

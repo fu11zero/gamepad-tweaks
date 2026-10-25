@@ -1,6 +1,8 @@
 package dev.gamepadtweaks;
 
 import me.zed_0xff.zombie_buddy.Patch;
+import zombie.characters.CharacterJoypadButtonBinding;
+import zombie.characters.component.CharacterInputComponent;
 import zombie.core.physics.CarController;
 import zombie.input.JoypadManager;
 import zombie.network.GameServer;
@@ -44,6 +46,25 @@ public final class Patches {
         public static void exit(@Patch.This JoypadManager.Joypad joypad,
                                 @Patch.Return(readOnly = false) float value) {
             value = Triggers.value(joypad, false, value);
+        }
+    }
+
+    // A press that closed a UI element must not reach the character (see ButtonLatch).
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "setJoypadButtonsActive")
+    public static class ButtonsActive {
+        @Patch.OnEnter
+        public static void enter(@Patch.This CharacterInputComponent input, @Patch.Argument(0) boolean active) {
+            ButtonLatch.onButtonsActive(input.getJoypadBind(), input.isJoypadButtonsActive(), active);
+        }
+    }
+
+    @Patch(className = "zombie.characters.CharacterJoypadButtonBinding$JoypadButtonBinding", methodName = "isDown")
+    public static class CharacterButtonDown {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterJoypadButtonBinding.JoypadButtonBinding binding,
+                                @Patch.Argument(0) int joypadBind,
+                                @Patch.Return(readOnly = false) boolean down) {
+            down = ButtonLatch.isDown(binding.getButton(), joypadBind, down);
         }
     }
 
