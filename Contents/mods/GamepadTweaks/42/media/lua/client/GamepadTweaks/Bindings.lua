@@ -118,7 +118,8 @@ end
 -- - hold: held in the world;
 -- - uiHold: held while a UI has the focus;
 -- - navigation: released during UI panel navigation.
--- run(controller, joypadData) for press layers; repeat: also on D-pad auto-repeat.
+-- run(controller, joypadData) for press layers; repeat: also on D-pad auto-repeat;
+-- release(controller, joypadData): when the button that ran it is released (horn).
 Bindings.actions = {
 	{ id = "vehicleWheel", button = Joypad.DPadUp, layer = "world",
 		run = function(c, jd) vanilla.onDisplayUp(jd) end },
@@ -329,13 +330,31 @@ local function retargetHide(jd, vanillaButton, button)
 	end
 end
 
+-- [heldKey] = action whose release runs when that button goes up (the action found on
+-- press, even if the binding changes meanwhile).
+local pendingRelease = {}
+
 local function run(action, jd, button)
 	local ok, err = pcall(action.run, jd.controller, jd)
 	if not ok then
 		log("ERROR: " .. action.id .. " failed: " .. tostring(err))
 		return
 	end
+	if action.release then
+		pendingRelease[heldKey(jd, button)] = action
+	end
 	retargetHide(jd, action.button, button)
+end
+
+local function runRelease(jd, button)
+	local key = heldKey(jd, button)
+	local action = pendingRelease[key]
+	if not action then return end
+	pendingRelease[key] = nil
+	local ok, err = pcall(action.release, jd.controller, jd)
+	if not ok then
+		log("ERROR: " .. action.id .. " release failed: " .. tostring(err))
+	end
 end
 
 local function dispatchLayer(jd, button, layer)
@@ -404,6 +423,7 @@ local function wrapDir(press, release, display, button)
 		local jd = self.joypad
 		if jd then
 			held[heldKey(jd, button)] = nil
+			runRelease(jd, button)
 		end
 		vanillaRelease(self, ...)
 		-- Vanilla passes D-pad releases only to the radial menu; the back button wheel
@@ -558,6 +578,9 @@ end
 
 function JoypadControllerData:onReleaseButton(button)
 	local jd = self.joypad
+	if jd and not DPAD[button] then
+		runRelease(jd, button)
+	end
 	if jd and jd.isDoingNavigation then
 		if button == Bindings.getButton("uiNavigation") then
 			jd:endNavigation()

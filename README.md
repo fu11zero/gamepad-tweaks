@@ -128,6 +128,11 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     `CFarming_Interact.FastDropItem` (favorites are kept);
   - `grabCorpse`: `ISGrabCorpseAction.OnKeyPressed` / `PerformGrabCorpse` (let go, or grab the closest);
   - `sharpenWeapon`: `ISFirearmRadialMenu.sharpenWeapon` for the main hand item.
+  - `sitOnGround`: `ISSitOnGround` key handler; `searchMode`: `ISSearchManager.handleKeyPressed`;
+    `shout`: `Callout` (on foot / as a passenger, the driver has the horn); `releaseRope`: `fallFromRope`;
+  - vehicle (`ISVehicleMenu.onKeyPressed/onKeyStartPressed`): `engine` (start / shut off),
+    `headlights` (driver), `heater`, `horn` (driver, sounds while held: `release` callback on the
+    button release), `switchSeat` (seat UI, in or next to a vehicle), `vehicleInfo` (mechanics).
 
 - **Cruise control and reload follow their bindings** (`Bindings.lua`). Vanilla puts the prompts of
   `CruiseControl` and `ReloadWeapon` on their bound buttons but hardcodes the rest: the cruise

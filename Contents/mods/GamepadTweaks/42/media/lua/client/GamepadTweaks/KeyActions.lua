@@ -11,6 +11,8 @@ require "GamepadTweaks/Bindings"
 require "ISUI/ISInventoryPaneContextMenu"
 require "ISUI/ISFirearmRadialMenu"
 require "TimedActions/ISGrabCorpseAction"
+require "Foraging/ISSearchManager"
+require "Vehicles/ISUI/ISVehicleMenu"
 
 local Bindings = GamepadTweaks.Bindings
 
@@ -127,6 +129,121 @@ local function sharpenWeapon(c, jd)
 	end
 end
 
+-- Character -------------------------------------------------------------------------
+
+-- ISSitOnGround onKeyPress (SIT_ON_GROUND key): sit down or get up, not in a vehicle.
+local function sitOnGround(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj or playerObj:getVehicle() then return end
+	if playerObj:isSitting() then
+		playerObj:StopAllActionQueue()
+		playerObj:setVariable("forceGetUp", true)
+	else
+		playerObj:setAutoWalk(false)
+		playerObj:reportEvent("EventSitOnGround")
+	end
+end
+
+-- ISSearchManager.handleKeyPressed (TOGGLE_SEARCH_MODE key).
+local function searchMode(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj then return end
+	local manager = ISSearchManager.getManager(playerObj)
+	if manager then
+		manager:toggleSearchMode()
+		manager:bringToTop()
+	end
+end
+
+-- SHOUT key: on foot ISEmoteRadialMenu.onKeyReleased (tap), as a passenger
+-- ISVehicleMenu.onKeyPressed; the driver has the horn.
+local function shout(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj then return end
+	local vehicle = playerObj:getVehicle()
+	if not vehicle then
+		playerObj:Callout(true)
+	elseif not vehicle:isDriver(playerObj) then
+		playerObj:Callout()
+	end
+end
+
+-- CFarming_Interact.ChangeClimbDirection (RELEASE_ROPE key).
+local function releaseRope(c, jd)
+	local playerObj = actor(jd)
+	if playerObj and playerObj:isClimbingRope() then
+		playerObj:fallFromRope()
+	end
+end
+
+-- Vehicle ---------------------------------------------------------------------------
+-- ISVehicleMenu.onKeyPressed / onKeyStartPressed, ItemBindingHandler.toggleLight (headlights).
+
+local function inVehicle(jd)
+	local playerObj = actor(jd)
+	local vehicle = playerObj and playerObj:getVehicle()
+	return playerObj, vehicle
+end
+
+local function engine(c, jd)
+	local playerObj, vehicle = inVehicle(jd)
+	if not vehicle then return end
+	if vehicle:isEngineRunning() then
+		ISVehicleMenu.onShutOff(playerObj)
+	else
+		ISVehicleMenu.onStartEngine(playerObj)
+	end
+end
+
+local function headlights(c, jd)
+	local playerObj, vehicle = inVehicle(jd)
+	if vehicle and vehicle:isDriver(playerObj) and not playerObj:isAiming() and vehicle:hasHeadlights() then
+		ISVehicleMenu.onToggleHeadlights(playerObj)
+	end
+end
+
+local function heater(c, jd)
+	local playerObj, vehicle = inVehicle(jd)
+	if vehicle then
+		ISVehicleMenu.onToggleHeater(playerObj)
+	end
+end
+
+-- Held: sounds while the button is down.
+local function hornStart(c, jd)
+	local playerObj, vehicle = inVehicle(jd)
+	if vehicle and vehicle:isDriver(playerObj) then
+		ISVehicleMenu.onHornStart(playerObj)
+	end
+end
+
+local function hornStop(c, jd)
+	local playerObj = jd.player and getSpecificPlayer(jd.player)
+	local vehicle = playerObj and playerObj:getVehicle()
+	if vehicle and vehicle:isDriver(playerObj) then
+		ISVehicleMenu.onHornStop(playerObj)
+	end
+end
+
+-- In a vehicle or next to one.
+local function switchSeat(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj then return end
+	local vehicle = ISVehicleMenu.getVehicleToInteractWith(playerObj)
+	if vehicle and vehicle:getScript() and vehicle:getScript():getWheelCount() > 0 then
+		ISVehicleMenu.onShowSeatUI(playerObj, vehicle)
+	end
+end
+
+local function vehicleInfo(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj then return end
+	local vehicle = playerObj:getVehicle() or ISVehicleMenu.getVehicleToInteractWith(playerObj)
+	if vehicle then
+		ISVehicleMenu.onMechanic(playerObj, vehicle)
+	end
+end
+
 local ACTIONS = {
 	{ id = "lightSource", label = "Equip/Turn On/Off Light Source", run = lightSource },
 	{ id = "dropPrimary", label = "DropPrimaryHeldItem", run = dropper(false, false, true) },
@@ -136,6 +253,16 @@ local ACTIONS = {
 	{ id = "dropHandsAndBag", label = "DropBothHeldItemsAndWornBag", run = dropper(true, true, true) },
 	{ id = "grabCorpse", label = "GrabCorpse", run = grabCorpse },
 	{ id = "sharpenWeapon", label = "SharpenWeapon", run = sharpenWeapon },
+	{ id = "sitOnGround", label = "SitOnGround", run = sitOnGround },
+	{ id = "searchMode", label = "Toggle Search Mode", run = searchMode },
+	{ id = "shout", label = "Shout", run = shout },
+	{ id = "releaseRope", label = "ReleaseRope", run = releaseRope },
+	{ id = "engine", label = "StartVehicleEngine", run = engine },
+	{ id = "headlights", label = "ToggleVehicleHeadlights", run = headlights },
+	{ id = "heater", label = "VehicleHeater", run = heater },
+	{ id = "horn", label = "VehicleHorn", run = hornStart, release = hornStop },
+	{ id = "switchSeat", label = "VehicleSwitchSeat", run = switchSeat },
+	{ id = "vehicleInfo", label = "VehicleMechanics", run = vehicleInfo },
 }
 
 for _, action in ipairs(ACTIONS) do
