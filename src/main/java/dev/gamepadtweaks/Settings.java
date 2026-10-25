@@ -116,6 +116,52 @@ public final class Settings {
             #bind.stickRadial=LeftStick
             #bind.uiNavigation=RightBump
             #bind.uiNavigateParent=LeftBump
+            # Keyboard-only actions, unbound by default (media/lua/client/GamepadTweaks/KeyActions.lua).
+            # Main:
+            #bind.lightSource=
+            #bind.dropPrimary=
+            #bind.dropSecondary=
+            #bind.dropBothHands=
+            #bind.dropBag=
+            #bind.dropHandsAndBag=
+            #bind.grabCorpse=
+            #bind.sharpenWeapon=
+            #bind.sitOnGround=
+            #bind.searchMode=
+            #bind.shout=
+            #bind.releaseRope=
+            #bind.engine=
+            #bind.headlights=
+            #bind.heater=
+            #bind.horn=
+            #bind.switchSeat=
+            #bind.vehicleInfo=
+            # Extra:
+            #bind.map=
+            #bind.craftingMenu=
+            #bind.buildingMenu=
+            #bind.skills=
+            #bind.health=
+            #bind.protection=
+            #bind.info=
+            #bind.survivalGuide=
+            #bind.hotbar1=
+            #bind.hotbar2=
+            #bind.hotbar3=
+            #bind.hotbar4=
+            #bind.hotbar5=
+            #bind.hotbar6=
+            #bind.hotbar7=
+            #bind.hotbar8=
+            #bind.timePause=
+            #bind.timeNormal=
+            #bind.timeFast1=
+            #bind.timeFast2=
+            #bind.timeFast3=
+            #bind.moveFurniture=
+            #bind.toggleUI=
+            #bind.screenshot=
+            #bind.pvp=
             """;
 
     public static volatile boolean scaleToSpeedClamp = true;

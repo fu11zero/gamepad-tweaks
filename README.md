@@ -133,6 +133,16 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - vehicle (`ISVehicleMenu.onKeyPressed/onKeyStartPressed`): `engine` (start / shut off),
     `headlights` (driver), `heater`, `horn` (driver, sounds while held: `release` callback on the
     button release), `switchSeat` (seat UI, in or next to a vehicle), `vehicleInfo` (mechanics).
+  - extra (`category = "extra"`, for the settings panel): `map` (`ISWorldMap.ToggleWorldMap`),
+    `craftingMenu`, `buildingMenu`, `moveFurniture` (as the back button wheel commands do),
+    `skills`, `health`, `protection`, `info` (character window tab, `toggleView`, the controller gets
+    the focus), `survivalGuide`, `hotbar1`..`hotbar8` (`ISHotbar:activateSlot`; vanilla hotbar keys
+    work only for player 0 and not with a controller), `timePause`, `timeNormal`, `timeFast1..3`
+    (`SpeedControlsHandler`, not in MP, `whilePaused`: run while paused, other buttons don't),
+    `toggleUI`, `screenshot` (`Core.TakeFullScreenshot`, as `GameWindow` does for the key),
+    `pvp` (`ISEquippedItem` safety toggle for the controller's player).
+  - not done: music toggle and push-to-talk are read from the keyboard in Java
+    (`SoundManager.updateMusic`, `VoiceManager`).
 
 - **Cruise control and reload follow their bindings** (`Bindings.lua`). Vanilla puts the prompts of
   `CruiseControl` and `ReloadWeapon` on their bound buttons but hardcodes the rest: the cruise

@@ -119,7 +119,8 @@ end
 -- - uiHold: held while a UI has the focus;
 -- - navigation: released during UI panel navigation.
 -- run(controller, joypadData) for press layers; repeat: also on D-pad auto-repeat;
--- release(controller, joypadData): when the button that ran it is released (horn).
+-- release(controller, joypadData): when the button that ran it is released (horn);
+-- whilePaused: also runs while the game is paused (other buttons are ignored then).
 Bindings.actions = {
 	{ id = "vehicleWheel", button = Joypad.DPadUp, layer = "world",
 		run = function(c, jd) vanilla.onDisplayUp(jd) end },
@@ -465,8 +466,13 @@ function JoypadControllerData:onPressButtonNoFocus(button)
 		return vanilla.onPressButtonNoFocus(self, button)
 	end
 	local always = button == Joypad.Back or button == Joypad.Start
-	-- vanilla ignores other buttons while paused
+	-- vanilla ignores other buttons while paused; actions that work then (game speed) still run
 	if not always and isGamePaused() and not jd.activeWhilePaused then
+		local action = Bindings.getAction("world", button)
+		if action and action.whilePaused then
+			dispatchLayer(jd, button, "world")
+			return
+		end
 		return vanilla.onPressButtonNoFocus(self, button)
 	end
 	if not dispatch(jd, button) and not always then

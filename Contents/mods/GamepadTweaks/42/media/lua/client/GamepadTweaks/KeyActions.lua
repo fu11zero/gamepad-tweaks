@@ -5,7 +5,8 @@
 -- player can't use them at all (or only through a wheel). Each action here does what the
 -- key handler does, for the player of the controller. All of them are unbound by default:
 -- bind.<id>=<button> in ~/Zomboid/GamepadTweaks.properties.
--- label: the vanilla key binding name (UI_optionscreen_binding_*), for the settings panel.
+-- label: the vanilla key binding name (UI_optionscreen_binding_*, or a full IGUI_ key), and
+-- category (main / extra), for the settings panel.
 
 require "GamepadTweaks/Bindings"
 require "ISUI/ISInventoryPaneContextMenu"
@@ -13,6 +14,10 @@ require "ISUI/ISFirearmRadialMenu"
 require "TimedActions/ISGrabCorpseAction"
 require "Foraging/ISSearchManager"
 require "Vehicles/ISUI/ISVehicleMenu"
+require "ISUI/ISDPadWheels"
+require "ISUI/ISUIHandler"
+require "ISUI/Maps/ISWorldMap"
+require "ISUI/SpeedControlsHandler"
 
 local Bindings = GamepadTweaks.Bindings
 
@@ -244,6 +249,139 @@ local function vehicleInfo(c, jd)
 	end
 end
 
+-- Extra: windows ---------------------------------------------------------------------
+-- XpUpdate.displayCharacterInfo, ISWorldMap.onKeyReleased, SurvivalGuide.onKeyPressed act for
+-- player 0 and don't give a controller the focus; the gamepad versions are the back button
+-- wheel commands (ISBackButtonWheel:onCommand), used here.
+
+-- Character info window on a tab (skills, health, protection, info); again closes it.
+local function infoView(view)
+	return function(c, jd)
+		local playerObj = actor(jd)
+		local playerNum = jd.player
+		if not playerObj or not getPlayerData(playerNum) then return end
+		local window = getPlayerInfoPanel(playerNum)
+		window:toggleView(xpSystemText[view])
+		if view == "health" and window.healthView then
+			window.healthView.doctorLevel = playerObj:getPerkLevel(Perks.Doctor)
+		end
+		if window:getIsVisible() then
+			setJoypadFocus(playerNum, window.panel:getActiveView())
+		else
+			setJoypadFocus(playerNum, nil)
+		end
+	end
+end
+
+local function entityWindow(name, open)
+	return function(c, jd)
+		local playerObj = actor(jd)
+		if not playerObj then return end
+		local window = ISEntityUI.GetWindowInstance(jd.player, name)
+		if window then
+			window:close()
+		else
+			open(playerObj, nil, "*")
+		end
+	end
+end
+
+local function map(c, jd)
+	local playerObj = jd.player and getSpecificPlayer(jd.player)
+	if not playerObj or playerObj:isDead() then return end
+	if not ISWorldMap.IsAllowed() or getCore():getGameMode() == "Tutorial" then return end
+	if isGamePaused() and not (ISWorldMap_instance and ISWorldMap_instance:isVisible()) then return end
+	ISWorldMap.ToggleWorldMap(jd.player)
+end
+
+local function survivalGuide(c, jd)
+	if actor(jd) then
+		ISDPadWheels.showSurvGuide(jd.player)
+	end
+end
+
+-- Extra: hotbar ------------------------------------------------------------------------
+-- ISHotbar.onKeyPressed: player 0 only, and not when that player uses a controller.
+
+local function hotbar(slot)
+	return function(c, jd)
+		local playerObj = actor(jd)
+		if not playerObj or playerObj:isAttacking() then return end
+		local bar = getPlayerHotbar(jd.player)
+		if not bar then return end
+		local queue = ISTimedActionQueue.queues[playerObj]
+		if queue and #queue.queue > 0 then return end
+		bar:activateSlot(slot)
+	end
+end
+
+-- Extra: game speed ----------------------------------------------------------------------
+-- SpeedControlsHandler.onKeyPressed (keys only); not in multiplayer.
+
+local function canChangeSpeed()
+	return not isClient() and MainScreen.instance and MainScreen.instance.inGame
+		and not MainScreen.instance:getIsVisible()
+end
+
+local function timePause(c, jd)
+	if not canChangeSpeed() then return end
+	if getGameSpeed() > 0 then
+		SpeedControlsHandler.previousSpeed = getGameTime():getTrueMultiplier()
+		setGameSpeed(0)
+	else
+		setGameSpeed(1)
+		getGameTime():setMultiplier(SpeedControlsHandler.previousSpeed or 1)
+		SpeedControlsHandler.previousSpeed = nil
+	end
+end
+
+local function timeSpeed(speed, multiplier)
+	return function(c, jd)
+		if not canChangeSpeed() then return end
+		setGameSpeed(speed)
+		getGameTime():setMultiplier(multiplier)
+	end
+end
+
+-- Extra: misc ------------------------------------------------------------------------------
+
+-- ISBackButtonWheel:onCommand("MoveFurniture").
+local function moveFurniture(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj then return end
+	local cursor = ISMoveableCursor:new(playerObj)
+	getCell():setDrag(cursor, cursor.player)
+end
+
+-- ISUIHandler.onKeyPressed (TOGGLE_UI key).
+local function toggleUI(c, jd)
+	if getCore():getGameMode() ~= "Tutorial" then
+		ISUIHandler.toggleUI()
+	end
+end
+
+-- GameWindow.logic: TAKE_SCREENSHOT key.
+local function screenshot(c, jd)
+	getCore():TakeFullScreenshot(nil)
+end
+
+-- ISEquippedItem.onKeyPressed / toggleSafety (TOGGLE_SAFETY key; toggleSafety uses getPlayer()).
+local function pvp(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj then return end
+	if not isClient() then
+		IsoPlayer.setCoopPVP(not IsoPlayer.getCoopPVP())
+		return
+	end
+	if not getServerOptions():getBoolean("SafetySystem") then return end
+	local safety = playerObj:getSafety()
+	if safety:isToggleAllowed() then
+		safety:toggleSafety()
+		ISLogSystem.logAction({ character = playerObj, Type = "Safety",
+			getExtraLogData = function() return safety:isCurrent() and "Safety On" or "Safety Off" end })
+	end
+end
+
 local ACTIONS = {
 	{ id = "lightSource", label = "Equip/Turn On/Off Light Source", run = lightSource },
 	{ id = "dropPrimary", label = "DropPrimaryHeldItem", run = dropper(false, false, true) },
@@ -263,11 +401,37 @@ local ACTIONS = {
 	{ id = "horn", label = "VehicleHorn", run = hornStart, release = hornStop },
 	{ id = "switchSeat", label = "VehicleSwitchSeat", run = switchSeat },
 	{ id = "vehicleInfo", label = "VehicleMechanics", run = vehicleInfo },
+
+	{ id = "map", label = "Map", run = map, category = "extra" },
+	{ id = "craftingMenu", label = "Crafting UI", category = "extra",
+		run = entityWindow("HandcraftWindow", function(...) ISEntityUI.OpenHandcraftWindow(...) end) },
+	{ id = "buildingMenu", label = "Building UI", category = "extra",
+		run = entityWindow("BuildWindow", function(...) ISEntityUI.OpenBuildWindow(...) end) },
+	{ id = "skills", label = "Toggle Skill Panel", run = infoView("skills"), category = "extra" },
+	{ id = "health", label = "Toggle Health Panel", run = infoView("health"), category = "extra" },
+	{ id = "protection", label = "Toggle Clothing Protection Panel", run = infoView("protection"), category = "extra" },
+	{ id = "info", label = "Toggle Info Panel", run = infoView("info"), category = "extra" },
+	{ id = "survivalGuide", label = "Toggle Survival Guide", run = survivalGuide, category = "extra" },
+	{ id = "timePause", label = "Pause", run = timePause, whilePaused = true, category = "extra" },
+	{ id = "timeNormal", label = "Normal Speed", run = timeSpeed(1, 1), whilePaused = true, category = "extra" },
+	{ id = "timeFast1", label = "Fast Forward x1", run = timeSpeed(2, 5), whilePaused = true, category = "extra" },
+	{ id = "timeFast2", label = "Fast Forward x2", run = timeSpeed(3, 20), whilePaused = true, category = "extra" },
+	{ id = "timeFast3", label = "Fast Forward x3", run = timeSpeed(4, 40), whilePaused = true, category = "extra" },
+	{ id = "moveFurniture", label = "IGUI_BackButton_Movable", run = moveFurniture, category = "extra" },
+	{ id = "toggleUI", label = "Toggle UI", run = toggleUI, whilePaused = true, category = "extra" },
+	{ id = "screenshot", label = "Take screenshot", run = screenshot, whilePaused = true, category = "extra" },
+	{ id = "pvp", label = "Toggle Safety", run = pvp, category = "extra" },
 }
+
+for slot = 1, 8 do
+	table.insert(ACTIONS, { id = "hotbar" .. slot, label = "Hotbar " .. slot, run = hotbar(slot), category = "extra" })
+end
 
 for _, action in ipairs(ACTIONS) do
 	action.layer = "world"
-	action.category = "main"
-	action.label = "UI_optionscreen_binding_" .. action.label
+	action.category = action.category or "main"
+	if not action.label:match("^IGUI_") then
+		action.label = "UI_optionscreen_binding_" .. action.label
+	end
 	Bindings.add(action)
 end
