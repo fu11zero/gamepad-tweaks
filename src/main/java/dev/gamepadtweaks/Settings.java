@@ -47,18 +47,29 @@ public final class Settings {
             steering.debugLog=false
 
             # Drifting center: a released stick rests slightly off zero and the car
-            # drives in an arc. While the stick stands still (range below
-            # recenterStillRange over recenterStillMs) within recenterZone of zero,
-            # its center glides to the current value at recenterRate per second.
-            # Steering moves the stick much more than that, so it isn't eaten.
+            # drives in an arc. The steering gets the distance from a learned center,
+            # without any dead zone. While the stick stands still (range below
+            # recenterStillRange over recenterStillMs: the jitter zone, used only to
+            # see that the stick stopped) within recenterZone of zero, the center glides
+            # to the mean of that window at recenterRate per second.
             steering.recenter=true
             steering.recenterZone=0.08
             steering.recenterStillRange=0.012
             steering.recenterStillMs=250
             steering.recenterRate=0.1
-            # Distance from the center ignored as stick noise (output is rescaled,
-            # so it starts from 0 just past it and full deflection is still 1).
-            steering.noiseDeadZone=0.01
+            # Learning is armed only after a release: the stick was further than
+            # releaseFrom from the center and got back within recenterZone in less than
+            # releaseMaxMs (direction doesn't matter, the spring can overshoot).
+            # Moving the stick slowly further than disarmDistance from where it rested
+            # disarms it, so holding the stick slightly off on purpose isn't eaten;
+            # not checked for releaseSettleMs after a release (overshoot swings).
+            steering.releaseFrom=0.2
+            steering.releaseMaxMs=200
+            steering.releaseSettleMs=500
+            steering.disarmDistance=0.025
+            # Distance from the center cut out as a dead zone (output is rescaled).
+            # 0 = none: jitter averages out, the curve squashes it at speed.
+            steering.noiseDeadZone=0
 
             # --- Triggers ---------------------------------------------------------
             # The game's dead zone is not applied to the triggers (they rest at zero
@@ -97,7 +108,11 @@ public final class Settings {
     public static volatile float recenterStillRange = 0.012f;
     public static volatile float recenterStillMs = 250f;
     public static volatile float recenterRate = 0.1f;
-    public static volatile float noiseDeadZone = 0.01f;
+    public static volatile float noiseDeadZone = 0f;
+    public static volatile float releaseFrom = 0.2f;
+    public static volatile float releaseMaxMs = 200f;
+    public static volatile float releaseSettleMs = 500f;
+    public static volatile float disarmDistance = 0.025f;
     public static volatile boolean triggersDebugLog = false;
     public static volatile float mapPanSpeed = 1.0f;
     public static volatile float mapPanExponent = 2.0f;
@@ -158,7 +173,11 @@ public final class Settings {
         recenterStillRange = num(p, "steering.recenterStillRange", 0.012f, 0f, 0.2f);
         recenterStillMs = num(p, "steering.recenterStillMs", 250f, 20f, 5000f);
         recenterRate = num(p, "steering.recenterRate", 0.1f, 0f, 10f);
-        noiseDeadZone = num(p, "steering.noiseDeadZone", 0.01f, 0f, 0.2f);
+        noiseDeadZone = num(p, "steering.noiseDeadZone", 0f, 0f, 0.2f);
+        releaseFrom = num(p, "steering.releaseFrom", 0.2f, 0.05f, 1f);
+        releaseMaxMs = num(p, "steering.releaseMaxMs", 200f, 10f, 2000f);
+        releaseSettleMs = num(p, "steering.releaseSettleMs", 500f, 0f, 5000f);
+        disarmDistance = num(p, "steering.disarmDistance", 0.025f, 0.001f, 0.5f);
         triggersDebugLog = bool(p, "triggers.debugLog", false);
         mapPanSpeed = num(p, "map.panSpeed", 1.0f, 0.01f, 20f);
         mapPanExponent = num(p, "map.panExponent", 2.0f, 0.1f, 5f);
@@ -173,6 +192,8 @@ public final class Settings {
                 + " recenter=" + recenter + " zone=" + recenterZone
                 + " still=" + recenterStillRange + "/" + recenterStillMs + "ms rate=" + recenterRate
                 + " noiseDeadZone=" + noiseDeadZone
+                + " release=" + releaseFrom + "/" + releaseMaxMs + "ms settle=" + releaseSettleMs
+                + "ms disarm=" + disarmDistance
                 + " triggers.debugLog=" + triggersDebugLog
                 + " map: pan=" + mapPanSpeed + "^" + mapPanExponent + " dpad=" + mapDpadDeflection
                 + " zoom=" + mapZoomSpeed + "^" + mapZoomExponent + " triggerDeadZone=" + mapTriggerDeadZone);

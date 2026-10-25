@@ -84,8 +84,9 @@ public final class Steering {
             long now = System.currentTimeMillis();
             if (now - lastDebugLog >= 1000) {
                 lastDebugLog = now;
-                Log.info(String.format("steering: speed=%.0fkm/h raw=%.4f center=%.4f stick=%.4f control=%.5f wheel=%.5f (vanilla %.5f)",
-                        speed, lastRaw, StickCenter.center(lastJoypad), lastStick,
+                Log.info(String.format("steering: speed=%.0fkm/h raw=%.4f center=%.4f%s stick=%.4f control=%.5f wheel=%.5f (vanilla %.5f)",
+                        speed, lastRaw, StickCenter.center(lastJoypad),
+                        StickCenter.armed(lastJoypad) ? "" : " (locked)", lastStick,
                         car.clientControls.steering, angle, vanilla));
             }
         }

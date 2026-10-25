@@ -15,13 +15,19 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   spot after every move (measured -0.01..-0.05 on a Vader 5 Pro, up to +-0.077 on a Vader 3).
   Without a dead zone that offset steers, and at highway speed even a 0.0003 wheel angle
   (stick -0.03) drives the car in a long arc, so the player has to hold the stick slightly
-  off to go straight. A plain dead zone fixes it but kills fine steering. Instead:
-  - while the stick stands still (range < `recenterStillRange` over `recenterStillMs`)
-    within `recenterZone` of zero, its center glides to the current value at
-    `recenterRate` per second. Thumb resting on the stick or not doesn't matter;
-    steering moves the stick far more than the jitter, so it isn't eaten;
-  - output = distance from the center minus a tiny `noiseDeadZone` (stick jitter),
-    rescaled so it starts from 0 and full deflection is still +-1.
+  off to go straight. A plain dead zone fixes it but kills fine steering. Instead the steering
+  gets the distance from a learned center, rescaled so full deflection is still +-1, with no
+  dead zone (`noiseDeadZone`, 0 by default):
+  - while the stick stands still (range < `recenterStillRange` over `recenterStillMs`: the
+    jitter zone, used only to detect that the stick stopped) within `recenterZone` of zero,
+    the center glides to the mean of that window at `recenterRate` per second;
+  - drift and a deliberate small hold look the same by position, so learning is armed only
+    by a release: the stick was further than `releaseFrom` from the center and got back within
+    `recenterZone` in less than `releaseMaxMs` (the direction isn't checked: without hardware
+    smoothing the spring overshoots). Armed at start too;
+  - moving the stick further than `disarmDistance` from where it rested (thumb steering)
+    disarms it, except during `releaseSettleMs` after a release (overshoot swings).
+  `steering.debugLog=true` logs arming/disarming and marks a locked center.
 
 - **Speed-sensitive steering** (`Steering.shape`). Vanilla clamps the wheel angle at speed
   (`VehicleScript.getSteeringClamp`: 0.9 standing still, ~0.4 at max speed) but maps the
