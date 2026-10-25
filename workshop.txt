@@ -13,7 +13,8 @@ description=[*][b]Triggers without dead zone.[/b] LT/RT (L2/R2) use the raw anal
 description=[*][b]Smooth map controls.[/b] World map and paper maps: past the game's stick dead zone the map pans smoothly, stick deflection = scroll speed (also in isometric view, diagonals work, no jumps). Triggers zoom smoothly, how far you press = zoom speed, instead of one zoom step per click. The paper map can now be moved with the stick too.
 description=[*][b]Fliers and brochures work with a controller.[/b] Vanilla throws a Lua error when giving the flier window the gamepad focus, so B (close), X (text) and Y (show on map) did nothing and it closed only with Esc on the keyboard. Fixed, plus a B prompt.
 description=[*][b]UI presses don't leak to the character.[/b] Closing a menu with B no longer makes your character crouch etc. when B is released.
-description=[*][b]Rebindable D-pad, Back and Start.[/b] The vanilla D-pad wheels (vehicle, emotes, weapon/light, zones/guide), the Back command wheel and Start pause are hardcoded to their buttons. Each is now an action you can move to another button or turn off to free the button for regular bindings. Defaults stay vanilla.
+description=[*][b]Rebindable hardcoded buttons.[/b] The D-pad wheels (vehicle, emotes, weapon/light, zones/guide), the Back command wheel, Start pause, cruise control speed (X + D-pad), the L3 crouch/sit radial and RB-hold UI navigation are hardcoded in vanilla. Each is now an action you can move to another button or turn off to free the button for regular bindings. Defaults stay vanilla.
+description=[*][b]Cruise control and reload follow your bindings.[/b] Vanilla shows the prompts on the bound buttons but still toggles cruise control on X and opens the reload radial on RB. Now rebinding them in Options -> Controller works.
 description=[*][b]Actions on press, not on release.[/b] Crouch (sneak) toggle and toggle-to-sprint (run) react on button press, no input lag; entering a vehicle only via the A prompt.
 description=[/list]
 description=
@@ -27,6 +28,6 @@ description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=36198
 description=[/list]
 description=
 description=[h2]Keywords[/h2]
-description=gamepad, controller, joystick, joypad, Xbox, PlayStation, DualSense, DualShock, Steam Deck, Steam Input, dead zone, deadzone, stick drift, analog, steering, driving, car, vehicle, triggers, gas, brake, map, world map, flier, flyer, brochure, zoom, scroll, pan, crouch, sneak, sprint, toggle, rebind, remap, keybind, bindings, D-pad, dpad, radial menu, wheel, emotes, back button, select, input lag, splitscreen, couch co-op
+description=gamepad, controller, joystick, joypad, Xbox, PlayStation, DualSense, DualShock, Steam Deck, Steam Input, dead zone, deadzone, stick drift, analog, steering, driving, car, vehicle, triggers, gas, brake, map, world map, flier, flyer, brochure, zoom, scroll, pan, crouch, sneak, sprint, toggle, rebind, remap, keybind, bindings, D-pad, dpad, radial menu, wheel, emotes, back button, select, cruise control, reload, L3, RB, input lag, splitscreen, couch co-op
 tags=Build 42;Interface;Vehicles;QoL
 visibility=public

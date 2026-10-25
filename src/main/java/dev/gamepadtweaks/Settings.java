@@ -100,13 +100,22 @@ public final class Settings {
             # bind.<action>=<button>: A B X Y LeftBump RightBump LeftStick RightStick
             # Back Start Guide DPadUp DPadDown DPadLeft DPadRight, or none to free the
             # button for the regular bindings (Options -> Controller).
-            # A missing line = the vanilla button.
+            # A missing line = the vanilla button. An action set to a button takes it from
+            # the action that has it by default.
             #bind.vehicleWheel=DPadUp
             #bind.emoteWheel=DPadDown
             #bind.equipWheel=DPadLeft
             #bind.extraWheel=DPadRight
             #bind.commandWheel=Back
             #bind.pause=Start
+            # cruiseFaster/cruiseSlower: while driving with the CruiseControl button held.
+            # stickRadial: held in the world (crouch/sit/auto-walk radial, if enabled in options).
+            # uiNavigation: held in a UI (panel navigation); uiNavigateParent: released while navigating.
+            #bind.cruiseFaster=DPadUp
+            #bind.cruiseSlower=DPadDown
+            #bind.stickRadial=LeftStick
+            #bind.uiNavigation=RightBump
+            #bind.uiNavigateParent=LeftBump
             """;
 
     public static volatile boolean scaleToSpeedClamp = true;

@@ -86,23 +86,49 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
 
 - **Rebindable hardcoded buttons** (`media/lua/client/GamepadTweaks/Bindings.lua`, values via
   `Settings` globals `GamepadTweaks_getSetting` / `GamepadTweaks_settingsVersion`).
-  Vanilla `JoyPadSetup.lua` calls the D-pad wheels (`JoypadControllerData:onPressUp/...` ->
-  `ISDPadWheels.onDisplayUp/Down/Left/Right`), the Back command wheel and Start pause
-  (`onPressButtonNoFocus`) directly, past the binding system, so these buttons can't be used for
-  anything else. The vanilla binding list is a Java enum (`CharacterJoypadButtonBinding`, fixed at
-  class load and saved by name in `InputBindings/*.xml`), so it isn't extended; the actions live
-  in the mod instead: `bind.<action>=<button>` (`vehicleWheel`, `emoteWheel`, `equipWheel`,
-  `extraWheel`, `commandWheel`, `pause`), `none` frees the button for the regular bindings.
+  Vanilla handles these directly, past the binding system, so the buttons can't be used for
+  anything else and the actions can't be moved:
+  - D-pad wheels: `JoypadControllerData:onPressUp/...` -> `ISDPadWheels.onDisplayUp/Down/Left/Right`;
+  - Back command wheel and Start pause: `onPressButtonNoFocus`;
+  - cruise control speed: X + D-pad up/down (`ISVehicleRegulator.onJoypadPressUp/Down`);
+  - L3 held -> crouch/sit/auto-walk radial (`ISJoystickButtonRadialMenu`, timer from
+    `ISButtonPrompt:update`);
+  - RB held in a UI -> panel navigation, LB in it -> parent panel (`onHoldButton`, `onReleaseButton`).
+
+  The vanilla binding list is a Java enum (`CharacterJoypadButtonBinding`, fixed at class load and
+  saved by name in `InputBindings/*.xml`), so it isn't extended; the actions live in the mod:
+  `bind.<action>=<button>`, `none` frees the button for the regular bindings. Actions are in layers
+  (one button = one action per layer): `world` press (`vehicleWheel`, `emoteWheel`, `equipWheel`,
+  `extraWheel`, `commandWheel`, `pause`), `cruise` press while driving with the CruiseControl
+  button held, checked first (`cruiseFaster`, `cruiseSlower`, repeat while held), `hold`
+  (`stickRadial`), `uiHold` (`uiNavigation`), `navigation` release (`uiNavigateParent`).
   Default = vanilla button, so nothing changes until rebound; an action set to a button takes it
-  from the action that has it by default. Details:
+  from the action that has it by default. A regular binding that acts in the world (not the UI-only
+  ClosePanel/Cycle*/TransferItem) put on the button of a default world action takes it too: vanilla
+  has none on the D-pad, Back or Start, so the player put it there (Melee on D-pad left no longer
+  also opens the weapon wheel). Regular bindings are re-checked every 500 ms. Details:
   - the D-pad hooks are the `onDisplay*` calls made from `onPressUp/...` (so vanilla checks still
-    apply: UI focus, drag, cruise control X + up/down); an action fires once per press (vanilla
-    D-pad repeats while held);
+    apply: UI focus, drag); `ISVehicleRegulator.onJoypadPressUp/Down` return false there, the
+    cruise layer is dispatched with the wheels. A world action fires once per press (vanilla D-pad
+    repeats while held);
   - other buttons in the world: an action bound to them replaces vanilla (button prompts);
     a freed Back/Start does nothing;
   - wheels close on their vanilla button release (`hideWhenButtonReleased`), the mod switches it
-    to the button that opened them; D-pad releases are also passed to the back button wheel.
+    to the button that opened them; D-pad releases are also passed to the back button wheel;
   - without the jar the defaults are used.
+
+- **Cruise control and reload follow their bindings** (`Bindings.lua`). Vanilla puts the prompts of
+  `CruiseControl` and `ReloadWeapon` on their bound buttons but hardcodes the rest: the cruise
+  toggle happens on X release (`onReleaseButton` -> `ISVehicleRegulator.onJoypadReleaseX`), the
+  speed changes with X held; the firearm radial opens while RB is held (`ISButtonPrompt:update` ->
+  `ISFirearmRadialMenu.onRepeatRBumper`), quick reload and closing the radial are on RB release.
+  With either binding moved (e.g. CruiseControl on RB) they don't work. Also the cruise prompt
+  (its press handler) is set only while JoyPadSetup evaluates the X button, and the evaluation of
+  the CruiseControl button right after clears it (RB: `getBestRBButtonAction`, no firearm); the mod
+  sets it again after every `ISButtonPrompt:getBestButtonBindingAction`. Here all of it uses the
+  bound button; on the vanilla buttons nothing changes.
+  The cruise layer is dispatched before vanilla `onPressUp/...`, so mods wrapping `onDisplayUp`
+  (Smart Radial Menu opens its menu when the vehicle radial stays empty) don't see those presses.
 
 Settings live in `~/Zomboid/GamepadTweaks.properties` (created with defaults on first
 launch, re-read while the game runs).
