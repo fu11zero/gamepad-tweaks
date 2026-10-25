@@ -68,6 +68,33 @@ public final class Patches {
         }
     }
 
+    // Gamepad actions on press instead of click (see PressActions).
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isCrouchButtonPressed")
+    public static class CrouchOnPress {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input,
+                                @Patch.Return(readOnly = false) boolean pressed) {
+            pressed = PressActions.crouchPressed(input, pressed);
+        }
+    }
+
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "updateToggleToSprint")
+    public static class SprintToggleOnPress {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input) {
+            PressActions.afterToggleToSprint(input);
+        }
+    }
+
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isInteractButtonClicked")
+    public static class NoVehicleClick {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input,
+                                @Patch.Return(readOnly = false) boolean clicked) {
+            clicked = PressActions.interactClicked(input, clicked);
+        }
+    }
+
     // The options screen draws the trigger dead zone from these; it no longer applies.
     // The dead zone buttons there still change it for the sticks.
     @Patch(className = "zombie.input.JoypadManager$Joypad", methodName = "getLTDeadZone")

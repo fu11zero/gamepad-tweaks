@@ -35,6 +35,13 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   B still held, and its release counts as a "click" (crouch toggle etc.). Buttons held
   when the character's buttons get turned on are ignored by the character until released.
 
+- **Actions on press, not click** (`PressActions`). Vanilla toggles some gamepad actions on
+  a "click" (release within 400 ms), so they lag and don't work with long-press binds:
+  - crouch toggle: on press, unless the left stick radial menu is enabled;
+  - toggle-to-sprint: on press;
+  - enter/exit vehicle: vanilla also does it on an Interact click for any nearby vehicle,
+    on top of the A prompt (on press); for the gamepad only the prompt is left.
+
 Settings live in `~/Zomboid/GamepadTweaks.properties` (created with defaults on first
 launch, re-read while the game runs).
 
