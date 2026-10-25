@@ -45,6 +45,12 @@ public final class Settings {
 
             # Log stick and wheel angle once a second (for tuning).
             steering.debugLog=false
+
+            # --- Triggers ---------------------------------------------------------
+            # The game's dead zone is not applied to the triggers (they rest at zero
+            # and need none). Log every change of the raw trigger value (what the
+            # controller driver reports, before any game code), to find jumps.
+            triggers.debugLog=false
             """;
 
     public static volatile boolean scaleToSpeedClamp = true;
@@ -55,6 +61,7 @@ public final class Settings {
     public static volatile float highSpeedTurnRate = 0.03f;
     public static volatile float returnRate = 0.06f;
     public static volatile boolean debugLog = false;
+    public static volatile boolean triggersDebugLog = false;
 
     private static Path path;
     private static long lastCheck;
@@ -103,10 +110,12 @@ public final class Settings {
         highSpeedTurnRate = num(p, "steering.highSpeedTurnRate", 0.03f, 0.001f, 1f);
         returnRate = num(p, "steering.returnRate", 0.06f, 0.001f, 1f);
         debugLog = bool(p, "steering.debugLog", false);
+        triggersDebugLog = bool(p, "triggers.debugLog", false);
         Log.info("settings loaded: scaleToSpeedClamp=" + scaleToSpeedClamp
                 + " exponent=" + lowSpeedExponent + ".." + highSpeedExponent
                 + " @" + highSpeedKmh + "km/h turnRate=" + turnRate + ".." + highSpeedTurnRate
-                + " returnRate=" + returnRate + " debugLog=" + debugLog);
+                + " returnRate=" + returnRate + " debugLog=" + debugLog
+                + " triggers.debugLog=" + triggersDebugLog);
     }
 
     private static boolean bool(Properties p, String key, boolean def) {

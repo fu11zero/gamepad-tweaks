@@ -23,6 +23,13 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   inside the 0.1 dead zone. Instead the wheel moves towards the stick at a constant rate,
   faster back to center. Only for gamepad drivers; keyboard steering stays vanilla.
 
+- **Triggers without dead zone** (`Triggers`, `Patches.*TriggerValue`). Vanilla
+  `Joypad.getLTValue/getRTValue` apply the per-axis dead zone that the options screen
+  dead zone buttons set for all axes at once (default 0.2 = first 10% of the travel).
+  Triggers rest at zero and don't need it: the raw axis is used instead, the options
+  screen shows no trigger dead zone, the buttons still work for the sticks.
+  `triggers.debugLog=true` logs every raw value change.
+
 Settings live in `~/Zomboid/GamepadTweaks.properties` (created with defaults on first
 launch, re-read while the game runs).
 
