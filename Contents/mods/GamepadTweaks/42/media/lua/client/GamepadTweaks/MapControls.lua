@@ -39,7 +39,7 @@ local function update(self, allowPan)
 	if GamepadTweaks_updateMap(self.mapAPI, self.joyfocus.id, dt, self.width, self.height, allowPan) then
 		return true
 	end
-	-- unknown controller: give vanilla this frame's time
+	-- unknown controller or map.smooth off: give vanilla this frame's time
 	self.updateMS = prevMS
 	return false
 end

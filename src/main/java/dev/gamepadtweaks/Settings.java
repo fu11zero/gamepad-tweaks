@@ -23,8 +23,15 @@ public final class Settings {
     private static final String DEFAULTS = """
             # Gamepad Tweaks settings. Re-read automatically while the game runs.
             # Delete the file to restore defaults.
+            # The main settings are also in the game: Options -> Mods -> Gamepad Tweaks.
 
             # --- Steering ---------------------------------------------------------
+            # false = vanilla gamepad steering (everything below is off).
+            steering.enabled=true
+            # Steer with the raw stick X: no stick dead zone, no diagonal x1.41 stretch
+            # (false = the game's stick value, with its dead zone).
+            steering.rawStick=true
+
             # Full stick deflection = the vehicle's max steering angle at the current
             # speed (vanilla clamps the angle instead, so at speed the outer part of
             # the stick travel does nothing and small deflections are too sharp).
@@ -37,6 +44,9 @@ public final class Settings {
             steering.highSpeedExponent=2.0
             steering.highSpeedKmh=80
 
+            # The wheels turn at a constant rate towards the stick (false = vanilla: a lag
+            # that grows with speed, fast return only from inside the stick dead zone).
+            steering.constantRateWheel=true
             # How fast the wheels turn, angle units per frame at 60 fps
             # (full lock is ~0.9 standing still, ~0.4-0.6 at speed).
             # turnRate at 0 km/h, highSpeedTurnRate at highSpeedKmh and above;
@@ -76,14 +86,27 @@ public final class Settings {
 
             # --- Triggers ---------------------------------------------------------
             # The game's dead zone is not applied to the triggers (they rest at zero
-            # and need none). Log every change of the raw trigger value (what the
-            # controller driver reports, before any game code), to find jumps.
+            # and need none). false = vanilla (the options screen stick dead zone).
+            triggers.noDeadZone=true
+            # Log every change of the raw trigger value (what the controller driver
+            # reports, before any game code), to find jumps.
             triggers.debugLog=false
+
+            # --- Buttons ----------------------------------------------------------
+            # Crouch toggle on press, not on release (only without the left stick radial menu).
+            actions.crouchOnPress=true
+            # Toggle-to-sprint on press, not on release.
+            actions.sprintOnPress=true
+            # Enter/exit a vehicle only with the A button prompt; vanilla also does it on
+            # an Interact click for any vehicle nearby.
+            actions.vehicleOnlyByPrompt=true
 
             # --- Map --------------------------------------------------------------
             # World map and paper maps: past the game's stick dead zone the map pans
             # at a speed that follows the stick deflection, the triggers zoom at a
             # speed that follows how far they are pressed (vanilla: on/off steps).
+            # false = vanilla map controls.
+            map.smooth=true
             # Pan speed at full deflection, map heights per second.
             map.panSpeed=1.0
             # Pan speed = deflection ^ exponent (1 = linear, 2 = finer at small deflections).
@@ -179,6 +202,9 @@ public final class Settings {
             #bind.pvp=
             """;
 
+    public static volatile boolean steeringEnabled = true;
+    public static volatile boolean rawStick = true;
+    public static volatile boolean constantRateWheel = true;
     public static volatile boolean scaleToSpeedClamp = true;
     public static volatile float lowSpeedExponent = 1.0f;
     public static volatile float highSpeedExponent = 2.0f;
@@ -197,7 +223,12 @@ public final class Settings {
     public static volatile float releaseMaxMs = 200f;
     public static volatile float releaseSettleMs = 500f;
     public static volatile float disarmDistance = 0.025f;
+    public static volatile boolean triggersNoDeadZone = true;
     public static volatile boolean triggersDebugLog = false;
+    public static volatile boolean crouchOnPress = true;
+    public static volatile boolean sprintOnPress = true;
+    public static volatile boolean vehicleOnlyByPrompt = true;
+    public static volatile boolean mapSmooth = true;
     public static volatile float mapPanSpeed = 1.0f;
     public static volatile float mapPanExponent = 2.0f;
     public static volatile float mapDpadDeflection = 0.5f;
@@ -323,6 +354,9 @@ public final class Settings {
         try (Reader r = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             p.load(r);
         }
+        steeringEnabled = bool(p, "steering.enabled", true);
+        rawStick = bool(p, "steering.rawStick", true);
+        constantRateWheel = bool(p, "steering.constantRateWheel", true);
         scaleToSpeedClamp = bool(p, "steering.scaleToSpeedClamp", true);
         lowSpeedExponent = num(p, "steering.lowSpeedExponent", 1.0f, 0.1f, 5f);
         highSpeedExponent = num(p, "steering.highSpeedExponent", 2.0f, 0.1f, 5f);
@@ -341,7 +375,12 @@ public final class Settings {
         releaseMaxMs = num(p, "steering.releaseMaxMs", 200f, 10f, 2000f);
         releaseSettleMs = num(p, "steering.releaseSettleMs", 500f, 0f, 5000f);
         disarmDistance = num(p, "steering.disarmDistance", 0.025f, 0.001f, 0.5f);
+        triggersNoDeadZone = bool(p, "triggers.noDeadZone", true);
         triggersDebugLog = bool(p, "triggers.debugLog", false);
+        crouchOnPress = bool(p, "actions.crouchOnPress", true);
+        sprintOnPress = bool(p, "actions.sprintOnPress", true);
+        vehicleOnlyByPrompt = bool(p, "actions.vehicleOnlyByPrompt", true);
+        mapSmooth = bool(p, "map.smooth", true);
         mapPanSpeed = num(p, "map.panSpeed", 1.0f, 0.01f, 20f);
         mapPanExponent = num(p, "map.panExponent", 2.0f, 0.1f, 5f);
         mapDpadDeflection = num(p, "map.dpadDeflection", 0.5f, 0.01f, 1f);
@@ -352,7 +391,9 @@ public final class Settings {
         steamInputDebugLog = bool(p, "steamInput.debugLog", false);
         raw = p;
         version++;
-        Log.info("settings loaded: scaleToSpeedClamp=" + scaleToSpeedClamp
+        Log.info("settings loaded: steering=" + steeringEnabled + " rawStick=" + rawStick
+                + " constantRateWheel=" + constantRateWheel
+                + " scaleToSpeedClamp=" + scaleToSpeedClamp
                 + " exponent=" + lowSpeedExponent + ".." + highSpeedExponent
                 + " @" + highSpeedKmh + "km/h turnRate=" + turnRate + ".." + highSpeedTurnRate
                 + " returnRate=" + returnRate + " debugLog=" + debugLog
@@ -361,8 +402,10 @@ public final class Settings {
                 + " noiseDeadZone=" + noiseDeadZone
                 + " release=" + releaseFrom + "/" + releaseMaxMs + "ms settle=" + releaseSettleMs
                 + "ms disarm=" + disarmDistance
-                + " triggers.debugLog=" + triggersDebugLog
-                + " map: pan=" + mapPanSpeed + "^" + mapPanExponent + " dpad=" + mapDpadDeflection
+                + " triggers.noDeadZone=" + triggersNoDeadZone + " triggers.debugLog=" + triggersDebugLog
+                + " actions: crouchOnPress=" + crouchOnPress + " sprintOnPress=" + sprintOnPress
+                + " vehicleOnlyByPrompt=" + vehicleOnlyByPrompt
+                + " map: smooth=" + mapSmooth + " pan=" + mapPanSpeed + "^" + mapPanExponent + " dpad=" + mapDpadDeflection
                 + " zoom=" + mapZoomSpeed + "^" + mapZoomExponent + " triggerDeadZone=" + mapTriggerDeadZone);
     }
 

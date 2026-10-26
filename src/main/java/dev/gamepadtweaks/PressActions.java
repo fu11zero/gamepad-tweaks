@@ -21,7 +21,7 @@ import zombie.core.Core;
 //   else. For the gamepad only the prompt is left.
 //
 // Toggle-to-run on the gamepad is a stick gesture (full deflection and back), not a
-// button, so it stays a click.
+// button, so it stays a click. Each change can be turned off (actions.* settings).
 public final class PressActions {
     private static final Field TOGGLE_CROUCH = field("toggleCrouch");
     private static final Field TOGGLE_SPRINT = field("toggleSprint");
@@ -65,7 +65,8 @@ public final class PressActions {
 
     /** CharacterInputComponent.isCrouchButtonPressed. */
     public static boolean crouchPressed(CharacterInputComponent input, boolean vanilla) {
-        if (!gamepad(input) || Core.getInstance().getOptionEnableLeftJoystickRadialMenu()) {
+        if (!Settings.crouchOnPress || !gamepad(input)
+                || Core.getInstance().getOptionEnableLeftJoystickRadialMenu()) {
             return vanilla;
         }
         TimedInputHandler crouch = handler(TOGGLE_CROUCH, input);
@@ -77,7 +78,7 @@ public final class PressActions {
 
     /** After CharacterInputComponent.updateToggleToSprint: move its toggle from click to press. */
     public static void afterToggleToSprint(CharacterInputComponent input) {
-        if (!gamepad(input) || SHOULD_ALLOW_FORCE_RUN_OR_SPRINT == null) {
+        if (!Settings.sprintOnPress || !gamepad(input) || SHOULD_ALLOW_FORCE_RUN_OR_SPRINT == null) {
             return;
         }
         TimedInputHandler sprint = handler(TOGGLE_SPRINT, input);
@@ -101,6 +102,6 @@ public final class PressActions {
 
     /** CharacterInputComponent.isInteractButtonClicked. */
     public static boolean interactClicked(CharacterInputComponent input, boolean vanilla) {
-        return !gamepad(input) && vanilla;
+        return vanilla && (!Settings.vehicleOnlyByPrompt || !gamepad(input));
     }
 }

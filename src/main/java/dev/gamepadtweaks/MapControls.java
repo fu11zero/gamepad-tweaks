@@ -26,7 +26,7 @@ public final class MapControls {
 
     /**
      * Pans and zooms {@code map} for one frame. Returns false when the controller is
-     * unknown, so the Lua side can fall back to vanilla.
+     * unknown or map.smooth is off, so the Lua side falls back to vanilla.
      */
     @LuaMethod(name = "GamepadTweaks_updateMap", global = true)
     public static boolean update(UIWorldMapV1 map, double controllerId, double dtMs,
@@ -34,7 +34,7 @@ public final class MapControls {
         Settings.refresh();
         int id = (int) controllerId;
         JoypadManager.Joypad joypad = JoypadManager.instance.getFromControllerID(id);
-        if (map == null || joypad == null) {
+        if (!Settings.mapSmooth || map == null || joypad == null) {
             return false;
         }
         float dt = (float) Math.max(0.0, Math.min(dtMs, MAX_DT_MS)) / 1000f;

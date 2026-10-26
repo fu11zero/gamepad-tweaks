@@ -13,7 +13,8 @@ public final class Patches {
     // Vanilla: clientControls.steering = JoypadManager.getMovementAxisX(joypad),
     // which applies the stick dead zone and stretches diagonals up to x1.41.
     // Replace it with the raw stick X, recentered (see StickCenter) and shaped by
-    // speed (see Steering).
+    // speed (see Steering). steering.enabled=false keeps vanilla; steering.rawStick=false
+    // keeps the game's stick value (dead zone) but still shapes it.
     @Patch(className = "zombie.core.physics.CarController", methodName = "updateControls")
     public static class SteeringInput {
         @Patch.OnExit
@@ -22,11 +23,19 @@ public final class Patches {
                 return;
             }
             int joypad = car.vehicleObject.getJoypad();
-            if (joypad == -1) {
+            Settings.refresh();
+            if (joypad == -1 || !Settings.steeringEnabled) {
                 return;
             }
-            float raw = RawStick.movementX(joypad, car.clientControls.steering);
-            float stick = StickCenter.apply(joypad, raw);
+            float raw;
+            float stick;
+            if (Settings.rawStick) {
+                raw = RawStick.movementX(joypad, car.clientControls.steering);
+                stick = StickCenter.apply(joypad, raw);
+            } else {
+                raw = Math.max(-1.0f, Math.min(1.0f, car.clientControls.steering));
+                stick = raw;
+            }
             car.clientControls.steering = Steering.shape(car, raw, stick, joypad);
         }
     }
@@ -103,7 +112,7 @@ public final class Patches {
     public static class LeftTriggerDeadZone {
         @Patch.OnExit
         public static void exit(@Patch.Return(readOnly = false) float value) {
-            value = 0.0f;
+            value = Triggers.deadZone(value);
         }
     }
 
@@ -111,7 +120,7 @@ public final class Patches {
     public static class RightTriggerDeadZone {
         @Patch.OnExit
         public static void exit(@Patch.Return(readOnly = false) float value) {
-            value = 0.0f;
+            value = Triggers.deadZone(value);
         }
     }
 }

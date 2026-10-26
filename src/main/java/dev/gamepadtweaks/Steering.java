@@ -63,7 +63,8 @@ public final class Steering {
     /** Called in CarController.update() after vanilla moved the wheel; returns the angle to use. */
     public static float wheel(CarController car) {
         float vanilla = car.getVehicleSteering();
-        if (GameServer.server || car != updating || car.vehicleObject.getJoypad() == -1) {
+        if (GameServer.server || car != updating || car.vehicleObject.getJoypad() == -1
+                || !Settings.steeringEnabled || !Settings.constantRateWheel) {
             return vanilla;
         }
         float speed = Math.abs(car.vehicleObject.getCurrentSpeedKmHour());

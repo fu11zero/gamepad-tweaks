@@ -33,9 +33,15 @@ public final class Triggers {
         }
     }
 
-    /** Raw trigger value, or {@code vanilla} if it can't be read (or the trigger is a button). */
+    /**
+     * Raw trigger value, or {@code vanilla} if it can't be read (or the trigger is a button,
+     * or triggers.noDeadZone is off).
+     */
     public static float value(JoypadManager.Joypad joypad, boolean left, float vanilla) {
         Settings.refresh();
+        if (!Settings.triggersNoDeadZone) {
+            return vanilla;
+        }
         Field triggerField = left ? TRIGGER_LEFT : TRIGGER_RIGHT;
         if (triggerField == null || TRIGGERS_FLIPPED == null) {
             return vanilla;
@@ -61,6 +67,11 @@ public final class Triggers {
         } catch (IllegalAccessException e) {
             return vanilla;
         }
+    }
+
+    /** Trigger dead zone shown on the options screen: none while the raw value is used. */
+    public static float deadZone(float vanilla) {
+        return Settings.triggersNoDeadZone ? 0.0f : vanilla;
     }
 
     // Every change of the raw axis, to see where a jump comes from:
