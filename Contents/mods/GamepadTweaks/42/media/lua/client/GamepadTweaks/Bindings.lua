@@ -111,7 +111,8 @@ local function cruiseSlower(c, jd)
 end
 
 -- id: key in the settings file; button: the vanilla button (default, and what the vanilla
--- code assumes, e.g. for setHideWhenButtonReleased).
+-- code assumes, e.g. for setHideWhenButtonReleased); category: section in the settings panel
+-- (UI_GamepadTweaks_cat_*); label: name translation key (default UI_GamepadTweaks_action_<id>).
 -- layer: when the action is looked up; actions in one layer can't share a button:
 -- - world: pressed in the world (no UI focus);
 -- - cruise: pressed in the world while driving with the CruiseControl button held (before world);
@@ -122,23 +123,23 @@ end
 -- release(controller, joypadData): when the button that ran it is released (horn);
 -- whilePaused: also runs while the game is paused (other buttons are ignored then).
 Bindings.actions = {
-	{ id = "vehicleWheel", button = Joypad.DPadUp, layer = "world",
+	{ id = "vehicleWheel", category = "wheels", button = Joypad.DPadUp, layer = "world",
 		run = function(c, jd) vanilla.onDisplayUp(jd) end },
-	{ id = "emoteWheel", button = Joypad.DPadDown, layer = "world",
+	{ id = "emoteWheel", category = "wheels", button = Joypad.DPadDown, layer = "world",
 		run = function(c, jd) vanilla.onDisplayDown(jd) end },
-	{ id = "equipWheel", button = Joypad.DPadLeft, layer = "world",
+	{ id = "equipWheel", category = "wheels", button = Joypad.DPadLeft, layer = "world",
 		run = function(c, jd) vanilla.onDisplayLeft(jd) end },
-	{ id = "extraWheel", button = Joypad.DPadRight, layer = "world",
+	{ id = "extraWheel", category = "wheels", button = Joypad.DPadRight, layer = "world",
 		run = function(c, jd) vanilla.onDisplayRight(jd) end },
-	{ id = "commandWheel", button = Joypad.Back, layer = "world",
+	{ id = "commandWheel", category = "wheels", button = Joypad.Back, layer = "world",
 		run = function(c, jd) vanilla.onPressButtonNoFocus(c, Joypad.Back) end },
-	{ id = "pause", button = Joypad.Start, layer = "world",
+	{ id = "pause", category = "wheels", button = Joypad.Start, layer = "world",
 		run = function(c, jd) vanilla.onPressButtonNoFocus(c, Joypad.Start) end },
-	{ id = "cruiseFaster", button = Joypad.DPadUp, layer = "cruise", repeats = true, run = cruiseFaster },
-	{ id = "cruiseSlower", button = Joypad.DPadDown, layer = "cruise", repeats = true, run = cruiseSlower },
-	{ id = "stickRadial", button = Joypad.LStickButton, layer = "hold" },
-	{ id = "uiNavigation", button = Joypad.RBumper, layer = "uiHold" },
-	{ id = "uiNavigateParent", button = Joypad.LBumper, layer = "navigation" },
+	{ id = "cruiseFaster", category = "vehicle", button = Joypad.DPadUp, layer = "cruise", repeats = true, run = cruiseFaster },
+	{ id = "cruiseSlower", category = "vehicle", button = Joypad.DPadDown, layer = "cruise", repeats = true, run = cruiseSlower },
+	{ id = "stickRadial", category = "controls", button = Joypad.LStickButton, layer = "hold" },
+	{ id = "uiNavigation", category = "controls", button = Joypad.RBumper, layer = "uiHold" },
+	{ id = "uiNavigateParent", category = "controls", button = Joypad.LBumper, layer = "navigation" },
 }
 
 local actionById = {}
@@ -305,6 +306,60 @@ end
 function Bindings.getButton(id)
 	refresh()
 	return actionById[id].bound
+end
+
+-- Settings panel ---------------------------------------------------------------
+
+local LAYER_NOTE = { cruise = true, hold = true, uiHold = true, navigation = true }
+
+-- "[Category] Name (context)" for lists.
+function Bindings.getLabel(action, withCategory)
+	local text = getText(action.label or ("UI_GamepadTweaks_action_" .. action.id))
+	if LAYER_NOTE[action.layer] then
+		text = text .. " " .. getText("UI_GamepadTweaks_layer_" .. action.layer)
+	end
+	if withCategory then
+		text = "[" .. getText("UI_GamepadTweaks_cat_" .. (action.category or "misc")) .. "] " .. text
+	end
+	return text
+end
+
+function Bindings.getActionById(id)
+	return actionById[id]
+end
+
+-- Actions the button is on, in registration order.
+function Bindings.getActionsOn(button)
+	refresh()
+	local result = {}
+	for _, action in ipairs(Bindings.actions) do
+		if action.bound == button then
+			table.insert(result, action)
+		end
+	end
+	return result
+end
+
+function Bindings.canEdit()
+	return GamepadTweaks_setSetting ~= nil
+end
+
+-- Puts the action on button (false/nil: none) and writes it to the settings file. Another
+-- action of the same layer on that button is set to none, so a button never ends up with two.
+function Bindings.set(id, button)
+	local action = actionById[id]
+	if not action or not GamepadTweaks_setSetting then return false end
+	refresh()
+	if button then
+		for _, other in ipairs(Bindings.actions) do
+			if other ~= action and other.layer == action.layer and other.bound == button then
+				GamepadTweaks_setSetting("bind." .. other.id, "none")
+			end
+		end
+	end
+	GamepadTweaks_setSetting("bind." .. id, button and tostring(button) or "none")
+	refresh()
+	return true
 end
 
 -- Dispatch ---------------------------------------------------------------------

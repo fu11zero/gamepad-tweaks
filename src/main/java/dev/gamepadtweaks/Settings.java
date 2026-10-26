@@ -6,6 +6,8 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import se.krka.kahlua.integration.annotations.LuaMethod;
@@ -212,6 +214,65 @@ public final class Settings {
     public static double luaVersion() {
         refresh();
         return version;
+    }
+
+    /**
+     * Sets {@code key=value} in the file and re-reads it (the settings panel); null removes the
+     * line. The rest of the file stays as it is: the line is replaced in place, or added after
+     * its commented-out example ({@code #key=...}), or at the end.
+     */
+    @LuaMethod(name = "GamepadTweaks_setSetting", global = true)
+    public static boolean luaSet(String key, String value) {
+        if (key == null || key.isBlank() || key.contains("=") || key.contains("\n")
+                || (value != null && value.contains("\n"))) {
+            return false;
+        }
+        try {
+            lastCheck = 0;
+            refresh(); // creates the file if it's missing
+            List<String> lines = new ArrayList<>(Files.readAllLines(path, StandardCharsets.UTF_8));
+            String line = value == null ? null : key + "=" + value;
+            int set = -1;
+            int example = -1;
+            for (int i = 0; i < lines.size(); i++) {
+                String t = lines.get(i).trim();
+                if (isKeyLine(t, key)) {
+                    set = i;
+                } else if (example < 0 && t.startsWith("#") && isKeyLine(t.substring(1).trim(), key)) {
+                    example = i;
+                }
+            }
+            if (set >= 0) {
+                if (line == null) {
+                    lines.remove(set);
+                } else {
+                    lines.set(set, line);
+                }
+            } else if (line != null) {
+                if (example >= 0) {
+                    lines.add(example + 1, line);
+                } else {
+                    lines.add(line);
+                }
+            } else {
+                return true;
+            }
+            Files.write(path, lines, StandardCharsets.UTF_8);
+            lastModified = Files.getLastModifiedTime(path).toMillis();
+            load();
+            return true;
+        } catch (IOException | RuntimeException e) {
+            Log.error("can't write " + key, e);
+            return false;
+        }
+    }
+
+    private static boolean isKeyLine(String line, String key) {
+        if (!line.startsWith(key)) {
+            return false;
+        }
+        String rest = line.substring(key.length()).trim();
+        return rest.startsWith("=") || rest.startsWith(":");
     }
 
     /** Cheap to call every frame. */

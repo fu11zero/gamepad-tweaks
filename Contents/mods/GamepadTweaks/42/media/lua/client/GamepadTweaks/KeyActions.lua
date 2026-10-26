@@ -5,8 +5,8 @@
 -- player can't use them at all (or only through a wheel). Each action here does what the
 -- key handler does, for the player of the controller. All of them are unbound by default:
 -- bind.<id>=<button> in ~/Zomboid/GamepadTweaks.properties.
--- label: the vanilla key binding name (UI_optionscreen_binding_*, or a full IGUI_ key), and
--- category (main / extra), for the settings panel.
+-- label: the vanilla key binding name (UI_optionscreen_binding_*, or a full IGUI_ key),
+-- category and group (main / extra), for the settings panel.
 
 require "GamepadTweaks/Bindings"
 require "ISUI/ISInventoryPaneContextMenu"
@@ -423,13 +423,26 @@ local ACTIONS = {
 	{ id = "pvp", label = "Toggle Safety", run = pvp, category = "extra" },
 }
 
+-- Section in the settings panel (UI_GamepadTweaks_cat_*); group: main / extra.
+local CATEGORY = {
+	lightSource = "hands", dropPrimary = "hands", dropSecondary = "hands", dropBothHands = "hands",
+	dropBag = "hands", dropHandsAndBag = "hands", grabCorpse = "hands", sharpenWeapon = "hands",
+	sitOnGround = "character", searchMode = "character", shout = "character", releaseRope = "character",
+	engine = "vehicle", headlights = "vehicle", heater = "vehicle", horn = "vehicle",
+	switchSeat = "vehicle", vehicleInfo = "vehicle",
+	map = "windows", craftingMenu = "windows", buildingMenu = "windows", skills = "windows",
+	health = "windows", protection = "windows", info = "windows", survivalGuide = "windows",
+	timePause = "time", timeNormal = "time", timeFast1 = "time", timeFast2 = "time", timeFast3 = "time",
+}
+
 for slot = 1, 8 do
 	table.insert(ACTIONS, { id = "hotbar" .. slot, label = "Hotbar " .. slot, run = hotbar(slot), category = "extra" })
 end
 
 for _, action in ipairs(ACTIONS) do
 	action.layer = "world"
-	action.category = action.category or "main"
+	action.group = action.category == "extra" and "extra" or "main"
+	action.category = CATEGORY[action.id] or (action.id:match("^hotbar") and "hotbar") or "misc"
 	if not action.label:match("^IGUI_") then
 		action.label = "UI_optionscreen_binding_" .. action.label
 	end

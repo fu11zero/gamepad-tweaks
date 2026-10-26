@@ -144,6 +144,17 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - not done: music toggle and push-to-talk are read from the keyboard in Java
     (`SoundManager.updateMusic`, `VoiceManager`).
 
+- **Mod actions in Options -> Controller** (`media/lua/client/GamepadTweaks/ControllerEditor.lua`).
+  The vanilla editor rows (`CharacterJoypadBindingUIRow`) list and offer only the Java enum
+  `CharacterJoypadButtonBinding`; the rows and their lists are Lua, so the vanilla functions run first
+  and the mod adds its actions: in each button row the actions on that button (mod colour, with the
+  context: cruise held, hold, ...), in the edit row a list per action (another action instead, or
+  `< Remove >`), and in `< Add New >` the actions not on the button yet ("[Category] Name", by
+  category). `Bindings.set` writes `bind.<id>` at once through `GamepadTweaks_setSetting` (Java:
+  replaces the line or adds it after its `#` example, keeps the rest of the file); an action of the
+  same layer on that button is set to `none`. Mod actions are not part of the vanilla presets.
+  Names: vanilla key binding names, mod strings in `media/lua/shared/Translate/{EN,RU}/UI.json`.
+
 - **Cruise control and reload follow their bindings** (`Bindings.lua`). Vanilla puts the prompts of
   `CruiseControl` and `ReloadWeapon` on their bound buttons but hardcodes the rest: the cruise
   toggle happens on X release (`onReleaseButton` -> `ISVehicleRegulator.onJoypadReleaseX`), the
