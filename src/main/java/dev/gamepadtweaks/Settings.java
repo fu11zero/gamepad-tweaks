@@ -200,6 +200,17 @@ public final class Settings {
             #bind.toggleUI=
             #bind.screenshot=
             #bind.pvp=
+            # Inventory, unbound by default: pressed while the inventory or loot window has the
+            # focus, instead of what vanilla does with that button there (InventoryActions.lua).
+            #bind.invTransferAll=
+            #bind.invTransferSameType=
+            #bind.invTransferSameTypeNearby=
+            #bind.invAllToFloor=
+            #bind.invDropSelected=
+            #bind.invTransferStack=
+            #bind.invTransferOne=
+            #bind.invUse=
+            #bind.invUnpack=
             """;
 
     public static volatile boolean steeringEnabled = true;

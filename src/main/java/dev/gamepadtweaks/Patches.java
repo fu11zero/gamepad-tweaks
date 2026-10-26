@@ -23,6 +23,7 @@ public final class Patches {
                 return;
             }
             int joypad = car.vehicleObject.getJoypad();
+            HeldActions.brake(car, joypad);
             Settings.refresh();
             if (joypad == -1 || !Settings.steeringEnabled) {
                 return;
@@ -103,6 +104,36 @@ public final class Patches {
         public static void exit(@Patch.This CharacterInputComponent input,
                                 @Patch.Return(readOnly = false) boolean clicked) {
             clicked = PressActions.interactClicked(input, clicked);
+        }
+    }
+
+    // Held actions from the mod (Steam Input), straight to the game's queries (see HeldActions).
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isSprintButtonDown")
+    public static class SprintHeld {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input,
+                                @Patch.Return(readOnly = false) boolean down) {
+            down = down || HeldActions.characterHeld(input, HeldActions.SPRINT) && input.isAllowSprint();
+        }
+    }
+
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isManualFloorAtkButtonDown")
+    public static class FloorAttackHeld {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input,
+                                @Patch.Return(readOnly = false) boolean down) {
+            down = down || HeldActions.characterHeld(input, HeldActions.FLOOR_ATTACK);
+        }
+    }
+
+    // Doors, windows, grapple and the vehicle use (IsoPlayer.updateUseKey -> doContext,
+    // enterExitVehicle) poll the Interact binding here; the Lua prompts do the rest.
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isInteractButtonDownInternal")
+    public static class InteractHeld {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input,
+                                @Patch.Return(readOnly = false) boolean down) {
+            down = down || HeldActions.characterHeld(input, HeldActions.INTERACT);
         }
     }
 

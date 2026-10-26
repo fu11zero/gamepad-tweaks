@@ -3,7 +3,8 @@
 -- Each button row (CharacterJoypadBindingUIRow) lists the regular bindings on that button,
 -- and its "< Add New >" list offers them; both come from the Java enum
 -- CharacterJoypadButtonBinding, which can't get new values. The row and its lists are Lua,
--- so here the vanilla functions run first and the mod's actions (Bindings.lua, KeyActions.lua)
+-- so here the vanilla functions run first and the mod's actions (Bindings.lua, KeyActions.lua,
+-- InventoryActions.lua)
 -- are added after them:
 -- - populateWithReadOnlyLabels: the actions on the button, in the mod colour;
 -- - populateWithEditableElements: a list per action (another action instead, or "< Remove >");
@@ -15,6 +16,7 @@
 require "ISUI/Gamepad/CharacterJoypadBindingUIRow"
 require "GamepadTweaks/Bindings"
 require "GamepadTweaks/KeyActions"
+require "GamepadTweaks/InventoryActions"
 
 local Bindings = GamepadTweaks.Bindings
 
@@ -23,7 +25,7 @@ local REMOVE = "!RemoveEntry!"
 local ADD_NEW = "!AddNewEntry!"
 local PREFIX = "gt:"
 
-local CATEGORY_ORDER = { "wheels", "controls", "vehicle", "hands", "character", "windows", "hotbar", "time", "misc" }
+local CATEGORY_ORDER = { "wheels", "controls", "vehicle", "hands", "character", "inventory", "windows", "hotbar", "time", "misc" }
 local categoryRank = {}
 for i, c in ipairs(CATEGORY_ORDER) do
 	categoryRank[c] = i
@@ -41,7 +43,9 @@ end
 local function sortedActions()
 	local list = {}
 	for i, action in ipairs(Bindings.actions) do
-		table.insert(list, { action = action, index = i })
+		if not action.steamOnly then
+			table.insert(list, { action = action, index = i })
+		end
 	end
 	table.sort(list, function(a, b)
 		local ra = categoryRank[a.action.category] or #CATEGORY_ORDER + 1

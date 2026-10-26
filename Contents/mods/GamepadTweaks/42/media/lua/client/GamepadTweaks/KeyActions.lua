@@ -134,6 +134,23 @@ local function sharpenWeapon(c, jd)
 	end
 end
 
+-- The firearm radial (eject / insert magazine, load / unload rounds, rack). Vanilla opens it
+-- only by holding the ReloadWeapon button (ISFirearmRadialMenu.onRepeatRBumper, after 500 ms
+-- unless "instant reload radial"), so a tap / hold split is needed on that one button; here
+-- it is its own action and opens at once. It closes and picks the slice on the release of
+-- the button that opened it (hides: the vanilla RB, retargeted).
+local function firearmRadial(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj or JoypadState.disableReload then return end
+	if playerObj:isAiming() or playerObj:isLookingWhileInVehicle() then return end
+	if not ISFirearmRadialMenu.checkWeapon(playerObj) then return end
+	if getPlayerRadialMenu(jd.player):isReallyVisible() then return end
+	local menu = ISFirearmRadialMenu:new(playerObj)
+	menu:fillMenu()
+	menu:display()
+	setPlayerButtonsActive(jd.player, false)
+end
+
 -- Character -------------------------------------------------------------------------
 
 -- ISSitOnGround onKeyPress (SIT_ON_GROUND key): sit down or get up, not in a vehicle.
@@ -391,6 +408,7 @@ local ACTIONS = {
 	{ id = "dropHandsAndBag", label = "DropBothHeldItemsAndWornBag", run = dropper(true, true, true) },
 	{ id = "grabCorpse", label = "GrabCorpse", run = grabCorpse },
 	{ id = "sharpenWeapon", label = "SharpenWeapon", run = sharpenWeapon },
+	{ id = "firearmRadial", label = "UI_GamepadTweaks_action_firearmRadial", run = firearmRadial, hides = Joypad.RBumper },
 	{ id = "sitOnGround", label = "SitOnGround", run = sitOnGround },
 	{ id = "searchMode", label = "Toggle Search Mode", run = searchMode },
 	{ id = "shout", label = "Shout", run = shout },
@@ -427,6 +445,7 @@ local ACTIONS = {
 local CATEGORY = {
 	lightSource = "hands", dropPrimary = "hands", dropSecondary = "hands", dropBothHands = "hands",
 	dropBag = "hands", dropHandsAndBag = "hands", grabCorpse = "hands", sharpenWeapon = "hands",
+	firearmRadial = "hands",
 	sitOnGround = "character", searchMode = "character", shout = "character", releaseRope = "character",
 	engine = "vehicle", headlights = "vehicle", heater = "vehicle", horn = "vehicle",
 	switchSeat = "vehicle", vehicleInfo = "vehicle",
@@ -443,7 +462,7 @@ for _, action in ipairs(ACTIONS) do
 	action.layer = "world"
 	action.group = action.category == "extra" and "extra" or "main"
 	action.category = CATEGORY[action.id] or (action.id:match("^hotbar") and "hotbar") or "misc"
-	if not action.label:match("^IGUI_") then
+	if not action.label:match("^IGUI_") and not action.label:match("^UI_GamepadTweaks_") then
 		action.label = "UI_optionscreen_binding_" .. action.label
 	end
 	Bindings.add(action)

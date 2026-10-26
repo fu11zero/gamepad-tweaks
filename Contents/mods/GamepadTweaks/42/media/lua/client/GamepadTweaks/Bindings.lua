@@ -118,10 +118,15 @@ end
 -- - cruise: pressed in the world while driving with the CruiseControl button held (before world);
 -- - hold: held in the world;
 -- - uiHold: held while a UI has the focus;
--- - navigation: released during UI panel navigation.
+-- - navigation: released during UI panel navigation;
+-- - inventory: pressed while the inventory or loot window has the focus (InventoryActions.lua).
 -- run(controller, joypadData) for press layers; repeat: also on D-pad auto-repeat;
 -- release(controller, joypadData): when the button that ran it is released (horn);
--- whilePaused: also runs while the game is paused (other buttons are ignored then).
+-- hides: the vanilla button a radial it opens closes on (setHideWhenButtonReleased), when
+-- that is not its default button;
+-- whilePaused: also runs while the game is paused (other buttons are ignored then);
+-- steamOnly: a Steam Input action only, not in the in-game editor (VanillaActions.lua: the
+-- vanilla bindings, which the editor already has).
 Bindings.actions = {
 	{ id = "vehicleWheel", category = "wheels", button = Joypad.DPadUp, layer = "world",
 		run = function(c, jd) vanilla.onDisplayUp(jd) end },
@@ -258,7 +263,7 @@ function Bindings.reload()
 	end
 	local defaults = {}
 	for _, action in ipairs(Bindings.actions) do
-		local button = readBinding(action)
+		local button = not action.steamOnly and readBinding(action) or nil
 		if button == nil then
 			table.insert(defaults, action)
 		else
@@ -310,7 +315,7 @@ end
 
 -- Settings panel ---------------------------------------------------------------
 
-local LAYER_NOTE = { cruise = true, hold = true, uiHold = true, navigation = true }
+local LAYER_NOTE = { cruise = true, hold = true, uiHold = true, navigation = true, inventory = true }
 
 -- "[Category] Name (context)" for lists.
 function Bindings.getLabel(action, withCategory)
@@ -399,7 +404,7 @@ local function run(action, jd, button)
 	if action.release then
 		pendingRelease[heldKey(jd, button)] = action
 	end
-	retargetHide(jd, action.button, button)
+	retargetHide(jd, action.hides or action.button, button)
 end
 
 local function runRelease(jd, button)
@@ -421,6 +426,12 @@ local function dispatchLayer(jd, button, layer)
 	if DPAD[button] then held[key] = true end
 	run(action, jd, button)
 	return true
+end
+
+-- Runs the action of that layer bound to button (other files: the inventory window).
+-- Returns false when there is none.
+function Bindings.press(jd, button, layer)
+	return dispatchLayer(jd, button, layer)
 end
 
 local function isCruiseHeld(jd)
@@ -680,7 +691,7 @@ end
 --
 -- The situation of each player picks the Steam action set layers (bottom to top), so the
 -- same input can do different things: on foot / in a vehicle, then aiming, a UI focused,
--- the map; the main menu and the pause menu (Esc) get "menu" on every controller.
+-- the inventory / loot window, the map; the main menu and the pause menu (Esc) get "menu" on every controller.
 -- Situational actions are declared in their layer (tools/steam_input.py), so they can only
 -- fire there; the rest of the controller falls through to the set (the plain gamepad).
 
@@ -718,6 +729,7 @@ local function steamRelease(jd, key)
 end
 
 local MAP_UI = { ISWorldMap = true, ISMap = true }
+local INVENTORY_UI = { ISInventoryPage = true }
 
 local function isMenuVisible()
 	return MainScreen.instance ~= nil and MainScreen.instance:isReallyVisible()
@@ -744,6 +756,9 @@ local function playerLayers(jd, onFootPassenger)
 	local focus = jd.focus
 	if focus ~= nil then
 		table.insert(layers, "ui")
+		if type(focus) == "table" and INVENTORY_UI[focus.Type] then
+			table.insert(layers, "inventory")
+		end
 		if type(focus) == "table" and MAP_UI[focus.Type] then
 			table.insert(layers, "map")
 		end

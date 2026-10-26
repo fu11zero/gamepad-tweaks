@@ -3,8 +3,10 @@
 
 Output: Contents/mods/GamepadTweaks/42/media/steam_input/
 - manifest.vdf: one action set "game" and its layers (LAYERS) with a button action per mod
-  action (Bindings.lua, KeyActions.lua): general actions in the set, situational ones in
-  their layer (CATEGORY_LAYER); titles in English and Russian (vanilla + mod translations);
+  action (Bindings.lua, KeyActions.lua, InventoryActions.lua) and per vanilla binding
+  (VanillaActions.lua, "vanilla<Binding>": runs the binding's game function): general
+  actions in the set, situational ones in their layer (CATEGORY_LAYER); titles in English
+  and Russian (vanilla + mod translations);
 - gamepad_<controller type>.vdf: Steam's "Gamepad" template for that controller (sticks,
   buttons, triggers -> the virtual gamepad, as without the manifest) under its own title,
   first in the list, so the plain layout stays the default;
@@ -32,18 +34,20 @@ STEAM_DIR = Path(os.environ.get("STEAM_DIR", Path.home() / ".local/share/Steam")
 TEMPLATES = STEAM_DIR / "controller_base/templates"
 
 MAJOR_REVISION = "2"
-MINOR_REVISION = "5"
+MINOR_REVISION = "7"
 # SteamID64 of the mod author, the "creator" of the "Gamepad Tweaks" layout (same format as in
 # Steam's own saved layouts). Steam currently shows the game's developer for bundled layouts.
 CREATOR = "76561198084489589"
 SET = "game"
 
-# Action set layers, bottom to top (SteamInput.java activates them in this order, the mod
-# picks them every frame from the player's situation, Bindings.lua). A layer changes only
-# the inputs bound in it; the rest falls through to the set (the plain gamepad).
-LAYERS = ["onfoot", "vehicle", "aiming", "ui", "map", "menu"]
+# Action set layers. The mod picks them every frame from the player's situation and
+# SteamInput.java activates them in that order, bottom to top (Bindings.lua playerLayers:
+# onfoot/vehicle, aiming, ui, inventory, map; menu alone). A layer changes only the inputs
+# bound in it; the rest falls through to the set (the plain gamepad). New layers go last:
+# the position is the layer's preset id in the players' saved layouts.
+LAYERS = ["onfoot", "vehicle", "aiming", "ui", "map", "menu", "inventory"]
 # Category -> layer its actions are declared in (bindable only there); others: the set.
-CATEGORY_LAYER = {"hands": "onfoot", "character": "onfoot", "vehicle": "vehicle"}
+CATEGORY_LAYER = {"hands": "onfoot", "character": "onfoot", "vehicle": "vehicle", "inventory": "inventory"}
 # Actions that stay in the set whatever their category (switch seat also works next to a car).
 IN_SET = {"switchSeat"}
 # Steam lists the set's actions, then the active layer's, in manifest order (no sorting, no
@@ -55,6 +59,39 @@ IN_SET = {"switchSeat"}
 # Hotbar slots get their number: what a slot holds depends on the worn belt / back / webbing,
 # and Steam reads the titles once per session.
 ICONS = {
+    # vanilla bindings
+    "vanillaInteract": "👆",
+    "vanillaInteractOptions": "💬",
+    "vanillaCancelAction": "🚫",
+    "vanillaCrouch": "🧎",
+    "vanillaSprint": "🏃",
+    "vanillaClimbThrough": "🤸",
+    "vanillaSmashWindow": "🪟",
+    "vanillaReloadWeapon": "🔫🔄",
+    "vanillaRackFirearm": "🔫",
+    "vanillaManualFloorAtk": "🦶",
+    "vanillaInventory": "🎒",
+    "vanillaClosePanel": "❌",
+    "vanillaTransferItem": "↔️",
+    "vanillaCycleInventory": "🎒🔁",
+    "vanillaCycleLoot": "📦🔁",
+    "vanillaCycleTabsLeft": "◀️",
+    "vanillaCycleTabsRight": "▶️",
+    "vanillaBrakes": "🚘🛑",
+    "vanillaCruiseControl": "🚘⏱️",
+    "vanillaZoomIn": "🔎➕",
+    "vanillaZoomOut": "🔎➖",
+    # inventory window
+    "invTransferAll": "📦⏬",
+    "invTransferSameType": "📦🔀",
+    "invTransferSameTypeNearby": "📦🗄️",
+    "invAllToFloor": "📦⬇️",
+    "invDropSelected": "🫳",
+    "invTransferStack": "↔️📚",
+    "invTransferOne": "↔️1️⃣",
+    "invUse": "👆👆",
+    "invUnpack": "🎒📤",
+    # mod actions
     "vehicleWheel": "🚙",
     "emoteWheel": "😀",
     "equipWheel": "🗡️",
@@ -86,6 +123,7 @@ ICONS = {
     "dropHandsAndBag": "🫳🎒",
     "grabCorpse": "🧟",
     "sharpenWeapon": "🔪",
+    "firearmRadial": "🔫🔄",
     "sitOnGround": "🧘",
     "searchMode": "🔍",
     "shout": "📢",
@@ -174,9 +212,16 @@ def vdf_dump(items, depth=0):
 # --- Actions ----------------------------------------------------------------------
 
 def lua_actions():
-    """[(id, category, label key, layer)] in the settings panel order."""
+    """[(id, category, label key, layer)]: the vanilla bindings, then the settings panel order."""
     actions = []
     text = (LUA / "Bindings.lua").read_text()
+    vanilla = (LUA / "VanillaActions.lua").read_text()
+    vanilla = vanilla[vanilla.index("local ACTIONS = {"):]
+    vanilla = vanilla[:vanilla.index("\n}\n")]
+    for id_ in re.findall(r'\{ id = "vanilla(\w+)"', vanilla):
+        actions.append(("vanilla" + id_, "vanilla",
+                        "UI_optionscreen_gamepad_CharacterJoypadButtonBinding_name_" + id_, "world"))
+
     block = text[text.index("Bindings.actions = {"):]
     block = block[:block.index("\n}\n")]
     entries = re.split(r"\n\t\{ ", block)[1:]
@@ -195,8 +240,14 @@ def lua_actions():
     found += [(f"hotbar{n}", f"Hotbar {n}") for n in range(1, 9)]
     for id_, label in found:
         cat = category.get(id_) or ("hotbar" if id_.startswith("hotbar") else "misc")
-        key = label if label.startswith("IGUI_") else "UI_optionscreen_binding_" + label
+        key = label if label.startswith(("IGUI_", "UI_GamepadTweaks_")) else "UI_optionscreen_binding_" + label
         actions.append((id_, cat, key, "world"))
+
+    text = (LUA / "InventoryActions.lua").read_text()
+    acts_block = text[text.index("local ACTIONS = {"):]
+    acts_block = acts_block[:acts_block.index("\n}\n")]
+    for id_ in re.findall(r'\{ id = "(\w+)"', acts_block):
+        actions.append((id_, "inventory", "UI_GamepadTweaks_action_" + id_, "inventory"))
     return actions
 
 
