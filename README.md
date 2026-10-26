@@ -210,6 +210,28 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
 Settings live in `~/Zomboid/GamepadTweaks.properties` (created with defaults on first
 launch, re-read while the game runs).
 
+- **Options -> Mods -> Gamepad Tweaks** (`media/lua/client/GamepadTweaks/Options.lua`,
+  `PZAPI.ModOptions`). Not every player wants the features (steering without a dead zone etc.)
+  or the default tuning for their controller, and the file is hard to find. The page shows the
+  features and the values worth tuning; it is a view of the `.properties` file, not of
+  `ModOptions.ini`: the values are read from the file whenever vanilla loads the mod options
+  (`PZAPI.ModOptions:load`, wrapped; `MainOptions` calls it when it builds the Mods page), and
+  Apply writes back only the changed ones (`GamepadTweaks_setSetting`), so hand-set values outside
+  a slider's range survive. Dependent options are greyed out while their feature is off.
+  Feature switches (all on by default, off = vanilla):
+  - `steering.enabled`: all of the steering changes (`Patches.SteeringInput`, `Steering.wheel`);
+  - `steering.rawStick`: raw stick X and `StickCenter`; off = the game's stick value, still shaped
+    by `Steering.shape`; `steering.recenter`: center learning;
+  - `steering.constantRateWheel`: `Steering.wheel` (off = vanilla wheel lag);
+  - `steering.scaleToSpeedClamp`: full stick = the clamp;
+  - `triggers.noDeadZone`: `Triggers.value` / `Triggers.deadZone`;
+  - `actions.crouchOnPress`, `actions.sprintOnPress`, `actions.vehicleOnlyByPrompt`: `PressActions`;
+  - `map.smooth`: `MapControls.update` returns false, Lua runs vanilla;
+  - `steamInput.enabled` (restart), `steamInput.passengerLayer`.
+  Sliders: steering dead zone, center drift zone, curve exponents and their speed, wheel rates,
+  map pan speed / curve, zoom speed. Fixes (`ButtonLatch`, fliers, cruise/reload bindings) have
+  no switch; debug logs and the center learning timings are file-only.
+
 Stick axis indices and inversion come from `~/Zomboid/joypads/<guid>.config`
 (`MovementAxisX`, `MovementAxisXFlipped`): the game loads them into `JoypadManager.Joypad`.
 
