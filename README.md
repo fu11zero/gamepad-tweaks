@@ -235,6 +235,17 @@ launch, re-read while the game runs).
 Stick axis indices and inversion come from `~/Zomboid/joypads/<guid>.config`
 (`MovementAxisX`, `MovementAxisXFlipped`): the game loads them into `JoypadManager.Joypad`.
 
+## Screenshots
+
+`screenshots/` (also the Workshop gallery, see Publishing):
+
+| | |
+|---|---|
+| ![Steam game actions](screenshots/1-steam-game-actions.png) | ![Back buttons](screenshots/2-steam-back-buttons.png) |
+| ![Layers](screenshots/3-steam-layers.png) | ![On foot actions](screenshots/4-steam-game-actions-onfoot.png) |
+| ![Controller bindings](screenshots/5-controller-bindings.png) | ![Mod options](screenshots/6-mod-options.png) |
+| ![Recommended layouts](screenshots/7-steam-recommended-layouts.png) | |
+
 ## Layout
 
 ```
@@ -245,6 +256,7 @@ Contents/mods/GamepadTweaks/       the mod itself (Workshop layout; the game loa
   42/media/java/client/GamepadTweaks.jar   <- build.sh output
 build.sh                           build
 preview.png                        Workshop preview (256x256 or 512x512, <= 1 MB)
+screenshots/                       Workshop gallery images (uploaded by hand, not by the game)
 workshop.txt                       Workshop title, description (BBCode), tags, visibility
 tools/decompile.sh                 decompile game classes into decompiled/ (not in git)
 ```
@@ -266,6 +278,10 @@ pick GamepadTweaks. The game uploads only `Contents/` plus `preview.png` and che
 `*.sh *.so *.dll *.exe *.zip ...` inside `Contents/`, a `mod.info` with `id=` in a version
 folder. Allowed tags: `media/WorkshopTags.txt` in the game folder. After the first upload the
 game writes the item id into `workshop.txt`.
+
+The game uploads only `preview.png` as the item image (`SteamWorkshopItem` -> `SetItemPreview`).
+The gallery (`screenshots/`, in file name order) is added on the item's Steam page: "Add/edit images
+& videos" (owner only). The description's "Screenshots" list follows the same order.
 
 ## Reading game code
 
