@@ -22,5 +22,13 @@
     "UI_GamepadTweaks_layer_cruise": "(при зажатом круизе)",
     "UI_GamepadTweaks_layer_hold": "(удержание)",
     "UI_GamepadTweaks_layer_uiHold": "(удержание в панели)",
-    "UI_GamepadTweaks_layer_navigation": "(в режиме навигации)"
+    "UI_GamepadTweaks_layer_navigation": "(в режиме навигации)",
+    "UI_GamepadTweaks_steam_configTitle": "Gamepad Tweaks",
+    "UI_GamepadTweaks_steam_configDescription": "Стики и кнопки работают как геймпад. Действия мода (сигнал, свет, выбросить из рук...) можно назначить на любую кнопку, задний лепесток или комбинацию.",
+    "UI_GamepadTweaks_steam_layer_onfoot": "Пешком",
+    "UI_GamepadTweaks_steam_layer_vehicle": "В транспорте",
+    "UI_GamepadTweaks_steam_layer_aiming": "Прицеливание",
+    "UI_GamepadTweaks_steam_layer_ui": "Открыто окно / меню",
+    "UI_GamepadTweaks_steam_layer_map": "Открыта карта",
+    "UI_GamepadTweaks_steam_layer_menu": "Главное меню / меню паузы"
 }

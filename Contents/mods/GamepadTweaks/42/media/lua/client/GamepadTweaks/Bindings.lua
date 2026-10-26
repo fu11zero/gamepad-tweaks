@@ -670,4 +670,134 @@ function JoypadControllerData:onReleaseButton(button)
 	end
 end
 
+-- Steam Input -------------------------------------------------------------------
+-- The actions are also Steam Input game actions (SteamInput.java registers the manifest,
+-- media/steam_input/manifest.vdf), bound in the Steam controller configurator to any
+-- button, paddle, long press or chord. They run like a press of their button, on top of
+-- whatever is bound here: in the world, also with a UI focused (a dedicated input can't
+-- clash with UI navigation), not while paused unless the action works then.
+-- Wheels close and pick the slice when the Steam action is released, as with a button.
+--
+-- The situation of each player picks the Steam action set layers (bottom to top), so the
+-- same input can do different things: on foot / in a vehicle, then aiming, a UI focused,
+-- the map; the main menu and the pause menu (Esc) get "menu" on every controller.
+-- Situational actions are declared in their layer (tools/steam_input.py), so they can only
+-- fire there; the rest of the controller falls through to the set (the plain gamepad).
+
+local STEAM_ALWAYS = { commandWheel = true, pause = true }
+
+-- The joypad of a Steam controller; unknown (-1): the only joypad player's.
+local function steamJoypad(id)
+	if id >= 0 then
+		local c = JoypadState.controllers[id]
+		return c and c.joypad
+	end
+	local found = nil
+	for i = 1, getMaxActivePlayers() do
+		local jd = JoypadState.players[i]
+		if jd then
+			if found then return nil end
+			found = jd
+		end
+	end
+	return found
+end
+
+local function steamPress(action, jd, key)
+	if not isInWorld(jd) then return end
+	if isGamePaused() and not action.whilePaused and not STEAM_ALWAYS[action.id] then return end
+	run(action, jd, key)
+end
+
+local function steamRelease(jd, key)
+	runRelease(jd, key)
+	local focus = jd.focus
+	if type(focus) == "table" and focus.hideWhenButtonReleased == key and focus.onJoypadButtonReleased then
+		focus:onJoypadButtonReleased(key, jd)
+	end
+end
+
+local MAP_UI = { ISWorldMap = true, ISMap = true }
+
+local function isMenuVisible()
+	return MainScreen.instance ~= nil and MainScreen.instance:isReallyVisible()
+end
+
+-- steamInput.passengerLayer: vehicle (default) or onfoot for passengers.
+local function passengerOnFoot()
+	return readSetting("steamInput.passengerLayer") == "onfoot"
+end
+
+local function playerLayers(jd, onFootPassenger)
+	local playerObj = getSpecificPlayer(jd.player)
+	if not playerObj or playerObj:isDead() then return "" end
+	local layers = {}
+	local vehicle = playerObj:getVehicle()
+	if vehicle and (vehicle:isDriver(playerObj) or not onFootPassenger) then
+		table.insert(layers, "vehicle")
+	else
+		table.insert(layers, "onfoot")
+	end
+	if playerObj:isAiming() then
+		table.insert(layers, "aiming")
+	end
+	local focus = jd.focus
+	if focus ~= nil then
+		table.insert(layers, "ui")
+		if type(focus) == "table" and MAP_UI[focus.Type] then
+			table.insert(layers, "map")
+		end
+	end
+	return table.concat(layers, ",")
+end
+
+local lastLayers = nil
+
+local function updateSteamLayers()
+	local spec
+	if isMenuVisible() then
+		spec = "*=menu"
+	else
+		local parts = {}
+		local onFootPassenger = passengerOnFoot()
+		for i = 1, getMaxActivePlayers() do
+			local jd = JoypadState.players[i]
+			if jd and jd.player and jd.id then
+				table.insert(parts, tostring(jd.id) .. "=" .. playerLayers(jd, onFootPassenger))
+			end
+		end
+		table.insert(parts, "*=")
+		spec = table.concat(parts, ";")
+	end
+	if spec ~= lastLayers then
+		lastLayers = spec
+		GamepadTweaks_steamInputSetLayers(spec)
+	end
+end
+
+local function steamTick()
+	if not GamepadTweaks_steamInputPoll then return end
+	if GamepadTweaks_steamInputSetLayers then
+		local ok, err = pcall(updateSteamLayers)
+		if not ok then log("ERROR: steam layers: " .. tostring(err)) end
+	end
+	local events = GamepadTweaks_steamInputPoll()
+	if not events then return end
+	for id, controller, down in events:gmatch("(%w+):(%-?%d+):(%d)") do
+		local action = actionById[id]
+		local jd = steamJoypad(tonumber(controller))
+		if action and action.run and jd then
+			local key = "steam:" .. id
+			if down == "1" then
+				steamPress(action, jd, key)
+			else
+				steamRelease(jd, key)
+			end
+		end
+	end
+end
+
+-- Every frame, also in the main menu (registers the manifest early) and while paused.
+Events.OnRenderTick.Add(steamTick)
+
 Events.OnGameStart.Add(refresh)

@@ -22,5 +22,13 @@
     "UI_GamepadTweaks_layer_cruise": "(cruise button held)",
     "UI_GamepadTweaks_layer_hold": "(hold)",
     "UI_GamepadTweaks_layer_uiHold": "(hold in a panel)",
-    "UI_GamepadTweaks_layer_navigation": "(during navigation)"
+    "UI_GamepadTweaks_layer_navigation": "(during navigation)",
+    "UI_GamepadTweaks_steam_configTitle": "Gamepad Tweaks",
+    "UI_GamepadTweaks_steam_configDescription": "Sticks and buttons work as a gamepad. Mod actions (horn, lights, drop items...) can be bound to any button, back paddle or combination.",
+    "UI_GamepadTweaks_steam_layer_onfoot": "On foot",
+    "UI_GamepadTweaks_steam_layer_vehicle": "In a vehicle",
+    "UI_GamepadTweaks_steam_layer_aiming": "Aiming",
+    "UI_GamepadTweaks_steam_layer_ui": "Panel / menu open",
+    "UI_GamepadTweaks_steam_layer_map": "Map open",
+    "UI_GamepadTweaks_steam_layer_menu": "Main menu / pause menu"
 }

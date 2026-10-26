@@ -1,0 +1,483 @@
+"Action Manifest"
+{
+	"configurations"
+	{
+		"controller_xbox360"
+		{
+			"0"
+			{
+				"path"		"gamepad_xbox360.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_xbox360.vdf"
+			}
+		}
+		"controller_xboxone"
+		{
+			"0"
+			{
+				"path"		"gamepad_xboxone.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_xboxone.vdf"
+			}
+		}
+		"controller_xboxelite"
+		{
+			"0"
+			{
+				"path"		"gamepad_xboxelite.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_xboxelite.vdf"
+			}
+		}
+		"controller_ps3"
+		{
+			"0"
+			{
+				"path"		"gamepad_ps3.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_ps3.vdf"
+			}
+		}
+		"controller_ps4"
+		{
+			"0"
+			{
+				"path"		"gamepad_ps4.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_ps4.vdf"
+			}
+		}
+		"controller_ps5"
+		{
+			"0"
+			{
+				"path"		"gamepad_ps5.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_ps5.vdf"
+			}
+		}
+		"controller_ps5_edge"
+		{
+			"0"
+			{
+				"path"		"gamepad_ps5_edge.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_ps5_edge.vdf"
+			}
+		}
+		"controller_switch_pro"
+		{
+			"0"
+			{
+				"path"		"gamepad_switch_pro.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_switch_pro.vdf"
+			}
+		}
+		"controller_neptune"
+		{
+			"0"
+			{
+				"path"		"gamepad_neptune.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_neptune.vdf"
+			}
+		}
+		"controller_steamcontroller_gordon"
+		{
+			"0"
+			{
+				"path"		"gamepad_steamcontroller_gordon.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_steamcontroller_gordon.vdf"
+			}
+		}
+		"controller_generic"
+		{
+			"0"
+			{
+				"path"		"gamepad_generic.vdf"
+			}
+			"1"
+			{
+				"path"		"gamepadtweaks_generic.vdf"
+			}
+		}
+	}
+	"major_revision"		"2"
+	"minor_revision"		"5"
+	"actions"
+	{
+		"game"
+		{
+			"title"		"#set_game"
+			"Button"
+			{
+				"vehicleWheel"		"#act_vehicleWheel"
+				"emoteWheel"		"#act_emoteWheel"
+				"equipWheel"		"#act_equipWheel"
+				"extraWheel"		"#act_extraWheel"
+				"commandWheel"		"#act_commandWheel"
+				"pause"		"#act_pause"
+				"map"		"#act_map"
+				"craftingMenu"		"#act_craftingMenu"
+				"buildingMenu"		"#act_buildingMenu"
+				"skills"		"#act_skills"
+				"health"		"#act_health"
+				"protection"		"#act_protection"
+				"info"		"#act_info"
+				"survivalGuide"		"#act_survivalGuide"
+				"timePause"		"#act_timePause"
+				"timeNormal"		"#act_timeNormal"
+				"timeFast1"		"#act_timeFast1"
+				"timeFast2"		"#act_timeFast2"
+				"timeFast3"		"#act_timeFast3"
+				"moveFurniture"		"#act_moveFurniture"
+				"toggleUI"		"#act_toggleUI"
+				"screenshot"		"#act_screenshot"
+				"pvp"		"#act_pvp"
+				"hotbar1"		"#act_hotbar1"
+				"hotbar2"		"#act_hotbar2"
+				"hotbar3"		"#act_hotbar3"
+				"hotbar4"		"#act_hotbar4"
+				"hotbar5"		"#act_hotbar5"
+				"hotbar6"		"#act_hotbar6"
+				"hotbar7"		"#act_hotbar7"
+				"hotbar8"		"#act_hotbar8"
+				"switchSeat"		"#act_switchSeat"
+			}
+		}
+	}
+	"action_layers"
+	{
+		"onfoot"
+		{
+			"title"		"#layer_onfoot"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+			"Button"
+			{
+				"lightSource"		"#act_lightSource"
+				"dropPrimary"		"#act_dropPrimary"
+				"dropSecondary"		"#act_dropSecondary"
+				"dropBothHands"		"#act_dropBothHands"
+				"dropBag"		"#act_dropBag"
+				"dropHandsAndBag"		"#act_dropHandsAndBag"
+				"grabCorpse"		"#act_grabCorpse"
+				"sharpenWeapon"		"#act_sharpenWeapon"
+				"sitOnGround"		"#act_sitOnGround"
+				"searchMode"		"#act_searchMode"
+				"shout"		"#act_shout"
+				"releaseRope"		"#act_releaseRope"
+			}
+		}
+		"vehicle"
+		{
+			"title"		"#layer_vehicle"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+			"Button"
+			{
+				"cruiseFaster"		"#act_cruiseFaster"
+				"cruiseSlower"		"#act_cruiseSlower"
+				"engine"		"#act_engine"
+				"headlights"		"#act_headlights"
+				"heater"		"#act_heater"
+				"horn"		"#act_horn"
+				"vehicleInfo"		"#act_vehicleInfo"
+			}
+		}
+		"aiming"
+		{
+			"title"		"#layer_aiming"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+		"ui"
+		{
+			"title"		"#layer_ui"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+		"map"
+		{
+			"title"		"#layer_map"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+		"menu"
+		{
+			"title"		"#layer_menu"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+	}
+	"localization"
+	{
+		"english"
+		{
+			"gamepad_title"		"Gamepad"
+			"gamepad_description"		"This template is for games that already have built-in gamepad support.  Intended for dual stick games such as twin-stick shooters, side-scrollers, etc."
+			"set_game"		"Project Zomboid"
+			"layer_onfoot"		"On foot"
+			"layer_vehicle"		"In a vehicle"
+			"layer_aiming"		"Aiming"
+			"layer_ui"		"Panel / menu open"
+			"layer_map"		"Map open"
+			"layer_menu"		"Main menu / pause menu"
+			"config_title"		"Gamepad Tweaks"
+			"config_description"		"Sticks and buttons work as a gamepad. Mod actions (horn, lights, drop items...) can be bound to any button, back paddle or combination."
+			"act_vehicleWheel"		"🚙 Vehicle / Animal Wheel"
+			"act_emoteWheel"		"😀 Emotes Wheel"
+			"act_equipWheel"		"🗡️ Weapon / Light Wheel"
+			"act_extraWheel"		"🏡 Zones / Guide Wheel"
+			"act_commandWheel"		"🎮 Command Wheel"
+			"act_pause"		"🏠 Pause / Main Menu"
+			"act_map"		"🗺️ Toggle Map"
+			"act_craftingMenu"		"🔨 Toggle Crafting UI"
+			"act_buildingMenu"		"🧱 Toggle Building UI"
+			"act_skills"		"📈 Toggle Skill Panel"
+			"act_health"		"💊 Toggle Health Panel"
+			"act_protection"		"🦺 Toggle Clothing Protection Panel"
+			"act_info"		"👤 Toggle Info Panel"
+			"act_survivalGuide"		"📖 Toggle Survival Guide"
+			"act_timePause"		"🕐⏸️ Pause"
+			"act_timeNormal"		"🕐▶️ Normal Speed"
+			"act_timeFast1"		"🕐⏩ Fast Forward x1"
+			"act_timeFast2"		"🕐⏩⏩ Fast Forward x2"
+			"act_timeFast3"		"🕐⏩⏩⏩ Fast Forward x3"
+			"act_moveFurniture"		"🪑 Move furniture"
+			"act_toggleUI"		"👀 Toggle UI"
+			"act_screenshot"		"📸 Take Screenshot"
+			"act_pvp"		"⚔️ Toggle Safety"
+			"act_hotbar1"		"1️⃣ Hotbar 1"
+			"act_hotbar2"		"2️⃣ Hotbar 2"
+			"act_hotbar3"		"3️⃣ Hotbar 3"
+			"act_hotbar4"		"4️⃣ Hotbar 4"
+			"act_hotbar5"		"5️⃣ Hotbar 5"
+			"act_hotbar6"		"6️⃣ Hotbar 6"
+			"act_hotbar7"		"7️⃣ Hotbar 7"
+			"act_hotbar8"		"8️⃣ Hotbar 8"
+			"act_lightSource"		"🔦 Equip/Turn On/Off Light Source"
+			"act_dropPrimary"		"🫳 Drop Primary Held Item"
+			"act_dropSecondary"		"🫳 Drop Secondary Held Item"
+			"act_dropBothHands"		"🫳 Drop Both Held Items"
+			"act_dropBag"		"🫳🎒 Drop Worn Bag"
+			"act_dropHandsAndBag"		"🫳🎒 Drop Held Items And Worn Bag"
+			"act_grabCorpse"		"🧟 Grab Corpse"
+			"act_sharpenWeapon"		"🔪 Sharpen Weapon"
+			"act_sitOnGround"		"🧘 Sit On Ground"
+			"act_searchMode"		"🔍 Toggle Search Mode"
+			"act_shout"		"📢 Shout"
+			"act_releaseRope"		"🧗 Let Go of Rope Being Climbed"
+			"act_cruiseFaster"		"🚘🔼 Cruise Speed Up"
+			"act_cruiseSlower"		"🚘🔽 Cruise Speed Down"
+			"act_engine"		"🚘🔑 Start Vehicle Engine"
+			"act_headlights"		"🚘🔆 Toggle Vehicle Headlights"
+			"act_heater"		"🚘🌡️ Vehicle Heater"
+			"act_horn"		"🚘📯 Horn"
+			"act_switchSeat"		"🚘💺 Switch Seat"
+			"act_vehicleInfo"		"🚘🔧 Vehicle Info"
+		}
+		"russian"
+		{
+			"gamepad_title"		"Геймпад"
+			"gamepad_description"		"Этот шаблон подходит для большинства игр с поддержкой геймпада — например, для шутеров с видом сверху или сбоку."
+			"set_game"		"Project Zomboid"
+			"layer_onfoot"		"Пешком"
+			"layer_vehicle"		"В транспорте"
+			"layer_aiming"		"Прицеливание"
+			"layer_ui"		"Открыто окно / меню"
+			"layer_map"		"Открыта карта"
+			"layer_menu"		"Главное меню / меню паузы"
+			"config_title"		"Gamepad Tweaks"
+			"config_description"		"Стики и кнопки работают как геймпад. Действия мода (сигнал, свет, выбросить из рук...) можно назначить на любую кнопку, задний лепесток или комбинацию."
+			"act_vehicleWheel"		"🚙 Колесо транспорта / животных"
+			"act_emoteWheel"		"😀 Колесо эмоций"
+			"act_equipWheel"		"🗡️ Колесо оружия / света"
+			"act_extraWheel"		"🏡 Колесо зон / руководства"
+			"act_commandWheel"		"🎮 Колесо команд"
+			"act_pause"		"🏠 Пауза / главное меню"
+			"act_map"		"🗺️ Карта"
+			"act_craftingMenu"		"🔨 Меню создания"
+			"act_buildingMenu"		"🧱 Меню строительства"
+			"act_skills"		"📈 Панель навыков"
+			"act_health"		"💊 Панель здоровья"
+			"act_protection"		"🦺 Панель защиты"
+			"act_info"		"👤 Панель информации"
+			"act_survivalGuide"		"📖 Руководство по выживанию"
+			"act_timePause"		"🕐⏸️ Пауза"
+			"act_timeNormal"		"🕐▶️ Нормальная скорость"
+			"act_timeFast1"		"🕐⏩ Ускорение времени - x2"
+			"act_timeFast2"		"🕐⏩⏩ Ускорение времени - x3"
+			"act_timeFast3"		"🕐⏩⏩⏩ Ускорение времени - x4"
+			"act_moveFurniture"		"🪑 Передвинуть мебель"
+			"act_toggleUI"		"👀 Скрыть/покзать интерфейс"
+			"act_screenshot"		"📸 Сделать скриншот"
+			"act_pvp"		"⚔️ Вкл./Выкл. режим PvP"
+			"act_hotbar1"		"1️⃣ Панель быстрого доступа 1"
+			"act_hotbar2"		"2️⃣ Панель быстрого доступа 2"
+			"act_hotbar3"		"3️⃣ Панель быстрого доступа 3"
+			"act_hotbar4"		"4️⃣ Панель быстрого доступа 4"
+			"act_hotbar5"		"5️⃣ Панель быстрого доступа 5"
+			"act_hotbar6"		"6️⃣ Панель быстрого доступа 6"
+			"act_hotbar7"		"7️⃣ Панель быстрого доступа 7"
+			"act_hotbar8"		"8️⃣ Панель быстрого доступа 8"
+			"act_lightSource"		"🔦 Вкл./Выкл. источник света"
+			"act_dropPrimary"		"🫳 Бросить предмет из основной руки"
+			"act_dropSecondary"		"🫳 Бросить предмет из дополнительной руки"
+			"act_dropBothHands"		"🫳 Бросить предметы из обеих рук"
+			"act_dropBag"		"🫳🎒 Бросить сумку/рюкзак"
+			"act_dropHandsAndBag"		"🫳🎒 Бросить предметы и сумку/рюкзак"
+			"act_grabCorpse"		"🧟 Поднять/положить труп"
+			"act_sharpenWeapon"		"🔪 Заточить оружие"
+			"act_sitOnGround"		"🧘 Сесть на землю"
+			"act_searchMode"		"🔍 Переключить режим поиска"
+			"act_shout"		"📢 Крикнуть"
+			"act_releaseRope"		"🧗 Отпустить веревку при лазании"
+			"act_cruiseFaster"		"🚘🔼 Круиз: прибавить скорость"
+			"act_cruiseSlower"		"🚘🔽 Круиз: убавить скорость"
+			"act_engine"		"🚘🔑 Запустить/заглушить двигатель"
+			"act_headlights"		"🚘🔆 Фары"
+			"act_heater"		"🚘🌡️ Обогреватель"
+			"act_horn"		"🚘📯 Звуковой сигнал"
+			"act_switchSeat"		"🚘💺 Пересесть"
+			"act_vehicleInfo"		"🚘🔧 Информация о транспорте"
+		}
+		"czech"
+		{
+			"gamepad_title"		"Gamepad"
+			"gamepad_description"		"Tato šablona je pro většinu her podporujících gamepad a byla navržena pro použití ve hrách využívajících dvě páčky, jakými jsou například plošinovky nebo automatové hry."
+		}
+		"danish"
+		{
+			"gamepad_title"		"Gamepad"
+			"gamepad_description"		"Denne skabelon er til spil, der allerede har indbygget gamepad-understøttelse. Beregnet til spil med dobbelte styrepinde såsom twin-stick shooters, side-scrollers osv."
+		}
+		"dutch"
+		{
+			"gamepad_title"		"Gamepad"
+			"gamepad_description"		"Deze template is voor spellen die al ingebouwde gamepadondersteuning hebben. Bedoeld voor dual-stick spellen zoals twin-stick-shooters, side-scrollers, etc."
+		}
+		"finnish"
+		{
+			"gamepad_title"		"Ohjain"
+			"gamepad_description"		"Tämä malli on muita ohjaimia valmiiksi tukeville peleille. Se on tarkoitettu kahta sauvaa käyttäville peleille, kuten twin-stick shooterit, side-scrollerit, jne."
+		}
+		"french"
+		{
+			"gamepad_title"		"Manette"
+			"gamepad_description"		"Ce modèle fonctionne pour les jeux conçus pour manettes à deux sticks tels que les jeux de type twin-stick shooter, à défilement horizontal (side-scrollers), etc."
+		}
+		"german"
+		{
+			"gamepad_title"		"Gamepad"
+			"gamepad_description"		"Diese Vorlage ist für Spiele konzipiert, die bereits volle Unterstützung für Gamepads mit sich bringen. Gedacht für Zwei-Analogstick-Spiele wie Twin-Stick-Shooter, Side-Scrollers usw."
+		}
+		"hungarian"
+		{
+			"gamepad_title"		"Gamepad"
+			"gamepad_description"		"Ez a sablon olyan játékokhoz való, melyek már rendelkeznek beépített gamepad-támogatással. Olyan két karos játékokhoz szánva, mint a kétkaros vagy oldalnézetes lövöldözős játékok stb."
+		}
+		"italian"
+		{
+			"gamepad_title"		"Controller"
+			"gamepad_description"		"Questo modello funziona per la maggior parte dei giochi che supportano i controller in modalità nativa."
+		}
+		"japanese"
+		{
+			"gamepad_title"		"ゲームパッド"
+			"gamepad_description"		"このテンプレートは、標準でゲームパッドをサポートしているツインスティックシューターや横スクロール等といったデュアルスティックゲームを対象としたゲーム向けです。"
+		}
+		"koreana"
+		{
+			"gamepad_title"		"게임패드"
+			"gamepad_description"		"게임 패드를 지원하도록 설계된 게임들을 위한 설정입니다. 이중 스틱 슈팅 게임, 사이드 스크롤 게임 등 스틱을 두 개 쓰는 게임을 염두에 두고 만들어졌습니다."
+		}
+		"polish"
+		{
+			"gamepad_title"		"Kontroler"
+			"gamepad_description"		"Ten szablon jest odpowiedni dla gier, które już mają wbudowane wsparcie dla kontrolerów. Przeznaczony dla gier obsługujących dwie gałki, m.in. twin-stick shootery, side-scrollery itp."
+		}
+		"portuguese"
+		{
+			"gamepad_title"		"Comando"
+			"gamepad_description"		"Este modelo é indicado para jogos que já têm compatibilidade nativa com comando. Foi concebido para jogos de tiros que usam dois sticks, jogos de plataformas, de naves, etc."
+		}
+		"romanian"
+		{
+			"gamepad_title"		"Gamepad"
+			"gamepad_description"		"Șablonul acesta este pentru jocurile care au deja suport pentru gamepad implementat. Destinat pentru jocuri dual stick, precum shooter-e twin-stick, side-scroller, etc."
+		}
+		"spanish"
+		{
+			"gamepad_title"		"Mando"
+			"gamepad_description"		"Esta plantilla es para juegos que ya incluyen de serie compatibilidad con mando. Está destinada a juegos de doble stick como twin-stick shooters, side-scrollers, etc."
+		}
+		"swedish"
+		{
+			"gamepad_title"		"Gamepad"
+			"gamepad_description"		"Denna mall är för spel som redan har inbyggt stöd för spelkontroller. Avsett för spel som använder två styrspakar, som twin-stick shooters och side-scrollers, etc."
+		}
+		"schinese"
+		{
+			"gamepad_title"		"手柄"
+			"gamepad_description"		"该模板适用于已内置手柄支持的游戏。针对双摇杆游戏，如双摇杆射击游戏、横版过关游戏等设计。"
+		}
+		"thai"
+		{
+			"gamepad_title"		"เกมแพด"
+		}
+		"brazilian"
+		{
+			"gamepad_title"		"Controle padrão"
+			"gamepad_description"		"Este modelo é para jogos já compatíveis com controle que usam ambas as alavancas, como jogos de nave, etc."
+		}
+		"bulgarian"
+		{
+			"gamepad_title"		"Геймпад"
+			"gamepad_description"		"Този шаблон е за игри, които вече имат вградена поддръжка на геймпад. Предназначен e за игри ползващи двата стика. Като например, екшъни за два аналогови стика, странични скролери и т.н."
+		}
+		"greek"
+		{
+			"gamepad_title"		"Χειριστήριο"
+			"gamepad_description"		"Αυτό το πρότυπο ορίζεται για παιχνίδια τα οποία έχουν ήδη υποστήριξη χειριστηρίου. Προορίζεται για παιχνίδια dual-stick όπως twin-stick shooters, side-scrollers, κλπ."
+		}
+		"turkish"
+		{
+			"gamepad_title"		"Oyun Kumandası"
+			"gamepad_description"		"Bu şablon hali hazırda oyun içi oyun kumandası desteği ve birincil veya üçüncü kişi kontrollü kameraya sahip oyunlar içindir. Çift çubuk kullanılan oyunlar olan ikiz çubuk nişancılık, side-scroller oyunlar vb. içindir."
+		}
+		"ukrainian"
+		{
+			"gamepad_title"		"Ґеймпад"
+			"gamepad_description"		"Цей шаблон для більшості ігор, в яких вже вбудовано підтримку ґеймпада. Призначено для ігор з керуванням двома стіками."
+		}
+	}
+}

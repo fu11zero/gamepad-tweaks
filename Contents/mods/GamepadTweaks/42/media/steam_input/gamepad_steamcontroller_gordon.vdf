@@ -1,0 +1,274 @@
+"controller_mappings"
+{
+	"version"		"3"
+	"revision"		"1"
+	"title"		"#gamepad_title"
+	"description"		"#gamepad_description"
+	"creator"		""
+	"progenitor"		""
+	"export_type"		"unknown"
+	"controller_type"		"controller_steamcontroller_gordon"
+	"major_revision"		"2"
+	"minor_revision"		"5"
+	"Timestamp"		"0"
+	"actions"
+	{
+		"game"
+		{
+			"title"		"#set_game"
+			"legacy_set"		"0"
+			"Button"
+			{
+				"vehicleWheel"		"#act_vehicleWheel"
+				"emoteWheel"		"#act_emoteWheel"
+				"equipWheel"		"#act_equipWheel"
+				"extraWheel"		"#act_extraWheel"
+				"commandWheel"		"#act_commandWheel"
+				"pause"		"#act_pause"
+				"map"		"#act_map"
+				"craftingMenu"		"#act_craftingMenu"
+				"buildingMenu"		"#act_buildingMenu"
+				"skills"		"#act_skills"
+				"health"		"#act_health"
+				"protection"		"#act_protection"
+				"info"		"#act_info"
+				"survivalGuide"		"#act_survivalGuide"
+				"timePause"		"#act_timePause"
+				"timeNormal"		"#act_timeNormal"
+				"timeFast1"		"#act_timeFast1"
+				"timeFast2"		"#act_timeFast2"
+				"timeFast3"		"#act_timeFast3"
+				"moveFurniture"		"#act_moveFurniture"
+				"toggleUI"		"#act_toggleUI"
+				"screenshot"		"#act_screenshot"
+				"pvp"		"#act_pvp"
+				"hotbar1"		"#act_hotbar1"
+				"hotbar2"		"#act_hotbar2"
+				"hotbar3"		"#act_hotbar3"
+				"hotbar4"		"#act_hotbar4"
+				"hotbar5"		"#act_hotbar5"
+				"hotbar6"		"#act_hotbar6"
+				"hotbar7"		"#act_hotbar7"
+				"hotbar8"		"#act_hotbar8"
+				"switchSeat"		"#act_switchSeat"
+			}
+		}
+	}
+	"action_layers"
+	{
+		"onfoot"
+		{
+			"title"		"#layer_onfoot"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+			"Button"
+			{
+				"lightSource"		"#act_lightSource"
+				"dropPrimary"		"#act_dropPrimary"
+				"dropSecondary"		"#act_dropSecondary"
+				"dropBothHands"		"#act_dropBothHands"
+				"dropBag"		"#act_dropBag"
+				"dropHandsAndBag"		"#act_dropHandsAndBag"
+				"grabCorpse"		"#act_grabCorpse"
+				"sharpenWeapon"		"#act_sharpenWeapon"
+				"sitOnGround"		"#act_sitOnGround"
+				"searchMode"		"#act_searchMode"
+				"shout"		"#act_shout"
+				"releaseRope"		"#act_releaseRope"
+			}
+		}
+		"vehicle"
+		{
+			"title"		"#layer_vehicle"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+			"Button"
+			{
+				"cruiseFaster"		"#act_cruiseFaster"
+				"cruiseSlower"		"#act_cruiseSlower"
+				"engine"		"#act_engine"
+				"headlights"		"#act_headlights"
+				"heater"		"#act_heater"
+				"horn"		"#act_horn"
+				"vehicleInfo"		"#act_vehicleInfo"
+			}
+		}
+		"aiming"
+		{
+			"title"		"#layer_aiming"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+		"ui"
+		{
+			"title"		"#layer_ui"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+		"map"
+		{
+			"title"		"#layer_map"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+		"menu"
+		{
+			"title"		"#layer_menu"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+	}
+	"localization"
+	{
+	}
+	"group"
+	{
+		"id"		"0"
+		"mode"		"four_buttons"
+		"bindings"
+		{
+			"button_a"		"xinput_button A"
+			"button_b"		"xinput_button B"
+			"button_x"		"xinput_button X"
+			"button_y"		"xinput_button Y"
+		}
+	}
+	"group"
+	{
+		"id"		"1"
+		"mode"		"dpad"
+		"bindings"
+		{
+			"dpad_north"		"xinput_button dpad_up"
+			"dpad_south"		"xinput_button dpad_down"
+			"dpad_east"		"xinput_button dpad_right"
+			"dpad_west"		"xinput_button dpad_left"
+		}
+		"settings"
+		{
+		}
+	}
+	"group"
+	{
+		"id"		"2"
+		"mode"		"joystick_move"
+		"bindings"
+		{
+			"click"		"xinput_button JOYSTICK_RIGHT"
+		}
+		"settings"
+		{
+		}
+	}
+	"group"
+	{
+		"id"		"3"
+		"mode"		"joystick_move"
+		"bindings"
+		{
+			"click"		"xinput_button JOYSTICK_LEFT"
+		}
+		"settings"
+		{
+			"adaptive_centering"		"0"
+		}
+	}
+	"group"
+	{
+		"id"		"4"
+		"mode"		"trigger"
+		"bindings"
+		{
+			"click"		"xinput_button TRIGGER_LEFT"
+		}
+		"settings"
+		{
+			"output_trigger"		"1"
+		}
+	}
+	"group"
+	{
+		"id"		"5"
+		"mode"		"trigger"
+		"bindings"
+		{
+			"click"		"xinput_button TRIGGER_RIGHT"
+		}
+		"settings"
+		{
+			"output_trigger"		"2"
+		}
+	}
+	"group"
+	{
+		"id"		"6"
+		"mode"		"joystick_move"
+		"bindings"
+		{
+			"click"		"xinput_button JOYSTICK_RIGHT"
+		}
+		"settings"
+		{
+			"output_joystick"		"1"
+		}
+	}
+	"settings"
+	{
+		"left_trackpad_mode"		"0"
+		"right_trackpad_mode"		"0"
+	}
+	"preset"
+	{
+		"id"		"1"
+		"name"		"onfoot"
+		"group_source_bindings"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"2"
+		"name"		"vehicle"
+		"group_source_bindings"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"3"
+		"name"		"aiming"
+		"group_source_bindings"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"4"
+		"name"		"ui"
+		"group_source_bindings"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"5"
+		"name"		"map"
+		"group_source_bindings"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"6"
+		"name"		"menu"
+		"group_source_bindings"
+		{
+		}
+	}
+}

@@ -1,0 +1,845 @@
+"controller_mappings"
+{
+	"version"		"3"
+	"revision"		"1"
+	"title"		"#config_title"
+	"description"		"#config_description"
+	"creator"		"76561198084489589"
+	"progenitor"		""
+	"export_type"		"unknown"
+	"controller_type"		"controller_ps5_edge"
+	"major_revision"		"2"
+	"minor_revision"		"5"
+	"Timestamp"		"0"
+	"actions"
+	{
+		"game"
+		{
+			"title"		"#set_game"
+			"legacy_set"		"0"
+			"Button"
+			{
+				"vehicleWheel"		"#act_vehicleWheel"
+				"emoteWheel"		"#act_emoteWheel"
+				"equipWheel"		"#act_equipWheel"
+				"extraWheel"		"#act_extraWheel"
+				"commandWheel"		"#act_commandWheel"
+				"pause"		"#act_pause"
+				"map"		"#act_map"
+				"craftingMenu"		"#act_craftingMenu"
+				"buildingMenu"		"#act_buildingMenu"
+				"skills"		"#act_skills"
+				"health"		"#act_health"
+				"protection"		"#act_protection"
+				"info"		"#act_info"
+				"survivalGuide"		"#act_survivalGuide"
+				"timePause"		"#act_timePause"
+				"timeNormal"		"#act_timeNormal"
+				"timeFast1"		"#act_timeFast1"
+				"timeFast2"		"#act_timeFast2"
+				"timeFast3"		"#act_timeFast3"
+				"moveFurniture"		"#act_moveFurniture"
+				"toggleUI"		"#act_toggleUI"
+				"screenshot"		"#act_screenshot"
+				"pvp"		"#act_pvp"
+				"hotbar1"		"#act_hotbar1"
+				"hotbar2"		"#act_hotbar2"
+				"hotbar3"		"#act_hotbar3"
+				"hotbar4"		"#act_hotbar4"
+				"hotbar5"		"#act_hotbar5"
+				"hotbar6"		"#act_hotbar6"
+				"hotbar7"		"#act_hotbar7"
+				"hotbar8"		"#act_hotbar8"
+				"switchSeat"		"#act_switchSeat"
+			}
+		}
+	}
+	"action_layers"
+	{
+		"onfoot"
+		{
+			"title"		"#layer_onfoot"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+			"Button"
+			{
+				"lightSource"		"#act_lightSource"
+				"dropPrimary"		"#act_dropPrimary"
+				"dropSecondary"		"#act_dropSecondary"
+				"dropBothHands"		"#act_dropBothHands"
+				"dropBag"		"#act_dropBag"
+				"dropHandsAndBag"		"#act_dropHandsAndBag"
+				"grabCorpse"		"#act_grabCorpse"
+				"sharpenWeapon"		"#act_sharpenWeapon"
+				"sitOnGround"		"#act_sitOnGround"
+				"searchMode"		"#act_searchMode"
+				"shout"		"#act_shout"
+				"releaseRope"		"#act_releaseRope"
+			}
+		}
+		"vehicle"
+		{
+			"title"		"#layer_vehicle"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+			"Button"
+			{
+				"cruiseFaster"		"#act_cruiseFaster"
+				"cruiseSlower"		"#act_cruiseSlower"
+				"engine"		"#act_engine"
+				"headlights"		"#act_headlights"
+				"heater"		"#act_heater"
+				"horn"		"#act_horn"
+				"vehicleInfo"		"#act_vehicleInfo"
+			}
+		}
+		"aiming"
+		{
+			"title"		"#layer_aiming"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+		"ui"
+		{
+			"title"		"#layer_ui"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+		"map"
+		{
+			"title"		"#layer_map"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+		"menu"
+		{
+			"title"		"#layer_menu"
+			"legacy_set"		"0"
+			"set_layer"		"1"
+			"parent_set_name"		"game"
+		}
+	}
+	"localization"
+	{
+		"english"
+		{
+			"set_game"		"Project Zomboid"
+			"layer_onfoot"		"On foot"
+			"layer_vehicle"		"In a vehicle"
+			"layer_aiming"		"Aiming"
+			"layer_ui"		"Panel / menu open"
+			"layer_map"		"Map open"
+			"layer_menu"		"Main menu / pause menu"
+			"config_title"		"Gamepad Tweaks"
+			"config_description"		"Sticks and buttons work as a gamepad. Mod actions (horn, lights, drop items...) can be bound to any button, back paddle or combination."
+			"act_vehicleWheel"		"🚙 Vehicle / Animal Wheel"
+			"act_emoteWheel"		"😀 Emotes Wheel"
+			"act_equipWheel"		"🗡️ Weapon / Light Wheel"
+			"act_extraWheel"		"🏡 Zones / Guide Wheel"
+			"act_commandWheel"		"🎮 Command Wheel"
+			"act_pause"		"🏠 Pause / Main Menu"
+			"act_map"		"🗺️ Toggle Map"
+			"act_craftingMenu"		"🔨 Toggle Crafting UI"
+			"act_buildingMenu"		"🧱 Toggle Building UI"
+			"act_skills"		"📈 Toggle Skill Panel"
+			"act_health"		"💊 Toggle Health Panel"
+			"act_protection"		"🦺 Toggle Clothing Protection Panel"
+			"act_info"		"👤 Toggle Info Panel"
+			"act_survivalGuide"		"📖 Toggle Survival Guide"
+			"act_timePause"		"🕐⏸️ Pause"
+			"act_timeNormal"		"🕐▶️ Normal Speed"
+			"act_timeFast1"		"🕐⏩ Fast Forward x1"
+			"act_timeFast2"		"🕐⏩⏩ Fast Forward x2"
+			"act_timeFast3"		"🕐⏩⏩⏩ Fast Forward x3"
+			"act_moveFurniture"		"🪑 Move furniture"
+			"act_toggleUI"		"👀 Toggle UI"
+			"act_screenshot"		"📸 Take Screenshot"
+			"act_pvp"		"⚔️ Toggle Safety"
+			"act_hotbar1"		"1️⃣ Hotbar 1"
+			"act_hotbar2"		"2️⃣ Hotbar 2"
+			"act_hotbar3"		"3️⃣ Hotbar 3"
+			"act_hotbar4"		"4️⃣ Hotbar 4"
+			"act_hotbar5"		"5️⃣ Hotbar 5"
+			"act_hotbar6"		"6️⃣ Hotbar 6"
+			"act_hotbar7"		"7️⃣ Hotbar 7"
+			"act_hotbar8"		"8️⃣ Hotbar 8"
+			"act_lightSource"		"🔦 Equip/Turn On/Off Light Source"
+			"act_dropPrimary"		"🫳 Drop Primary Held Item"
+			"act_dropSecondary"		"🫳 Drop Secondary Held Item"
+			"act_dropBothHands"		"🫳 Drop Both Held Items"
+			"act_dropBag"		"🫳🎒 Drop Worn Bag"
+			"act_dropHandsAndBag"		"🫳🎒 Drop Held Items And Worn Bag"
+			"act_grabCorpse"		"🧟 Grab Corpse"
+			"act_sharpenWeapon"		"🔪 Sharpen Weapon"
+			"act_sitOnGround"		"🧘 Sit On Ground"
+			"act_searchMode"		"🔍 Toggle Search Mode"
+			"act_shout"		"📢 Shout"
+			"act_releaseRope"		"🧗 Let Go of Rope Being Climbed"
+			"act_cruiseFaster"		"🚘🔼 Cruise Speed Up"
+			"act_cruiseSlower"		"🚘🔽 Cruise Speed Down"
+			"act_engine"		"🚘🔑 Start Vehicle Engine"
+			"act_headlights"		"🚘🔆 Toggle Vehicle Headlights"
+			"act_heater"		"🚘🌡️ Vehicle Heater"
+			"act_horn"		"🚘📯 Horn"
+			"act_switchSeat"		"🚘💺 Switch Seat"
+			"act_vehicleInfo"		"🚘🔧 Vehicle Info"
+		}
+		"russian"
+		{
+			"set_game"		"Project Zomboid"
+			"layer_onfoot"		"Пешком"
+			"layer_vehicle"		"В транспорте"
+			"layer_aiming"		"Прицеливание"
+			"layer_ui"		"Открыто окно / меню"
+			"layer_map"		"Открыта карта"
+			"layer_menu"		"Главное меню / меню паузы"
+			"config_title"		"Gamepad Tweaks"
+			"config_description"		"Стики и кнопки работают как геймпад. Действия мода (сигнал, свет, выбросить из рук...) можно назначить на любую кнопку, задний лепесток или комбинацию."
+			"act_vehicleWheel"		"🚙 Колесо транспорта / животных"
+			"act_emoteWheel"		"😀 Колесо эмоций"
+			"act_equipWheel"		"🗡️ Колесо оружия / света"
+			"act_extraWheel"		"🏡 Колесо зон / руководства"
+			"act_commandWheel"		"🎮 Колесо команд"
+			"act_pause"		"🏠 Пауза / главное меню"
+			"act_map"		"🗺️ Карта"
+			"act_craftingMenu"		"🔨 Меню создания"
+			"act_buildingMenu"		"🧱 Меню строительства"
+			"act_skills"		"📈 Панель навыков"
+			"act_health"		"💊 Панель здоровья"
+			"act_protection"		"🦺 Панель защиты"
+			"act_info"		"👤 Панель информации"
+			"act_survivalGuide"		"📖 Руководство по выживанию"
+			"act_timePause"		"🕐⏸️ Пауза"
+			"act_timeNormal"		"🕐▶️ Нормальная скорость"
+			"act_timeFast1"		"🕐⏩ Ускорение времени - x2"
+			"act_timeFast2"		"🕐⏩⏩ Ускорение времени - x3"
+			"act_timeFast3"		"🕐⏩⏩⏩ Ускорение времени - x4"
+			"act_moveFurniture"		"🪑 Передвинуть мебель"
+			"act_toggleUI"		"👀 Скрыть/покзать интерфейс"
+			"act_screenshot"		"📸 Сделать скриншот"
+			"act_pvp"		"⚔️ Вкл./Выкл. режим PvP"
+			"act_hotbar1"		"1️⃣ Панель быстрого доступа 1"
+			"act_hotbar2"		"2️⃣ Панель быстрого доступа 2"
+			"act_hotbar3"		"3️⃣ Панель быстрого доступа 3"
+			"act_hotbar4"		"4️⃣ Панель быстрого доступа 4"
+			"act_hotbar5"		"5️⃣ Панель быстрого доступа 5"
+			"act_hotbar6"		"6️⃣ Панель быстрого доступа 6"
+			"act_hotbar7"		"7️⃣ Панель быстрого доступа 7"
+			"act_hotbar8"		"8️⃣ Панель быстрого доступа 8"
+			"act_lightSource"		"🔦 Вкл./Выкл. источник света"
+			"act_dropPrimary"		"🫳 Бросить предмет из основной руки"
+			"act_dropSecondary"		"🫳 Бросить предмет из дополнительной руки"
+			"act_dropBothHands"		"🫳 Бросить предметы из обеих рук"
+			"act_dropBag"		"🫳🎒 Бросить сумку/рюкзак"
+			"act_dropHandsAndBag"		"🫳🎒 Бросить предметы и сумку/рюкзак"
+			"act_grabCorpse"		"🧟 Поднять/положить труп"
+			"act_sharpenWeapon"		"🔪 Заточить оружие"
+			"act_sitOnGround"		"🧘 Сесть на землю"
+			"act_searchMode"		"🔍 Переключить режим поиска"
+			"act_shout"		"📢 Крикнуть"
+			"act_releaseRope"		"🧗 Отпустить веревку при лазании"
+			"act_cruiseFaster"		"🚘🔼 Круиз: прибавить скорость"
+			"act_cruiseSlower"		"🚘🔽 Круиз: убавить скорость"
+			"act_engine"		"🚘🔑 Запустить/заглушить двигатель"
+			"act_headlights"		"🚘🔆 Фары"
+			"act_heater"		"🚘🌡️ Обогреватель"
+			"act_horn"		"🚘📯 Звуковой сигнал"
+			"act_switchSeat"		"🚘💺 Пересесть"
+			"act_vehicleInfo"		"🚘🔧 Информация о транспорте"
+		}
+	}
+	"group"
+	{
+		"id"		"0"
+		"mode"		"four_buttons"
+		"inputs"
+		{
+			"button_a"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button A"
+						}
+					}
+				}
+			}
+			"button_b"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button B"
+						}
+					}
+				}
+			}
+			"button_x"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button X"
+						}
+					}
+				}
+			}
+			"button_y"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button Y"
+						}
+					}
+				}
+			}
+		}
+	}
+	"group"
+	{
+		"id"		"1"
+		"mode"		"dpad"
+		"inputs"
+		{
+			"dpad_north"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button dpad_up"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"1"
+						}
+					}
+				}
+			}
+			"dpad_south"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button dpad_down"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"1"
+						}
+					}
+				}
+			}
+			"dpad_east"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button dpad_right"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"1"
+						}
+					}
+				}
+			}
+			"dpad_west"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button dpad_left"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"1"
+						}
+					}
+				}
+			}
+		}
+	}
+	"group"
+	{
+		"id"		"2"
+		"mode"		"joystick_move"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button JOYSTICK_RIGHT"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"2"
+						}
+					}
+				}
+			}
+		}
+	}
+	"group"
+	{
+		"id"		"3"
+		"mode"		"joystick_move"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button JOYSTICK_LEFT"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"2"
+						}
+					}
+				}
+			}
+		}
+	}
+	"group"
+	{
+		"id"		"4"
+		"mode"		"trigger"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button TRIGGER_LEFT"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"2"
+						}
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"output_trigger"		"1"
+		}
+	}
+	"group"
+	{
+		"id"		"5"
+		"mode"		"trigger"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button TRIGGER_RIGHT"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"2"
+						}
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"output_trigger"		"2"
+		}
+	}
+	"group"
+	{
+		"id"		"6"
+		"mode"		"joystick_move"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button JOYSTICK_RIGHT"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"2"
+						}
+					}
+				}
+			}
+		}
+	}
+	"group"
+	{
+		"id"		"8"
+		"mode"		"joystick_move"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button JOYSTICK_RIGHT"
+						}
+					}
+				}
+			}
+		}
+	}
+	"group"
+	{
+		"id"		"9"
+		"mode"		"dpad"
+		"inputs"
+		{
+			"dpad_north"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button DPAD_UP"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"1"
+						}
+					}
+				}
+			}
+			"dpad_south"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button DPAD_DOWN"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"1"
+						}
+					}
+				}
+			}
+			"dpad_east"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button DPAD_RIGHT"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"1"
+						}
+					}
+				}
+			}
+			"dpad_west"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button DPAD_LEFT"
+						}
+						"settings"
+						{
+							"haptic_intensity"		"1"
+						}
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"requires_click"		"0"
+		}
+	}
+	"group"
+	{
+		"id"		"7"
+		"mode"		"switches"
+		"inputs"
+		{
+			"button_escape"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button start"
+						}
+					}
+				}
+			}
+			"button_menu"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button select"
+						}
+					}
+				}
+			}
+			"left_bumper"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button shoulder_left"
+						}
+					}
+				}
+			}
+			"right_bumper"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button shoulder_right"
+						}
+					}
+				}
+			}
+			"button_back_left"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button a"
+						}
+					}
+				}
+			}
+			"button_back_right"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button x"
+						}
+					}
+				}
+			}
+		}
+	}
+	"group"
+	{
+		"id"		"10"
+		"mode"		"single_button"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button START"
+						}
+					}
+				}
+			}
+			"touch"
+			{
+				"activators"
+				{
+				}
+			}
+		}
+		"gameactions"
+		{
+		}
+	}
+	"group"
+	{
+		"id"		"11"
+		"mode"		"single_button"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button SELECT"
+						}
+					}
+				}
+			}
+			"touch"
+			{
+				"activators"
+				{
+				}
+			}
+		}
+		"gameactions"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"0"
+		"name"		"game"
+		"group_source_bindings"
+		{
+			"7"		"switch active"
+			"0"		"button_diamond active"
+			"1"		"left_trackpad inactive"
+			"11"		"left_trackpad active"
+			"2"		"right_trackpad inactive"
+			"6"		"right_trackpad inactive"
+			"10"		"right_trackpad active"
+			"3"		"joystick active"
+			"4"		"left_trigger active"
+			"5"		"right_trigger active"
+			"8"		"right_joystick active"
+			"9"		"dpad active"
+		}
+	}
+	"settings"
+	{
+		"left_trackpad_mode"		"0"
+		"right_trackpad_mode"		"0"
+	}
+	"preset"
+	{
+		"id"		"1"
+		"name"		"onfoot"
+		"group_source_bindings"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"2"
+		"name"		"vehicle"
+		"group_source_bindings"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"3"
+		"name"		"aiming"
+		"group_source_bindings"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"4"
+		"name"		"ui"
+		"group_source_bindings"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"5"
+		"name"		"map"
+		"group_source_bindings"
+		{
+		}
+	}
+	"preset"
+	{
+		"id"		"6"
+		"name"		"menu"
+		"group_source_bindings"
+		{
+		}
+	}
+}

@@ -97,6 +97,19 @@ public final class Settings {
             # Trigger travel (0..1) ignored as noise.
             map.triggerDeadZone=0.05
 
+            # --- Steam Input ------------------------------------------------------
+            # Show the mod's actions (horn, lights, drop items, wheels...) in the Steam
+            # controller configurator as game actions, so they can go on any button,
+            # back paddle, long/double press or chord. Sticks and buttons stay a gamepad.
+            # Needs a game restart.
+            steamInput.enabled=true
+            # Steam action set layer for vehicle passengers: vehicle (as the driver) or
+            # onfoot. Layers follow the situation (on foot, vehicle, aiming, panel, map,
+            # main/pause menu), so one button can do different things in each.
+            steamInput.passengerLayer=vehicle
+            # Log every Steam action press/release and controller mapping.
+            steamInput.debugLog=false
+
             # --- Button actions ---------------------------------------------------
             # Actions that vanilla hardcodes to buttons (media/lua/client/GamepadTweaks/Bindings.lua).
             # bind.<action>=<button>: A B X Y LeftBump RightBump LeftStick RightStick
@@ -191,6 +204,8 @@ public final class Settings {
     public static volatile float mapZoomSpeed = 3.0f;
     public static volatile float mapZoomExponent = 1.5f;
     public static volatile float mapTriggerDeadZone = 0.05f;
+    public static volatile boolean steamInput = true;
+    public static volatile boolean steamInputDebugLog = false;
 
     // All values as read, for the Lua side (button actions).
     private static volatile Properties raw = new Properties();
@@ -333,6 +348,8 @@ public final class Settings {
         mapZoomSpeed = num(p, "map.zoomSpeed", 3.0f, 0.01f, 20f);
         mapZoomExponent = num(p, "map.zoomExponent", 1.5f, 0.1f, 5f);
         mapTriggerDeadZone = num(p, "map.triggerDeadZone", 0.05f, 0f, 0.5f);
+        steamInput = bool(p, "steamInput.enabled", true);
+        steamInputDebugLog = bool(p, "steamInput.debugLog", false);
         raw = p;
         version++;
         Log.info("settings loaded: scaleToSpeedClamp=" + scaleToSpeedClamp
