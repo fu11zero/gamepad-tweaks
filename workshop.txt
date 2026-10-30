@@ -47,6 +47,9 @@ description=[*]Build 42.21+
 description=[*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3619862853]ZombieBuddy[/url] 2.3.4+ installed as a Java agent. On first launch ZombieBuddy asks to approve the mod's jar.
 description=[/list]
 description=
+description=[h2]Source code and bug reports[/h2]
+description=[url=https://github.com/fu11zero/gamepad-tweaks]github.com/fu11zero/gamepad-tweaks[/url]
+description=
 description=[h2]Keywords[/h2]
 description=gamepad, controller, joystick, analog steering, analog movement, Steam Deck back buttons, L4, R4, L5, R5, M1, M2, Xbox Elite paddles, DualSense Edge, mod options, settings, configurable, sensitivity, steering sensitivity, joypad, Xbox, PlayStation, DualSense, DualShock, Steam Deck, Steam Input, Steam Input API, game actions, back paddles, back buttons, paddles, extra buttons, long press, double press, chord, action layers, gyro, gyro aiming, dead zone, deadzone, stick drift, analog, analog actions, gyro aim, gyroscope, motion controls, trackpad aiming, flick, attack button, shove, melee, run button, look far, camera pan, pan camera, rotate building, driver seat, drive, curtains, fire mode, select fire, chop tree, dig, farming, water plants, tool, push to talk, voice chat, animal menu, music toggle, FPS, steering, driving, car, vehicle, triggers, gas, brake, map, world map, flier, flyer, brochure, zoom, scroll, pan, crouch, sneak, sprint, toggle, rebind, remap, keybind, bindings, D-pad, dpad, radial menu, wheel, emotes, back button, select, cruise control, reload, firearm radial, magazine, eject magazine, unload, rack, L3, RB, hotbar, quick slots, flashlight, drop item, inventory, loot, loot all, transfer all, take all, same type, move to floor, drop all, drop to floor, unpack, stack, crouch button, interact, horn, headlights, engine, heater, sit, search mode, foraging, screenshot, game speed, input lag, splitscreen, couch co-op
 tags=Build 42;Interface;Vehicles;QoL

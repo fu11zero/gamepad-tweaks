@@ -7,6 +7,7 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 - Fixed: a controller preset made in a non-English game (e.g. Russian "Пользовательский") was not
   saved on Linux / Steam Deck (the game runs with an ASCII locale there); new presets are named "Custom".
+- Fixed: an action set to none in the mod's bindings got its default button back after reloading.
 - Added: gyro / trackpad aiming through Steam Input: bind the gyro to the "Aim" analog action, it
   moves the reticle on top of the stick, with no added lag.
 - Added: "Move" and "Steer" analog actions in Steam Input: put a stick (or trackpad) straight on
@@ -26,6 +27,6 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
   the FPS graph.
 - Changed: Steam action set layers switch only the layers that change.
 - Changed: Steam actions have short titles with icons and are grouped by situation: combat and
-  movement on foot, brake and cruise in a vehicle, item moves with the inventory open. Pick the
-  "Gamepad Tweaks" layout again after updating.
+  movement on foot, brake and cruise in a vehicle, item moves with the inventory open. Restart
+  Steam and pick the "Gamepad Tweaks" layout again after updating.
 - Compatibility: works on 42.21 and the 42.22 beta.

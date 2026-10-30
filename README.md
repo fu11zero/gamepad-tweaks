@@ -393,6 +393,10 @@ compiles against every kept version (stable and beta branch); "does NOT compile 
 means the mod would break in X. After a test run, `~/Zomboid/tools/checklog.py GamepadTweaks`
 summarizes `console.txt` (mod loads per save, errors, Steam Input per session).
 
+## Source
+
+https://github.com/fu11zero/gamepad-tweaks
+
 ## Publishing
 
 Build first (the jar is not in git), then in the game: main menu -> Workshop -> upload,
