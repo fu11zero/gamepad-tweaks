@@ -330,6 +330,12 @@ sudo pacman -S jdk25-openjdk
 ./build.sh
 ```
 
+The jar is built against the installed game. When `~/Zomboid/tools/pz-versions.sh` is there,
+the build also keeps the installed `projectzomboid.jar` in `~/Zomboid/jars/<version>/` and
+compiles against every kept version (stable and beta branch); "does NOT compile against game X"
+means the mod would break in X. After a test run, `~/Zomboid/tools/checklog.py GamepadTweaks`
+summarizes `console.txt` (mod loads per save, errors, Steam Input per session).
+
 ## Publishing
 
 Build first (the jar is not in git), then in the game: main menu -> Workshop -> upload,
