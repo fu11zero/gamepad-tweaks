@@ -247,3 +247,30 @@ function CharacterJoypadBindingUIRow:onAddNewJoypadBindingChanged(senderBox, bin
 	end
 	return vanillaAddNewChanged(self, senderBox, bindingKey, ...)
 end
+
+-- New presets ------------------------------------------------------------------------
+
+-- Editing a built-in preset (Default, Original) spawns a new one named
+-- getText("IGUI_Custom") (gamepadBinding:createNewFromCurrent ->
+-- CharacterInputBindingSet.getUniqueSetName), saved as InputBindings/<name>.xml. Steam runs
+-- the game with LC_ALL=C, where Java can't create a file with a non-ASCII name
+-- ("Пользовательский.xml": Invalid argument), so the preset is lost on Apply. Such names
+-- become "Custom" (made unique by getUniqueSetName).
+require "gamepadBinding"
+
+local function isAscii(s)
+	return not s:find("[\128-\255]")
+end
+
+if gamepadBinding and gamepadBinding.createNewFromCurrent and CharacterInputBindingSet then
+	local vanillaCreateNew = gamepadBinding.createNewFromCurrent
+	function gamepadBinding:createNewFromCurrent(...)
+		if isAscii(getText("IGUI_Custom")) then
+			return vanillaCreateNew(self, ...)
+		end
+		local newSet = CharacterInputBindingSet.createNewFromCurrent("Custom")
+		return self:addInputSet(newSet)
+	end
+else
+	log("WARN: gamepadBinding.createNewFromCurrent not found, new presets keep the translated name")
+end
