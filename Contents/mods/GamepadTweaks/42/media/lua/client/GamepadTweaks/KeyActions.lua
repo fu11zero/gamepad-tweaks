@@ -6,6 +6,7 @@
 -- key handler does, for the player of the controller. All of them are unbound by default
 -- (bind.<id>=<button> in ~/Zomboid/GamepadTweaks.properties), except the camera pan: RB while
 -- aiming, the button vanilla hardcodes for it (PlayerCamera.update, see CameraPan.java).
+-- Also the Shift variants of Interact / Rack and the tool use of the context key, below.
 -- label: the vanilla key binding name (UI_optionscreen_binding_*, or a full IGUI_ key),
 -- category and group (main / extra), for the settings panel; layer: world unless set.
 
@@ -412,6 +413,152 @@ local function pvp(c, jd)
 	end
 end
 
+-- Shift variants and context actions --------------------------------------------------
+-- The keyboard gets more out of Interact (E) with Shift held (IsoPlayer.doContext*: the
+-- Java check is CharacterInputComponent.isShiftKeyDown, keyboard only) and from the context
+-- key event (OnContextKey); a gamepad player has no Shift and only some of it. Each action
+-- here does one of them directly, so the character does exactly that.
+
+-- E near a car seats the player by the nearest door (VehicleUtils.OnUseVehicle ->
+-- ISVehicleMenu.onEnter with BaseVehicle.getBestSeat); with Shift it is the driver's seat,
+-- through that door and over (ISVehicleMenu.processShiftEnter). Here: that, or for a
+-- passenger the switch to the driver's seat.
+local function drive(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj then return end
+	local vehicle = playerObj:getVehicle()
+	if vehicle then
+		local seat = vehicle:getSeat(playerObj)
+		if seat > 0 and not vehicle:isSeatOccupied(0) and vehicle:canSwitchSeat(seat, 0) then
+			ISVehicleMenu.onSwitchSeat(playerObj, 0)
+		end
+		return
+	end
+	vehicle = ISVehicleMenu.getVehicleToInteractWith(playerObj)
+	if not vehicle or not vehicle:getScript() or vehicle:getScript():getWheelCount() == 0 then return end
+	if vehicle:isSeatOccupied(0) then
+		-- "someone is in the seat", or the items on it are moved first (as vanilla)
+		return ISVehicleMenu.onEnter(playerObj, vehicle, 0)
+	end
+	local seat = vehicle:getBestSeat(playerObj)
+	if seat == -1 or vehicle:isSeatOccupied(seat) then seat = 0 end
+	ISTimedActionQueue.clear(playerObj)
+	ISVehicleMenu.processShiftEnter(playerObj, vehicle, seat)
+end
+
+-- The object whose curtain this is (what ISWorldObjectContextMenu.onOpenCloseCurtain takes:
+-- a door holds its sheet itself), or nil.
+local function curtainOf(obj, playerObj)
+	local curtain = nil
+	if instanceof(obj, "IsoDoor") then
+		return obj:HasCurtains() and obj or nil
+	elseif instanceof(obj, "IsoCurtain") then
+		curtain = obj
+	elseif instanceof(obj, "IsoWindow") or instanceof(obj, "IsoThumpable") then
+		curtain = obj:HasCurtains()
+	elseif instanceof(obj, "IsoWindowFrame") then
+		curtain = obj:getCurtain()
+	end
+	if curtain and instanceof(curtain, "IsoCurtain") and curtain:canInteractWith(playerObj) then
+		return curtain
+	end
+	return nil
+end
+
+-- Shift + E at a window, door or window frame toggles its curtain (IsoPlayer.doContextWindow,
+-- doContextDoor, doContextWindowFrame; Shift + click: ISObjectClickHandler.doClickWindow);
+-- on a gamepad only the context menu has it. Here: the curtain nearest to the player on their
+-- square and around it, the one they face first.
+local function curtain(c, jd)
+	local playerObj = actor(jd)
+	local square = playerObj and playerObj:getCurrentSquare()
+	if not square then return end
+	local facing = square:getAdjacentSquare(playerObj:getDir())
+	local best, bestDist = nil, nil
+	for dx = -1, 1 do
+		for dy = -1, 1 do
+			local sq = getCell():getGridSquare(square:getX() + dx, square:getY() + dy, square:getZ())
+			local objects = sq and sq:getObjects()
+			for i = 0, (objects and objects:size() or 0) - 1 do
+				local found = curtainOf(objects:get(i), playerObj)
+				if found and found:getSquare() then
+					local dist = found:getSquare():DistToProper(playerObj)
+					if sq == facing or sq == square then dist = dist - 1 end
+					if not bestDist or dist < bestDist then
+						best, bestDist = found, dist
+					end
+				end
+			end
+		end
+	end
+	if best then
+		ISWorldObjectContextMenu.onOpenCloseCurtain(nil, best, playerObj:getPlayerNum())
+	end
+end
+
+-- Shift + Rack cycles the fire mode of a select-fire gun (OnPressRackButton with shift ->
+-- ISReloadWeaponAction.OnPressRackButton); the gamepad's Rack never has the Shift.
+local function fireMode(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj then return end
+	local gun = playerObj:getPrimaryHandItem()
+	if not gun or not instanceof(gun, "HandWeapon") or not gun:isRanged() or not gun:isSelectFire() then return end
+	triggerEvent("OnPressRackButton", playerObj, gun, true)
+	local mode = gun:getFireMode()
+	if mode then
+		HaloTextHelper.addText(playerObj, getText("ContextMenu_FireMode_" .. mode))
+	end
+end
+
+-- E while aiming with a tool in hand works the square in front (CFarming_Interact.onContextKey,
+-- from OnContextKey when Interact finds no door / window / ...): chop a tree, cut a bush, remove
+-- a stump, mine ore, dig a furrow, sow, scythe, water, fertilize, cure a plant, clean blood /
+-- graffiti. It runs once per key press: SawOnContextKeyEvent is reset only by a keyboard
+-- Interact press (onKeyStartPressed), so with a gamepad it works once per session. Here the
+-- flag is reset per joypad press (below), and the action does it without aiming: the check
+-- is satisfied for the call only.
+local function useTool(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj or not CFarming_Interact or playerObj:getVehicle() then return end
+	local aiming = playerObj:isAiming()
+	CFarming_Interact.SawOnContextKeyEvent = false
+	if not aiming then playerObj:setIsAiming(true) end
+	local ok, err = pcall(CFarming_Interact.onContextKey, playerObj, 0)
+	if not aiming then playerObj:setIsAiming(false) end
+	if not ok then error(err, 0) end
+end
+
+-- A joypad player's Interact press: the flag is per press, released while the Interact
+-- button of the binding is up (OnContextKey fires every frame while it is held long).
+local toolPressSeen = {}
+
+Events.OnGameStart.Add(function()
+	if not CFarming_Interact or CFarming_Interact.GamepadTweaksWrapped then return end
+	CFarming_Interact.GamepadTweaksWrapped = true
+	local vanillaOnContextKey = CFarming_Interact.onContextKey
+	-- vanilla registers it in its own OnGameStart, by reference
+	Events.OnContextKey.Remove(vanillaOnContextKey)
+	CFarming_Interact.onContextKey = function(playerObj, ms)
+		if playerObj:getJoypadBind() ~= -1 then
+			local n = playerObj:getPlayerNum()
+			if toolPressSeen[n] then return end
+			toolPressSeen[n] = true
+			CFarming_Interact.SawOnContextKeyEvent = false
+		end
+		return vanillaOnContextKey(playerObj, ms)
+	end
+	Events.OnContextKey.Add(CFarming_Interact.onContextKey)
+end)
+
+Events.OnPlayerUpdate.Add(function(playerObj)
+	local n = playerObj:getPlayerNum()
+	if not toolPressSeen[n] then return end
+	local interact = CharacterJoypadButtonBinding.Interact:getJoypadButton()
+	if not interact or not interact:isDown(playerObj:getJoypadBind()) then
+		toolPressSeen[n] = nil
+	end
+end)
+
 local ACTIONS = {
 	{ id = "lightSource", label = "Equip/Turn On/Off Light Source", run = lightSource },
 	{ id = "dropPrimary", label = "DropPrimaryHeldItem", run = dropper(false, false, true) },
@@ -422,12 +569,16 @@ local ACTIONS = {
 	{ id = "grabCorpse", label = "GrabCorpse", run = grabCorpse },
 	{ id = "sharpenWeapon", label = "SharpenWeapon", run = sharpenWeapon },
 	{ id = "firearmRadial", label = "UI_GamepadTweaks_action_firearmRadial", run = firearmRadial, hides = Joypad.RBumper },
+	{ id = "fireMode", label = "UI_GamepadTweaks_action_fireMode", run = fireMode },
+	{ id = "useTool", label = "UI_GamepadTweaks_action_useTool", run = useTool },
 	{ id = "panCamera", label = "PanCamera", run = panRun, release = panRelease,
 		layer = "aiming", button = Joypad.RBumper },
 	{ id = "sitOnGround", label = "SitOnGround", run = sitOnGround },
 	{ id = "searchMode", label = "Toggle Search Mode", run = searchMode },
 	{ id = "shout", label = "Shout", run = shout },
 	{ id = "releaseRope", label = "ReleaseRope", run = releaseRope },
+	{ id = "curtain", label = "UI_GamepadTweaks_action_curtain", run = curtain },
+	{ id = "drive", label = "UI_GamepadTweaks_action_drive", run = drive },
 	{ id = "engine", label = "StartVehicleEngine", run = engine },
 	{ id = "headlights", label = "ToggleVehicleHeadlights", run = headlights },
 	{ id = "heater", label = "VehicleHeater", run = heater },
@@ -460,10 +611,10 @@ local ACTIONS = {
 local CATEGORY = {
 	lightSource = "hands", dropPrimary = "hands", dropSecondary = "hands", dropBothHands = "hands",
 	dropBag = "hands", dropHandsAndBag = "hands", grabCorpse = "hands", sharpenWeapon = "hands",
-	firearmRadial = "hands",
+	firearmRadial = "hands", fireMode = "hands", useTool = "hands",
 	panCamera = "character", sitOnGround = "character", searchMode = "character", shout = "character",
-	releaseRope = "character",
-	engine = "vehicle", headlights = "vehicle", heater = "vehicle", horn = "vehicle",
+	releaseRope = "character", curtain = "character",
+	drive = "vehicle", engine = "vehicle", headlights = "vehicle", heater = "vehicle", horn = "vehicle",
 	switchSeat = "vehicle", vehicleInfo = "vehicle",
 	map = "windows", craftingMenu = "windows", buildingMenu = "windows", skills = "windows",
 	health = "windows", protection = "windows", info = "windows", survivalGuide = "windows",
