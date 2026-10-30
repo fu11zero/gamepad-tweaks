@@ -5,3 +5,5 @@ build/
 # Built by build.sh
 Contents/mods/*/42/media/java/**/*.jar
 Contents/mods/*/42/media/java/**/*.jar.zbs
+# Python bytecode of the tools
+__pycache__/

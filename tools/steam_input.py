@@ -4,21 +4,21 @@
 Output: Contents/mods/GamepadTweaks/42/media/steam_input/
 - manifest.vdf: one action set "game" and its layers (LAYERS) with a button action per mod
   action (Bindings.lua, KeyActions.lua, InventoryActions.lua) and per vanilla binding
-  (VanillaActions.lua, "vanilla<Binding>": runs the binding's game function): general
-  actions in the set, situational ones in their layer (CATEGORY_LAYER); titles in English
-  and Russian (vanilla + mod translations);
+  (VanillaActions.lua, "vanilla<Binding>": runs the binding's game function). Where each
+  action is declared (the set or a layer), its order, icon and English / Russian title come
+  from tools/steam_actions.txt (see its header);
 - gamepad_<controller type>.vdf: Steam's "Gamepad" template for that controller (sticks,
   buttons, triggers -> the virtual gamepad, as without the manifest) under its own title,
   first in the list, so the plain layout stays the default;
 - gamepadtweaks_<controller type>.vdf: the same bindings titled "Gamepad Tweaks".
   Both have the actions, so nothing changes until the player binds one.
 
-Run after adding or renaming actions; bump MINOR_REVISION on changes, MAJOR_REVISION only
-if a binding id changed (Steam then updates the players' configurations).
+Run after editing steam_actions.txt or adding actions to the Lua code (then list them there).
 Needs a local Steam install (templates in controller_base/templates).
 """
 
 import json
+from collections import Counter
 import os
 import re
 import sys
@@ -33,8 +33,7 @@ PZ_DIR = Path(os.environ.get("PZ_DIR", "/mnt/data/SteamLibrary/steamapps/common/
 STEAM_DIR = Path(os.environ.get("STEAM_DIR", Path.home() / ".local/share/Steam"))
 TEMPLATES = STEAM_DIR / "controller_base/templates"
 
-MAJOR_REVISION = "2"
-MINOR_REVISION = "7"
+ACTIONS_FILE = ROOT / "tools/steam_actions.txt"
 # SteamID64 of the mod author, the "creator" of the "Gamepad Tweaks" layout (same format as in
 # Steam's own saved layouts). Steam currently shows the game's developer for bundled layouts.
 CREATOR = "76561198084489589"
@@ -46,105 +45,6 @@ SET = "game"
 # bound in it; the rest falls through to the set (the plain gamepad). New layers go last:
 # the position is the layer's preset id in the players' saved layouts.
 LAYERS = ["onfoot", "vehicle", "aiming", "ui", "map", "menu", "inventory"]
-# Category -> layer its actions are declared in (bindable only there); others: the set.
-CATEGORY_LAYER = {"hands": "onfoot", "character": "onfoot", "vehicle": "vehicle", "inventory": "inventory"}
-# Actions that stay in the set whatever their category (switch seat also works next to a car).
-IN_SET = {"switchSeat"}
-# Steam lists the set's actions, then the active layer's, in manifest order (no sorting, no
-# groups). So in the set the categories that continue in a layer go last, in layer order, and
-# the layer's list goes on with the same category.
-# Icon per action in front of its title: the list is long, a picture is found faster than a
-# word. Color emoji only: text-presentation symbols (gear, stopwatch) render small and
-# monochrome in Steam, unless followed by U+FE0F (emoji presentation) as the map here.
-# Hotbar slots get their number: what a slot holds depends on the worn belt / back / webbing,
-# and Steam reads the titles once per session.
-ICONS = {
-    # vanilla bindings
-    "vanillaInteract": "👆",
-    "vanillaInteractOptions": "💬",
-    "vanillaCancelAction": "🚫",
-    "vanillaCrouch": "🧎",
-    "vanillaSprint": "🏃",
-    "vanillaClimbThrough": "🤸",
-    "vanillaSmashWindow": "🪟",
-    "vanillaReloadWeapon": "🔫🔄",
-    "vanillaRackFirearm": "🔫",
-    "vanillaManualFloorAtk": "🦶",
-    "vanillaInventory": "🎒",
-    "vanillaClosePanel": "❌",
-    "vanillaTransferItem": "↔️",
-    "vanillaCycleInventory": "🎒🔁",
-    "vanillaCycleLoot": "📦🔁",
-    "vanillaCycleTabsLeft": "◀️",
-    "vanillaCycleTabsRight": "▶️",
-    "vanillaBrakes": "🚘🛑",
-    "vanillaCruiseControl": "🚘⏱️",
-    "vanillaZoomIn": "🔎➕",
-    "vanillaZoomOut": "🔎➖",
-    # inventory window
-    "invTransferAll": "📦⏬",
-    "invTransferSameType": "📦🔀",
-    "invTransferSameTypeNearby": "📦🗄️",
-    "invAllToFloor": "📦⬇️",
-    "invDropSelected": "🫳",
-    "invTransferStack": "↔️📚",
-    "invTransferOne": "↔️1️⃣",
-    "invUse": "👆👆",
-    "invUnpack": "🎒📤",
-    # mod actions
-    "vehicleWheel": "🚙",
-    "emoteWheel": "😀",
-    "equipWheel": "🗡️",
-    "extraWheel": "🏡",
-    "commandWheel": "🎮",
-    "pause": "🏠",
-    "map": "🗺️",
-    "craftingMenu": "🔨",
-    "buildingMenu": "🧱",
-    "skills": "📈",
-    "health": "💊",
-    "protection": "🦺",
-    "info": "👤",
-    "survivalGuide": "📖",
-    "timePause": "🕐⏸️",
-    "timeNormal": "🕐▶️",
-    "timeFast1": "🕐⏩",
-    "timeFast2": "🕐⏩⏩",
-    "timeFast3": "🕐⏩⏩⏩",
-    "moveFurniture": "🪑",
-    "toggleUI": "👀",
-    "screenshot": "📸",
-    "pvp": "⚔️",
-    "lightSource": "🔦",
-    "dropPrimary": "🫳",
-    "dropSecondary": "🫳",
-    "dropBothHands": "🫳",
-    "dropBag": "🫳🎒",
-    "dropHandsAndBag": "🫳🎒",
-    "grabCorpse": "🧟",
-    "sharpenWeapon": "🔪",
-    "firearmRadial": "🔫🔄",
-    "sitOnGround": "🧘",
-    "searchMode": "🔍",
-    "shout": "📢",
-    "releaseRope": "🧗",
-    "switchSeat": "🚘💺",
-    "cruiseFaster": "🚘🔼",
-    "cruiseSlower": "🚘🔽",
-    "engine": "🚘🔑",
-    "headlights": "🚘🔆",
-    "heater": "🚘🌡️",
-    "horn": "🚘📯",
-    "vehicleInfo": "🚘🔧",
-    "hotbar1": "1️⃣",
-    "hotbar2": "2️⃣",
-    "hotbar3": "3️⃣",
-    "hotbar4": "4️⃣",
-    "hotbar5": "5️⃣",
-    "hotbar6": "6️⃣",
-    "hotbar7": "7️⃣",
-    "hotbar8": "8️⃣",
-}
 
 # Steam controller type -> "Gamepad" template.
 CONTROLLERS = {
@@ -160,6 +60,17 @@ CONTROLLERS = {
     "controller_steamcontroller_gordon": "gamepad_joystick.vdf",
     "controller_generic": "controller_generic_gamepad_joystick.vdf",
 }
+
+# Analog actions (StickPadGyro): id -> input mode. An analog line in steam_actions.txt (an id
+# from here) is declared in its section like a button: "aim" in the aiming layer, where the
+# player puts the gyro. Steam does everything about the source (gyro activation, sensitivity,
+# dead zones, smoothing); the mod only adds the value to the game's own: "absolute_mouse" sends
+# per-frame deltas, "joystick_move" a -1..1 position. Ids and modes must match SteamInput.java
+# (Analog). Titles: "#analog_<id>", not "#act_", so SteamInput.readActionNames doesn't take
+# them for buttons. "steer" and "move" ("joystick_move") are meant for a stick: Steam drops
+# gyro-to-joystick output after any action set layer change until the game window loses and
+# regains focus.
+ANALOG_MODES = {"aim": "absolute_mouse", "steer": "joystick_move", "move": "joystick_move"}
 
 LANGS = {"english": "EN", "russian": "RU"}
 
@@ -210,6 +121,52 @@ def vdf_dump(items, depth=0):
 
 
 # --- Actions ----------------------------------------------------------------------
+
+def read_actions_file():
+    """steam_actions.txt -> (revision (major, minor), {section: (en, ru) layer title},
+    [(id, section, icon, en, ru)] in file order; section "set" or a layer)."""
+    revision = None
+    titles = {}
+    entries = []
+    section = None
+    errors = []
+    for n, line in enumerate(ACTIONS_FILE.read_text(encoding="utf-8").splitlines(), 1):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if m := re.fullmatch(r"revision\s+(\d+)\.(\d+)", line):
+            revision = (m[1], m[2])
+        elif m := re.fullmatch(r"\[(\w+)\]\s*(.*)", line):
+            section = m[1]
+            if section not in ("set", *LAYERS):
+                errors.append(f"line {n}: unknown section [{section}] (set, {', '.join(LAYERS)})")
+            elif section in LAYERS:
+                en, _, ru = m[2].partition("|")
+                titles[section] = (en.strip() or section, ru.strip() or en.strip() or section)
+        elif m := re.fullmatch(r"(\w+)\s+(\S+)\s+(.+?)\s*\|\s*(.+)", line):
+            if section is None:
+                errors.append(f"line {n}: action before any [section]")
+            icon = "" if m[2] == "-" else m[2]
+            entries.append((m[1], section, icon, m[3], m[4]))
+        else:
+            errors.append(f"line {n}: expected '<id>  <icon>  <English> | <Russian>': {line}")
+    if revision is None:
+        errors.append("no 'revision <major>.<minor>' line")
+    if errors:
+        sys.exit(f"{ACTIONS_FILE}:\n  " + "\n  ".join(errors))
+    return revision, titles, entries
+
+
+def check_actions(lua, entries):
+    """Every Lua action listed once, nothing unknown; analog ones are optional."""
+    known = {a[0] for a in lua} | set(ANALOG_MODES)
+    listed = Counter(id_ for id_, *_ in entries)
+    errors = [f"listed {n} times: {id_}" for id_, n in listed.items() if n > 1]
+    errors += [f"not an action of the mod: {id_}" for id_ in listed if id_ not in known]
+    errors += [f"missing (add it to a section): {a[0]}" for a in lua if a[0] not in listed]
+    if errors:
+        sys.exit(f"{ACTIONS_FILE}:\n  " + "\n  ".join(errors))
+
 
 def lua_actions():
     """[(id, category, label key, layer)]: the vanilla bindings, then the settings panel order."""
@@ -262,10 +219,12 @@ def translations(lang_dir):
     return texts
 
 
-def localization(actions):
+def localization(actions, layer_titles):
+    """Titles from steam_actions.txt (icon + text); layout title and description from the
+    mod's translations."""
     result = []
     en = translations("EN")
-    for lang, lang_dir in LANGS.items():
+    for i, (lang, lang_dir) in enumerate(LANGS.items()):
         texts = translations(lang_dir)
 
         def t(key):
@@ -273,38 +232,35 @@ def localization(actions):
 
         items = [
             ("set_" + SET, "Project Zomboid"),
-            *[("layer_" + l, t("UI_GamepadTweaks_steam_layer_" + l)) for l in LAYERS],
+            *[("layer_" + l, layer_titles.get(l, (l, l))[i]) for l in LAYERS],
             ("config_title", t("UI_GamepadTweaks_steam_configTitle")),
             ("config_description", t("UI_GamepadTweaks_steam_configDescription")),
         ]
-        for id_, cat, key, layer in actions:
-            text = t(key)  # no layer note: a Steam action runs directly (cruise +/- without X held)
-            icon = ICONS.get(id_, "")
-            items.append(("act_" + id_, f"{icon} {text}".strip()))
+        for id_, _, icon, *names in actions:
+            prefix = "analog_" if id_ in ANALOG_MODES else "act_"
+            items.append((prefix + id_, f"{icon} {names[i]}".strip()))
         result.append((lang, items))
     return result
 
 
-def place(action):
-    """Layer the action is declared in, or None for the set."""
-    id_, cat, *_ = action
-    return None if id_ in IN_SET else CATEGORY_LAYER.get(cat)
-
-
-def ordered(actions):
-    """Set actions without a layer first, then by layer (LAYERS order); stable otherwise."""
-    def key(item):
-        i, action = item
-        layer = CATEGORY_LAYER.get(action[1])
-        return (LAYERS.index(layer) + 1 if layer else 0, i)
-    return [a for _, a in sorted(enumerate(actions), key=key)]
+def declared(actions, section):
+    """Button and StickPadGyro groups of the actions declared in that section."""
+    groups = []
+    buttons = [(a[0], "#act_" + a[0]) for a in actions if a[1] == section and a[0] not in ANALOG_MODES]
+    if buttons:
+        groups.append(("Button", buttons))
+    analog = [(a[0], [("title", "#analog_" + a[0]), ("input_mode", ANALOG_MODES[a[0]])])
+              for a in actions if a[1] == section and a[0] in ANALOG_MODES]
+    if analog:
+        groups.append(("StickPadGyro", analog))
+    return groups
 
 
 def action_set(actions, with_legacy):
     items: list = [("title", "#set_" + SET)]
     if with_legacy:
         items.append(("legacy_set", "0"))
-    items.append(("Button", [(a[0], "#act_" + a[0]) for a in actions if place(a) is None]))
+    items += declared(actions, "set")
     return [(SET, items)]
 
 
@@ -317,9 +273,7 @@ def action_layers(actions):
             ("set_layer", "1"),
             ("parent_set_name", SET),
         ]
-        buttons = [(a[0], "#act_" + a[0]) for a in actions if place(a) == layer]
-        if buttons:
-            items.append(("Button", buttons))
+        items += declared(actions, layer)
         result.append((layer, items))
     return result
 
@@ -353,7 +307,7 @@ def manifest_localization(loc):
     return result
 
 
-def config(controller_type, template, actions, loc, tweaks):
+def config(controller_type, template, actions, loc, tweaks, revision):
     """tweaks=False: Steam's plain "Gamepad" layout (template title), listed first;
     tweaks=True: the same bindings titled "Gamepad Tweaks", by CREATOR."""
     items = vdf_parse((TEMPLATES / template).read_text(encoding="utf-8"))
@@ -367,8 +321,8 @@ def config(controller_type, template, actions, loc, tweaks):
         ("progenitor", ""),
         ("export_type", "unknown"),
         ("controller_type", controller_type),
-        ("major_revision", MAJOR_REVISION),
-        ("minor_revision", MINOR_REVISION),
+        ("major_revision", revision[0]),
+        ("minor_revision", revision[1]),
         ("Timestamp", "0"),
         ("actions", action_set(actions, True)),
         ("action_layers", action_layers(actions)),
@@ -388,8 +342,12 @@ def config(controller_type, template, actions, loc, tweaks):
 def main():
     if not TEMPLATES.is_dir():
         sys.exit(f"Steam templates not found: {TEMPLATES} (set STEAM_DIR=...)")
-    actions = ordered(lua_actions())
-    loc = localization(actions)
+    revision, layer_titles, entries = read_actions_file()
+    check_actions(lua_actions(), entries)
+    actions = list(entries)
+    # set first, then the layers in LAYERS order (Steam lists the set, then the active layer)
+    actions.sort(key=lambda a: 0 if a[1] == "set" else LAYERS.index(a[1]) + 1)
+    loc = localization(actions, layer_titles)
     OUT.mkdir(parents=True, exist_ok=True)
     for old in OUT.glob("*.vdf"):
         old.unlink()
@@ -400,20 +358,21 @@ def main():
         entries = []
         for i, (prefix, tweaks) in enumerate((("gamepad", False), ("gamepadtweaks", True))):
             name = f"{prefix}_{short}.vdf"
-            (OUT / name).write_text(config(controller_type, template, actions, loc, tweaks), encoding="utf-8")
+            (OUT / name).write_text(config(controller_type, template, actions, loc, tweaks, revision), encoding="utf-8")
             entries.append((str(i), [("path", name)]))
         configurations.append((controller_type, entries))
 
     manifest = [("Action Manifest", [
         ("configurations", configurations),
-        ("major_revision", MAJOR_REVISION),
-        ("minor_revision", MINOR_REVISION),
+        ("major_revision", revision[0]),
+        ("minor_revision", revision[1]),
         ("actions", action_set(actions, False)),
         ("action_layers", action_layers(actions)),
         ("localization", manifest_localization(loc)),
     ])]
     (OUT / "manifest.vdf").write_text(vdf_dump(manifest), encoding="utf-8")
-    print(f"{len(actions)} actions, {len(LAYERS)} layers, {len(CONTROLLERS)} configurations -> {OUT}")
+    analog = sum(a[0] in ANALOG_MODES for a in actions)
+    print(f"{len(actions) - analog} actions, {analog} analog, {len(LAYERS)} layers, {len(CONTROLLERS)} configurations -> {OUT}")
 
 
 if __name__ == "__main__":

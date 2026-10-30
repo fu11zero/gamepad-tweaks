@@ -1,0 +1,148 @@
+# Steam Input actions: where each one is, its icon and its title in Steam's configurator.
+# tools/steam_input.py reads this file and writes media/steam_input/ (manifest + layouts).
+#
+# Edit, then:
+#   1. raise the second number of "revision" below (the first one only if an action id changed:
+#      Steam then updates the players' layouts);
+#   2. python3 tools/steam_input.py      (it checks this file against the mod's actions);
+#   3. restart Steam: it caches the manifest until then;
+#   4. in Steam pick the "Gamepad Tweaks" layout again and bind your buttons.
+#
+# Sections:
+#   [set]                    always available: bind it in any layer, it works everywhere
+#   [<layer>] EN | RU        declared in that layer: bindable and firing only while the layer is
+#                            active; the rest of "EN | RU" is the layer's title in Steam.
+#                            Layers stack bottom to top: onfoot or vehicle, then aiming, ui
+#                            (any window focused), inventory or map on top of ui; menu alone.
+#                            A binding in a lower layer still works while an upper one is active
+#                            unless the upper one binds the same input.
+#   Analog actions (aim, steer, move: for a gyro / trackpad / stick in Steam's "joystick" or
+#   "mouse" picker) go in a section like buttons. steer and move take the place of the game's
+#   stick (bind the stick to them, not to the xinput stick). Don't put a gyro on them: Steam
+#   stops feeding a gyro into "joystick" output after a layer change until the game window
+#   loses focus.
+#
+# Line: <action id>  <icon>  <English title> | <Russian title>
+#   - the order of lines is the order in Steam's list (set first, then the active layer);
+#   - icon: color emoji, several in a row are fine, no spaces; "-" for none. Text-style
+#     symbols (⚙ ⏱ ↔) render small and monochrome unless followed by U+FE0F (as in ↔️);
+#   - an action can be in one section only; moving it between sections is safe, renaming an id
+#     is not (ids come from the Lua code).
+# Every action of the mod must be listed; the script names missing and unknown ones.
+
+revision 2.14
+
+[set]
+vanillaInteract         👆          Interact | Взаимодействие
+drive                   🚗          Drive | За руль
+vanillaCancelAction     🚫          Cancel | Отмена
+vanillaInventory        🎒          Inventory | Инвентарь
+map                     🗺️          Map | Карта
+pause                   🏠          Menu | Меню
+commandWheel            🎮          Commands | Команды
+vehicleWheel            🚙          Transport | Транспорт
+equipWheel              🗡️          Weapons | Оружие
+emoteWheel              😀          Emotes | Эмоции
+extraWheel              🏡          Zones | Зоны
+hotbar1                 1️⃣          Slot 1 | Слот 1
+hotbar2                 2️⃣          Slot 2 | Слот 2
+hotbar3                 3️⃣          Slot 3 | Слот 3
+hotbar4                 4️⃣          Slot 4 | Слот 4
+hotbar5                 5️⃣          Slot 5 | Слот 5
+hotbar6                 6️⃣          Slot 6 | Слот 6
+hotbar7                 7️⃣          Slot 7 | Слот 7
+hotbar8                 8️⃣          Slot 8 | Слот 8
+vanillaZoomIn           🔎➕        Zoom in | Ближе
+vanillaZoomOut          🔎➖        Zoom out | Дальше
+panCamera               🔭          Look far | Обзор
+craftingMenu            🔨          Crafting | Крафт
+buildingMenu            🧱          Building | Стройка
+skills                  📈          Skills | Навыки
+health                  💊          Health | Здоровье
+protection              🦺          Protection | Защита
+info                    👤          Character | Персонаж
+survivalGuide           📖          Guide | Справочник
+timePause               ⏸️          Pause | Пауза
+timeNormal              ▶️          Normal | Обычно
+timeFast1               ⏩          Fast | Быстро
+timeFast2               ⏩⏩        Faster | Быстрее
+timeFast3               ⏩⏩⏩      Fastest | Максимум
+voice                   🎙️          Voice | Голос
+toggleUI                👀          Hide UI | Скрыть UI
+screenshot              📸          Screenshot | Скриншот
+toggleMusic             🎵          Music | Музыка
+displayFps              📊          FPS | FPS
+pvp                     ⚔️          PvP | PvP
+
+[onfoot] On foot | Пешком
+move                    🚶          Move | Ход
+vanillaAim              🎯          Aim | Прицел
+vanillaAttack           💥          Attack | Атака
+vanillaManualFloorAtk   🦶          Stomp | Добить
+vanillaMelee            🤜          Shove | Толчок
+vanillaReloadWeapon     🔄          Reload | Перезарядка
+vanillaRackFirearm      🔫          Rack | Затвор
+firearmRadial           🧰          Ammo | Патроны
+fireMode                🎚️          Fire mode | Режим огня
+sharpenWeapon           🔪          Sharpen | Заточка
+useTool                 🪓          Tool | Инструмент
+vanillaRun              🏃          Run | Бег
+vanillaSprint           💨          Sprint | Спринт
+vanillaCrouch           🧎          Crouch | Присесть
+vanillaClimbThrough     🤸          Climb | Перелезть
+vanillaSmashWindow      🪟          Smash | Разбить
+curtain                 🎭          Curtain | Шторы
+vanillaInteractOptions  💬          Context | Контекст
+lightSource             🔦          Light | Фонарь
+grabCorpse              🧟          Corpse | Труп
+dropPrimary             🫳          Drop main | Бросить основное
+dropSecondary           🫳          Drop second | Бросить второе
+dropBothHands           🫳🫳        Drop hands | Бросить из рук
+dropBag                 🎒          Drop bag | Бросить сумку
+dropHandsAndBag         🫳🎒        Drop all | Бросить всё
+sitOnGround             🧘          Sit | Сесть
+searchMode              🔍🍄        Search | Поиск
+shout                   📢          Shout | Крик
+releaseRope             🧗          Let go | Отпустить
+animalRadial            🐄          Animals | Животные
+moveFurniture           🪑          Furniture | Мебель
+rotateBuilding          ↪️          Rotate | Повернуть
+
+[vehicle] Vehicle | Машина
+steer                   🛞          Steer | Руль
+vanillaBrakes           🛑          Brake | Тормоз
+vanillaCruiseControl    ⏱️          Cruise | Круиз
+cruiseFaster            🔼          Speed up | Прибавить
+cruiseSlower            🔽          Slow down | Убавить
+engine                  🔑          Engine | Двигатель
+headlights              🔆          Lights | Фары
+heater                  🌡️          Heater | Печка
+horn                    📯          Horn | Гудок
+switchSeat              💺          Seat | Пересесть
+vehicleInfo             🔧          Vehicle | Машина
+
+[aiming] Aiming | Прицел
+aim                     🎯          Aim | Прицел
+
+[ui] Window | Окно
+vanillaClosePanel       ❌          Close | Закрыть
+vanillaCycleTabsLeft    ◀️          Tab left | Вкладка влево
+vanillaCycleTabsRight   ▶️          Tab right | Вкладка вправо
+
+[inventory] Inventory | Инвентарь
+vanillaTransferItem     ↔️          Transfer | Переложить
+vanillaCycleInventory   🎒🔁        Bags | Сумки
+vanillaCycleLoot        📦🔁        Loot | Добыча
+invTransferAll          📦⏬        Take all | Взять всё
+invTransferSameType     🔀          Same type | Одинаковые
+invTransferSameTypeNearby 🗄️        Sort nearby | Разложить
+invAllToFloor           ⬇️          To floor | На пол
+invDropSelected         🗑️          Drop | Выбросить
+invTransferStack        📚          Stack | Стопкой
+invTransferOne          ☝️          One | Одну
+invUse                  👆          Use | Использовать
+invUnpack               📤          Unpack | Распаковать
+
+[map] Map | Карта
+
+[menu] Menu | Меню

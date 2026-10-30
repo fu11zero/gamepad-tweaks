@@ -718,7 +718,7 @@ end
 -- The situation of each player picks the Steam action set layers (bottom to top), so the
 -- same input can do different things: on foot / in a vehicle, then aiming, a UI focused,
 -- the inventory / loot window, the map; the main menu and the pause menu (Esc) get "menu" on every controller.
--- Situational actions are declared in their layer (tools/steam_input.py), so they can only
+-- Situational actions are declared in their layer (tools/steam_actions.txt), so they can only
 -- fire there; the rest of the controller falls through to the set (the plain gamepad).
 
 local STEAM_ALWAYS = { commandWheel = true, pause = true }
