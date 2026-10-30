@@ -263,7 +263,11 @@ function Bindings.reload()
 	end
 	local defaults = {}
 	for _, action in ipairs(Bindings.actions) do
-		local button = not action.steamOnly and readBinding(action) or nil
+		-- not "a and b or nil": readBinding's false (none) would become nil (default)
+		local button = nil
+		if not action.steamOnly then
+			button = readBinding(action)
+		end
 		if button == nil then
 			table.insert(defaults, action)
 		else
