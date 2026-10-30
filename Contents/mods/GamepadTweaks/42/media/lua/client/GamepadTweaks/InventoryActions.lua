@@ -29,7 +29,7 @@ local function focusedPage(jd)
 	if type(page) ~= "table" or page.Type ~= "ISInventoryPage" or not page.inventoryPane then return nil end
 	local playerObj = jd.player and getSpecificPlayer(jd.player)
 	if not playerObj or playerObj:isDead() or playerObj:isAsleep() or isGamePaused() then return nil end
-	if JoypadState.disableInvInteraction or getCore():getGameMode() == "Tutorial" then return nil end
+	if JoypadState.disableInvInteraction or Bindings.isTutorial() then return nil end
 	return page, playerObj
 end
 

@@ -306,7 +306,7 @@ end
 local function map(c, jd)
 	local playerObj = jd.player and getSpecificPlayer(jd.player)
 	if not playerObj or playerObj:isDead() then return end
-	if not ISWorldMap.IsAllowed() or getCore():getGameMode() == "Tutorial" then return end
+	if not ISWorldMap.IsAllowed() or Bindings.isTutorial() then return end
 	if isGamePaused() and not (ISWorldMap_instance and ISWorldMap_instance:isVisible()) then return end
 	ISWorldMap.ToggleWorldMap(jd.player)
 end
@@ -372,7 +372,7 @@ end
 
 -- ISUIHandler.onKeyPressed (TOGGLE_UI key).
 local function toggleUI(c, jd)
-	if getCore():getGameMode() ~= "Tutorial" then
+	if not Bindings.isTutorial() then
 		ISUIHandler.toggleUI()
 	end
 end

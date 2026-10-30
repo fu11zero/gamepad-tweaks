@@ -349,6 +349,17 @@ function Bindings.canEdit()
 	return GamepadTweaks_setSetting ~= nil
 end
 
+-- Up to 42.21 Core:getGameMode() returns a string ("Tutorial"); from 42.22 it returns a
+-- GameMode object (vanilla checks Core:isTutorial()), and comparing it to the string is
+-- always false. 42.21 has no GameMode.TUTORIAL.
+function Bindings.isTutorial()
+	local mode = getCore():getGameMode()
+	if GameMode and GameMode.TUTORIAL then
+		return mode == GameMode.TUTORIAL
+	end
+	return mode == "Tutorial"
+end
+
 -- Puts the action on button (false/nil: none) and writes it to the settings file. Another
 -- action of the same layer on that button is set to none, so a button never ends up with two.
 function Bindings.set(id, button)
