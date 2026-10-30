@@ -7,6 +7,7 @@ import zombie.characters.IsoPlayer;
 import zombie.characters.component.CharacterInputComponent;
 import zombie.core.physics.CarController;
 import zombie.input.JoypadManager;
+import zombie.iso.PlayerCamera;
 import zombie.network.GameServer;
 
 public final class Patches {
@@ -185,6 +186,32 @@ public final class Patches {
         public static void exit(@Patch.This CharacterInputComponent input,
                                 @Patch.Return(readOnly = false) boolean down) {
             down = down || HeldActions.characterHeld(input, HeldActions.RUN) && input.isAllowRun();
+        }
+    }
+
+    // Camera pan while aiming as a held action (see CameraPan).
+    @Patch(className = "zombie.iso.PlayerCamera", methodName = "update")
+    public static class PanCamera {
+        @Patch.OnEnter
+        public static void enter(@Patch.This PlayerCamera camera) {
+            CameraPan.before(camera);
+        }
+
+        @Patch.OnExit
+        public static void exit(@Patch.This PlayerCamera camera) {
+            CameraPan.after(camera);
+        }
+    }
+
+    // The hardcoded RB of the gamepad camera pan (see CameraPan): released for PlayerCamera.update.
+    // isRBPressed has other callers (JoypadButton.RightBump, the bindings), outside of it.
+    @Patch(className = "zombie.input.JoypadManager", methodName = "isRBPressed")
+    public static class CameraRB {
+        @Patch.OnExit
+        public static void exit(@Patch.Return(readOnly = false) boolean pressed) {
+            if (CameraPan.inUpdate()) {
+                pressed = false;
+            }
         }
     }
 

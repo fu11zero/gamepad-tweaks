@@ -31,6 +31,7 @@
     "UI_GamepadTweaks_cat_time": "Время",
     "UI_GamepadTweaks_cat_misc": "Прочее",
     "UI_GamepadTweaks_layer_cruise": "(при зажатом круизе)",
+    "UI_GamepadTweaks_layer_aiming": "(при прицеливании)",
     "UI_GamepadTweaks_layer_hold": "(удержание)",
     "UI_GamepadTweaks_layer_uiHold": "(удержание в панели)",
     "UI_GamepadTweaks_layer_navigation": "(в режиме навигации)",

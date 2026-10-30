@@ -31,6 +31,7 @@
     "UI_GamepadTweaks_cat_time": "Time",
     "UI_GamepadTweaks_cat_misc": "Misc",
     "UI_GamepadTweaks_layer_cruise": "(cruise button held)",
+    "UI_GamepadTweaks_layer_aiming": "(while aiming)",
     "UI_GamepadTweaks_layer_hold": "(hold)",
     "UI_GamepadTweaks_layer_uiHold": "(hold in a panel)",
     "UI_GamepadTweaks_layer_navigation": "(during navigation)",

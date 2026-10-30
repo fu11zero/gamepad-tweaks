@@ -3,10 +3,11 @@
 -- Vanilla handles these keys in OnKeyPressed/OnKeyStartPressed handlers that act for
 -- getSpecificPlayer(0) / getPlayer() and know nothing about the gamepad, so a controller
 -- player can't use them at all (or only through a wheel). Each action here does what the
--- key handler does, for the player of the controller. All of them are unbound by default:
--- bind.<id>=<button> in ~/Zomboid/GamepadTweaks.properties.
+-- key handler does, for the player of the controller. All of them are unbound by default
+-- (bind.<id>=<button> in ~/Zomboid/GamepadTweaks.properties), except the camera pan: RB while
+-- aiming, the button vanilla hardcodes for it (PlayerCamera.update, see CameraPan.java).
 -- label: the vanilla key binding name (UI_optionscreen_binding_*, or a full IGUI_ key),
--- category and group (main / extra), for the settings panel.
+-- category and group (main / extra), for the settings panel; layer: world unless set.
 
 require "GamepadTweaks/Bindings"
 require "ISUI/ISInventoryPaneContextMenu"
@@ -197,6 +198,18 @@ local function releaseRope(c, jd)
 		playerObj:fallFromRope()
 	end
 end
+
+-- Held, in Java (HeldActions): the game asks each frame whether it is held.
+local function held(name)
+	local function set(jd, down)
+		if GamepadTweaks_setActionHeld then GamepadTweaks_setActionHeld(jd.id, name, down) end
+	end
+	return function(c, jd) set(jd, true) end, function(c, jd) set(jd, false) end
+end
+
+-- Camera pan while aiming ("look far"): vanilla pans a gamepad player's camera only with RB
+-- held (PlayerCamera.update, hardcoded); CameraPan.java, towards the reticle.
+local panRun, panRelease = held("panCamera")
 
 -- Vehicle ---------------------------------------------------------------------------
 -- ISVehicleMenu.onKeyPressed / onKeyStartPressed, ItemBindingHandler.toggleLight (headlights).
@@ -409,6 +422,8 @@ local ACTIONS = {
 	{ id = "grabCorpse", label = "GrabCorpse", run = grabCorpse },
 	{ id = "sharpenWeapon", label = "SharpenWeapon", run = sharpenWeapon },
 	{ id = "firearmRadial", label = "UI_GamepadTweaks_action_firearmRadial", run = firearmRadial, hides = Joypad.RBumper },
+	{ id = "panCamera", label = "PanCamera", run = panRun, release = panRelease,
+		layer = "aiming", button = Joypad.RBumper },
 	{ id = "sitOnGround", label = "SitOnGround", run = sitOnGround },
 	{ id = "searchMode", label = "Toggle Search Mode", run = searchMode },
 	{ id = "shout", label = "Shout", run = shout },
@@ -446,7 +461,8 @@ local CATEGORY = {
 	lightSource = "hands", dropPrimary = "hands", dropSecondary = "hands", dropBothHands = "hands",
 	dropBag = "hands", dropHandsAndBag = "hands", grabCorpse = "hands", sharpenWeapon = "hands",
 	firearmRadial = "hands",
-	sitOnGround = "character", searchMode = "character", shout = "character", releaseRope = "character",
+	panCamera = "character", sitOnGround = "character", searchMode = "character", shout = "character",
+	releaseRope = "character",
 	engine = "vehicle", headlights = "vehicle", heater = "vehicle", horn = "vehicle",
 	switchSeat = "vehicle", vehicleInfo = "vehicle",
 	map = "windows", craftingMenu = "windows", buildingMenu = "windows", skills = "windows",
@@ -459,7 +475,7 @@ for slot = 1, 8 do
 end
 
 for _, action in ipairs(ACTIONS) do
-	action.layer = "world"
+	action.layer = action.layer or "world"
 	action.group = action.category == "extra" and "extra" or "main"
 	action.category = CATEGORY[action.id] or (action.id:match("^hotbar") and "hotbar") or "misc"
 	if not action.label:match("^IGUI_") and not action.label:match("^UI_GamepadTweaks_") then

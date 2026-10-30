@@ -3,12 +3,14 @@ package dev.gamepadtweaks;
 import se.krka.kahlua.integration.annotations.LuaMethod;
 import zombie.characters.CharacterInputMode;
 import zombie.characters.CharacterJoypadButtonBinding;
+import zombie.characters.IsoPlayer;
 import zombie.characters.component.CharacterInputComponent;
 import zombie.core.physics.CarController;
 
 // Game actions that last while held: sprint, floor attack (stomp), vehicle brake, the
 // Java half of Interact (doors, windows: IsoPlayer.updateUseKey acts on press + release),
-// aim (as the keyboard Aim key: aim and precision aim), attack, melee (shove), run.
+// aim (as the keyboard Aim key: aim and precision aim), attack, melee (shove), run, camera
+// pan while aiming (CameraPan).
 //
 // The game has no call for these: each frame it asks whether the action is held
 // (CharacterInputComponent.isSprintButtonDown / isManualFloorAtkButtonDown /
@@ -32,8 +34,9 @@ public final class HeldActions {
     public static final int ATTACK = 5;
     public static final int MELEE = 6;
     public static final int RUN = 7;
+    public static final int PAN = 8;
     private static final String[] NAMES = {
-        "sprint", "floorAttack", "brake", "interact", "aim", "attack", "melee", "run",
+        "sprint", "floorAttack", "brake", "interact", "aim", "attack", "melee", "run", "panCamera",
     };
     private static final int MAX_CONTROLLERS = 16;
 
@@ -66,6 +69,12 @@ public final class HeldActions {
     public static boolean characterHeld(CharacterInputComponent input, int action) {
         return input.getInputMode() == CharacterInputMode.GAMEPAD && input.isJoypadButtonsActive()
                 && isHeld(input.getJoypadBind(), action);
+    }
+
+    /** The action held for the player's controller, while the player takes gamepad input. */
+    public static boolean playerHeld(IsoPlayer player, int action) {
+        return player != null && player.getInputMode() == CharacterInputMode.GAMEPAD
+                && isHeld(player.getJoypadBind(), action);
     }
 
     /** After CarController.updateControls (gamepad driver): brake = Brakes binding or the held action. */

@@ -116,6 +116,7 @@ end
 -- layer: when the action is looked up; actions in one layer can't share a button:
 -- - world: pressed in the world (no UI focus);
 -- - cruise: pressed in the world while driving with the CruiseControl button held (before world);
+-- - aiming: pressed in the world while aiming or looking out of a vehicle (before world);
 -- - hold: held in the world;
 -- - uiHold: held while a UI has the focus;
 -- - navigation: released during UI panel navigation;
@@ -319,7 +320,7 @@ end
 
 -- Settings panel ---------------------------------------------------------------
 
-local LAYER_NOTE = { cruise = true, hold = true, uiHold = true, navigation = true, inventory = true }
+local LAYER_NOTE = { cruise = true, aiming = true, hold = true, uiHold = true, navigation = true, inventory = true }
 
 -- "[Category] Name (context)" for lists.
 function Bindings.getLabel(action, withCategory)
@@ -454,9 +455,19 @@ local function isCruiseHeld(jd)
 	return cruise ~= nil and cruise:isDown(jd.id) and not isPaused() and drivenVehicle(jd) ~= nil
 end
 
+-- Vanilla uses RB for the camera pan then and for nothing else (getBestRBButtonAction:
+-- no reload prompt while aiming or looking out of a vehicle).
+local function isAiming(jd)
+	local playerObj = getSpecificPlayer(jd.player)
+	return playerObj ~= nil and (playerObj:isAiming() or playerObj:isLookingWhileInVehicle())
+end
+
 -- Runs the world action bound to button. Returns false when there is none.
 local function dispatch(jd, button)
 	if isCruiseHeld(jd) and dispatchLayer(jd, button, "cruise") then
+		return true
+	end
+	if isAiming(jd) and dispatchLayer(jd, button, "aiming") then
 		return true
 	end
 	return dispatchLayer(jd, button, "world")
