@@ -7,6 +7,7 @@ import zombie.characters.IsoPlayer;
 import zombie.characters.component.CharacterInputComponent;
 import zombie.core.physics.CarController;
 import zombie.input.JoypadManager;
+import zombie.input.KeybindId;
 import zombie.iso.PlayerCamera;
 import zombie.network.GameServer;
 
@@ -214,6 +215,22 @@ public final class Patches {
             }
         }
     }
+
+    // Voice push-to-talk as a held action: VoiceManager sends while
+    // GameKeyboard.isKeyDown(ENABLE_VOICE_TRANSMIT), which calls isKeyDown(String id). All the
+    // isKeyDown overloads get this, hence the untyped arguments.
+    @Patch(className = "zombie.input.GameKeyboard", methodName = "isKeyDown")
+    public static class VoiceHeld {
+        @Patch.OnExit
+        public static void exit(@Patch.AllArguments Object[] args,
+                                @Patch.Return(readOnly = false) boolean down) {
+            if (!down && args.length == 1 && VOICE_ID.equals(args[0]) && HeldActions.anyHeld(HeldActions.VOICE)) {
+                down = true;
+            }
+        }
+    }
+
+    public static final String VOICE_ID = KeybindId.ENABLE_VOICE_TRANSMIT.getId();
 
     // Steam "aim" (gyro, trackpad as mouse) moves the gamepad reticle target (see AnalogInput).
     @Patch(className = "zombie.input.AimingReticle", methodName = "update")

@@ -212,6 +212,20 @@ end
 -- held (PlayerCamera.update, hardcoded); CameraPan.java, towards the reticle.
 local panRun, panRelease = held("panCamera")
 
+-- AnimalContextMenu.showRadialMenu (ANIMAL_RADIAL_MENU key, ISUIHandler: player 0 only);
+-- again closes it.
+local function animalRadial(c, jd)
+	local playerObj = actor(jd)
+	if not playerObj or playerObj:getVehicle() or not AnimalContextMenu then return end
+	local menu = getPlayerRadialMenu(jd.player)
+	if menu and menu:isReallyVisible() then
+		menu:undisplay()
+		setJoypadFocus(jd.player, nil)
+		return
+	end
+	AnimalContextMenu.showRadialMenu(playerObj)
+end
+
 -- Vehicle ---------------------------------------------------------------------------
 -- ISVehicleMenu.onKeyPressed / onKeyStartPressed, ItemBindingHandler.toggleLight (headlights).
 
@@ -382,6 +396,53 @@ local function moveFurniture(c, jd)
 	if not playerObj then return end
 	local cursor = ISMoveableCursor:new(playerObj)
 	getCell():setDrag(cursor, cursor.player)
+end
+
+-- ROTATE_BUILDING key: the build cursor (getCell():getDrag) turns on it in rotateKey (keyboard
+-- key, player 0's OnKeyPressed) or on RB in its onJoypadPressButton; the 3D item placement
+-- (ISPlace3DItemCursor) turns while RB is held (checkRotateJoypad -> handleRotate: a tap is a
+-- step, holding spins). Here the cursor of the controller's player; ISMoveableCursor takes the
+-- second argument as "from the gamepad" (no key check), the others ignore it.
+local rotateHeld = {}
+
+local function rotateBuilding(c, jd)
+	local playerObj = actor(jd)
+	local drag = playerObj and getCell():getDrag(jd.player)
+	if not drag then return end
+	if drag.handleRotate then
+		rotateHeld[jd.player] = true
+	elseif drag.rotateKey then
+		drag:rotateKey(getCore():getKey(KeybindId.ROTATE_BUILDING), true)
+	end
+end
+
+local function rotateBuildingRelease(c, jd)
+	rotateHeld[jd.player] = nil
+end
+
+-- server/ Lua (ISPlace3DItemCursor) loads after client/.
+Events.OnGameStart.Add(function()
+	if not ISPlace3DItemCursor or ISPlace3DItemCursor.GamepadTweaksRotate then return end
+	ISPlace3DItemCursor.GamepadTweaksRotate = true
+	local checkRotateJoypad = ISPlace3DItemCursor.checkRotateJoypad
+	ISPlace3DItemCursor.checkRotateJoypad = function(self, ...)
+		if rotateHeld[self.chr:getPlayerNum()] and not self.joypadPositionActive then
+			return self:handleRotate(true, false)
+		end
+		return checkRotateJoypad(self, ...)
+	end
+end)
+
+-- VoiceManager sends while ENABLE_VOICE_TRANSMIT is held (push-to-talk mode), in Java.
+local voiceRun, voiceRelease = held("voice")
+
+-- SoundManager.updateMusic (TOGGLE_MUSIC), IngameState (DISPLAY_FPS): Java, KeyToggles.
+local function toggleMusic(c, jd)
+	if GamepadTweaks_toggleMusic then GamepadTweaks_toggleMusic() end
+end
+
+local function displayFps(c, jd)
+	if GamepadTweaks_toggleFps then GamepadTweaks_toggleFps() end
 end
 
 -- ISUIHandler.onKeyPressed (TOGGLE_UI key).
@@ -577,6 +638,7 @@ local ACTIONS = {
 	{ id = "searchMode", label = "Toggle Search Mode", run = searchMode },
 	{ id = "shout", label = "Shout", run = shout },
 	{ id = "releaseRope", label = "ReleaseRope", run = releaseRope },
+	{ id = "animalRadial", label = "AnimalRadialMenu", run = animalRadial },
 	{ id = "curtain", label = "UI_GamepadTweaks_action_curtain", run = curtain },
 	{ id = "drive", label = "UI_GamepadTweaks_action_drive", run = drive },
 	{ id = "engine", label = "StartVehicleEngine", run = engine },
@@ -605,6 +667,11 @@ local ACTIONS = {
 	{ id = "toggleUI", label = "Toggle UI", run = toggleUI, whilePaused = true, category = "extra" },
 	{ id = "screenshot", label = "Take screenshot", run = screenshot, whilePaused = true, category = "extra" },
 	{ id = "pvp", label = "Toggle Safety", run = pvp, category = "extra" },
+	{ id = "rotateBuilding", label = "Rotate building", run = rotateBuilding, release = rotateBuildingRelease,
+		category = "extra" },
+	{ id = "voice", label = "Enable voice transmit", run = voiceRun, release = voiceRelease, category = "extra" },
+	{ id = "toggleMusic", label = "Toggle Music", run = toggleMusic, whilePaused = true, category = "extra" },
+	{ id = "displayFps", label = "Display FPS", run = displayFps, whilePaused = true, category = "extra" },
 }
 
 -- Section in the settings panel (UI_GamepadTweaks_cat_*); group: main / extra.
@@ -613,7 +680,7 @@ local CATEGORY = {
 	dropBag = "hands", dropHandsAndBag = "hands", grabCorpse = "hands", sharpenWeapon = "hands",
 	firearmRadial = "hands", fireMode = "hands", useTool = "hands",
 	panCamera = "character", sitOnGround = "character", searchMode = "character", shout = "character",
-	releaseRope = "character", curtain = "character",
+	releaseRope = "character", animalRadial = "character", curtain = "character",
 	drive = "vehicle", engine = "vehicle", headlights = "vehicle", heater = "vehicle", horn = "vehicle",
 	switchSeat = "vehicle", vehicleInfo = "vehicle",
 	map = "windows", craftingMenu = "windows", buildingMenu = "windows", skills = "windows",

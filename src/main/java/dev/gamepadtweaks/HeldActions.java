@@ -10,13 +10,13 @@ import zombie.core.physics.CarController;
 // Game actions that last while held: sprint, floor attack (stomp), vehicle brake, the
 // Java half of Interact (doors, windows: IsoPlayer.updateUseKey acts on press + release),
 // aim (as the keyboard Aim key: aim and precision aim), attack, melee (shove), run, camera
-// pan while aiming (CameraPan).
+// pan while aiming (CameraPan), voice push-to-talk.
 //
 // The game has no call for these: each frame it asks whether the action is held
 // (CharacterInputComponent.isSprintButtonDown / isManualFloorAtkButtonDown /
 // isInteractButtonDownInternal, isAimKeyDownInternal, isPrecisionAimKeyDownInternal,
 // isAttackButtonDown, isMeleeButtonDownInternal, isRunButtonDown, the brake in
-// CarController.updateControls)
+// CarController.updateControls, GameKeyboard.isKeyDown(ENABLE_VOICE_TRANSMIT) in VoiceManager)
 // and acts on it, with its own rules (toggle-to-sprint, sprint
 // allowed, ...). The mod's actions (Steam Input, VanillaActions.lua) set the held state per
 // controller and these queries also return true for it. No button is involved, so nothing
@@ -35,8 +35,9 @@ public final class HeldActions {
     public static final int MELEE = 6;
     public static final int RUN = 7;
     public static final int PAN = 8;
+    public static final int VOICE = 9;
     private static final String[] NAMES = {
-        "sprint", "floorAttack", "brake", "interact", "aim", "attack", "melee", "run", "panCamera",
+        "sprint", "floorAttack", "brake", "interact", "aim", "attack", "melee", "run", "panCamera", "voice",
     };
     private static final int MAX_CONTROLLERS = 16;
 
@@ -75,6 +76,16 @@ public final class HeldActions {
     public static boolean playerHeld(IsoPlayer player, int action) {
         return player != null && player.getInputMode() == CharacterInputMode.GAMEPAD
                 && isHeld(player.getJoypadBind(), action);
+    }
+
+    /** The action held on any controller (the voice transmit key is one for the whole client). */
+    public static boolean anyHeld(int action) {
+        for (boolean[] c : held) {
+            if (c[action]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** After CarController.updateControls (gamepad driver): brake = Brakes binding or the held action. */
