@@ -144,9 +144,37 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     work only for player 0 and not with a controller), `timePause`, `timeNormal`, `timeFast1..3`
     (`SpeedControlsHandler`, not in MP, `whilePaused`: run while paused, other buttons don't),
     `toggleUI`, `screenshot` (`Core.TakeFullScreenshot`, as `GameWindow` does for the key),
-    `pvp` (`ISEquippedItem` safety toggle for the controller's player).
-  - not done: music toggle and push-to-talk are read from the keyboard in Java
-    (`SoundManager.updateMusic`, `VoiceManager`).
+    `pvp` (`ISEquippedItem` safety toggle for the controller's player), `rotateBuilding` (the
+    build cursor of the controller's player: `rotateKey`, as the ROTATE_BUILDING key; the 3D item
+    placement spins while held, `ISPlace3DItemCursor.checkRotateJoypad` is wrapped), `voice`
+    (push-to-talk, held: `Patches.VoiceHeld` makes `GameKeyboard.isKeyDown(ENABLE_VOICE_TRANSMIT)`,
+    read by `VoiceManager`, true while held), `toggleMusic` (`SoundManager.allowMusic`, as
+    `updateMusic` on TOGGLE_MUSIC) and `displayFps` (`FPSGraph`, as `IngameState` on DISPLAY_FPS),
+    both in `KeyToggles.java`.
+  - `panCamera` ("look far", held): vanilla pans a gamepad player's camera while aiming only with
+    RB held (`PlayerCamera.update`, hardcoded, not in Options -> Controller), towards the aiming
+    stick. `Patches.CameraRB` makes `JoypadManager.isRBPressed` false inside `PlayerCamera.update`,
+    so the pan follows the action alone; it is on RB by default in the `aiming` layer of
+    `Bindings.lua` (pressed while aiming or looking out of a vehicle, before the world layer;
+    vanilla gives RB nothing else then: `getBestRBButtonAction`), and can be moved like any other.
+    `CameraPan` (after `PlayerCamera.update`): while the action is held and the player aims
+    (or looks out of a vehicle), the camera eases at vanilla's rate towards the reticle, so it
+    follows the gyro too.
+  - Shift variants and the context key. Interact (E) does more with Shift held, checked only on
+    the keyboard (`CharacterInputComponent.isShiftKeyDown`), so a gamepad player can't do them:
+    `drive` (Shift when getting in: the driver's seat through the nearest door,
+    `ISVehicleMenu.processShiftEnter`, instead of the seat by that door; a passenger switches to
+    it), `curtain` (Shift + E at a window / door / window frame: `IsoPlayer.doContextWindow` & co.;
+    here the nearest curtain the player can reach, the one faced first,
+    `ISWorldObjectContextMenu.onOpenCloseCurtain`), `fireMode` (Shift + Rack:
+    `OnPressRackButton(player, gun, true)` cycles a select-fire gun). `useTool`: E while aiming
+    with a tool works the square ahead (`CFarming_Interact.onContextKey`: chop, cut a bush, stump,
+    ore, dig, sow, scythe, water, fertilize, cure, clean); the action does it without aiming.
+    Vanilla runs that once per key press with a flag (`SawOnContextKeyEvent`) that only a keyboard
+    Interact press resets, so with a gamepad it worked once per session; the mod wraps
+    `onContextKey` to reset it per press of the Interact button for joypad players.
+  - `animalRadial`: `AnimalContextMenu.showRadialMenu` (ANIMAL_RADIAL_MENU key, player 0 only in
+    `ISUIHandler`); again closes it.
 
 - **Mod actions in Options -> Controller** (`media/lua/client/GamepadTweaks/ControllerEditor.lua`).
   The vanilla editor rows (`CharacterJoypadBindingUIRow`) list and offer only the Java enum
@@ -181,13 +209,13 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     (a panel or radial has the joypad focus), `inventory` (the inventory or loot window), `map`; `menu` on every controller in the main menu and
     the pause menu. A layer overrides only what is bound in it, so one paddle can be the light on
     foot and the horn in a car, the gyro can be a mouse only in panels or only while aiming.
-    Situational actions are declared in their layer (hands and character: `onfoot`, vehicle:
-    `vehicle`, except switch seat), the rest in the set; a layer's actions fire only while it's active
-    (leaving the car releases the horn);
-  - Steam lists the set's actions and then the active layer's, in manifest order: the set's
-    actions of a category that continues in a layer (switch seat) go last, titles start with an icon
-    per action ("🚘📯 Horn", `ICONS` in the script; color emoji only, text-style symbols render small
-    and monochrome unless followed by U+FE0F; hotbar slots get keycap numbers, since what a slot
+    Situational actions are declared in their layer (combat, movement, hands: `onfoot`; car:
+    `vehicle`; close / tabs: `ui`; item moves: `inventory`), general ones in the set; a layer's
+    actions fire only while it's active (leaving the car releases the horn);
+  - Steam lists the set's actions and then the active layer's, in manifest order, with no
+    groups, so titles are one or two short words that differ as whole words ("Brake", "Horn",
+    "Take all") and start with an icon (color emoji; text-style symbols render small and
+    monochrome unless followed by U+FE0F; hotbar slots get keycap numbers, since what a slot
     holds depends on the worn belt / back / webbing);
   - `GamepadTweaks_steamInputPoll` (Lua, every frame) reads the digital actions of every Steam
     controller and returns press/release edges; the controller is matched to the game's joypad by
@@ -195,8 +223,10 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - a press runs the action as its button would (in the world, also with a UI focused; while
     paused only actions that work then); a wheel closes and picks the slice on release;
   - `steamInput.enabled=false` turns it off (restart), `steamInput.debugLog=true` logs events;
-  - the files are generated by `tools/steam_input.py` from the Lua action lists, translations and
-    the local Steam templates; rerun it after adding actions.
+  - the files are generated by `tools/steam_input.py` from `tools/steam_actions.txt` (section =
+    the set or a layer, order, icon, English / Russian title, revision; its header says how to
+    edit it), checked against the Lua action lists, and the local Steam templates. A new action
+    in the Lua code has to be added there, the script names the missing ones.
 
 - **Inventory and loot window actions** (`InventoryActions.lua`, layer `inventory` in
   `Bindings.lua`). With a mouse the buttons above the item list are one click (Transfer All /
@@ -229,10 +259,17 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     Reload -> `OnPressReloadButton` (it only stops loading rounds) and
     `ISReloadWeaponAction.BeginAutomaticReload` (the gamepad reload is the RB prompt of
     `ISFirearmRadialMenu`, timed on the release hardcoded to RB), Zoom -> `Core.doZoomScroll` (`UIManager.handleZoomKeys`);
-  - held: Sprint, Manual Floor Attack, Brakes and the Java half of Interact set a held state per
-    controller that the game's query also returns (`isSprintButtonDown`,
+  - held: Sprint, Manual Floor Attack, Brakes, the Java half of Interact, Aim, Attack, Melee and
+    Run set a held state per controller that the game's query also returns (`isSprintButtonDown`,
     `isManualFloorAtkButtonDown`, `isInteractButtonDownInternal`: doors, windows, grapple via
-    `IsoPlayer.updateUseKey` -> `doContext`; the brake in `CarController.updateControls`), so toggle-to-sprint and the rest of vanilla still apply;
+    `IsoPlayer.updateUseKey` -> `doContext`; `isAimKeyDownInternal` and
+    `isPrecisionAimKeyDownInternal`, `isAttackButtonDown`, `isMeleeButtonDownInternal`,
+    `isRunButtonDown`; the brake in `CarController.updateControls`), so toggle-to-sprint and the
+    rest of vanilla still apply. On a gamepad vanilla takes Aim from the right stick (turn, the
+    reticle at a fixed distance), Precision Aim from a half-pressed RT (the free firearm reticle),
+    Attack from RT past 0.93, Melee from LT, Run from the movement stick past 0.975. The Aim action
+    is the keyboard Aim key: both aims, no stick needed (gyro aiming), so Precision Aim has no
+    action. Attack needs aiming, as with the mouse;
   - button prompts: `ISButtonPrompt:setButtonBindingPrompt` is wrapped to keep each binding's
     handler by name (vanilla keeps one per button, the last evaluated); Interact, Cancel, Climb
     Through, Smash Window run it. Interact Options and Inventory are evaluated by vanilla only for
@@ -246,9 +283,29 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - Cruise Control: on / off on the press (`ISVehicleRegulator.onJoypadReleaseX` toggles on the
     release, because the held button + D-pad sets the speed; the action has the separate
     cruise faster / slower actions). With no speed set yet it takes the current one.
-  Left out: Walk To (needs a cursor), Loot (unused); the analog bindings (Aim, Attack, Melee,
-  PrecisionAim, Run) stay on the sticks and triggers. Not in the in-game editor, which already has
-  them (`steamOnly`).
+  Left out: Walk To (needs a cursor), Loot (unused), Precision Aim (in Aim). Not in the in-game
+  editor, which already has them (`steamOnly`).
+
+- **Gyro / trackpad aiming** (`AnalogInput.java`, `SteamInput.Analog`, Steam analog action `aim`,
+  `absolute_mouse`). The gamepad reticle (`AimingReticle`) aims at the screen center + half screen *
+  stick (`getAimingScreenX/Y`), then `AimingMode.lerpAiming` moves it there: eased in precise
+  firearm aim, only the direction at a fixed distance in melee / plain aim. Steam's mouse deltas
+  (gyro, trackpad; Steam does activation, sensitivity, smoothing) are an offset per player added to
+  that target (`Patches.AimTargetX/Y`), kept on the player's screen and dropped when aiming ends, so
+  the gyro starts from the stick (or from the player with the stick released). In precise aim the
+  reticle itself is moved by the same delta too (`aimingPositions`), so vanilla's easing (meant for
+  the stick) doesn't lag the gyro. Steam is read right before `AimingReticle.update` (`Mouse.update`,
+  `SteamInput.updateAnalog`), after `SteamAPI_RunCallbacks` ran Steam's frame. `aim` is declared
+  in the `aiming` layer (only there it means anything), so the gyro is bound there. With the held
+  Aim action, the stick isn't needed at all.
+  Steering and movement analog actions (`steer` in the `vehicle` layer, `move` in `onfoot`,
+  `joystick_move`) are added to the steering stick (`Patches.SteeringInput`, before the mod's
+  shaping) and to the Movement axis binding (`Patches.MoveX/Y`, `MoveApplied`; Run at full
+  deflection sees it via `Patches.MoveAxisDown`). They are meant for a stick or trackpad, not the
+  gyro: Steam drops gyro-to-joystick output after any action set layer change until the game
+  window loses and regains focus.
+  Layers are switched by difference (`DeactivateActionSetLayer` / `ActivateActionSetLayer` of the
+  changed ones only).
 
 - **Brakes follow their binding** (`HeldActions.brake`, after `CarController.updateControls`).
   Vanilla brakes a gamepad driver's car on B (`JoypadManager.isBPressed`), past the Brakes binding;
