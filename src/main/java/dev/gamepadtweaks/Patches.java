@@ -1,7 +1,9 @@
 package dev.gamepadtweaks;
 
 import me.zed_0xff.zombie_buddy.Patch;
+import zombie.characters.CharacterJoypadAxis2dBinding;
 import zombie.characters.CharacterJoypadButtonBinding;
+import zombie.characters.IsoPlayer;
 import zombie.characters.component.CharacterInputComponent;
 import zombie.core.physics.CarController;
 import zombie.input.JoypadManager;
@@ -14,7 +16,8 @@ public final class Patches {
     // which applies the stick dead zone and stretches diagonals up to x1.41.
     // Replace it with the raw stick X, recentered (see StickCenter) and shaped by
     // speed (see Steering). steering.enabled=false keeps vanilla; steering.rawStick=false
-    // keeps the game's stick value (dead zone) but still shapes it.
+    // keeps the game's stick value (dead zone) but still shapes it. The Steam "steer" action
+    // is added to the stick either way (see AnalogInput).
     @Patch(className = "zombie.core.physics.CarController", methodName = "updateControls")
     public static class SteeringInput {
         @Patch.OnExit
@@ -25,7 +28,11 @@ public final class Patches {
             int joypad = car.vehicleObject.getJoypad();
             HeldActions.brake(car, joypad);
             Settings.refresh();
-            if (joypad == -1 || !Settings.steeringEnabled) {
+            if (joypad == -1) {
+                return;
+            }
+            if (!Settings.steeringEnabled) {
+                car.clientControls.steering = AnalogInput.steer(joypad, car.clientControls.steering);
                 return;
             }
             float raw;
@@ -37,6 +44,7 @@ public final class Patches {
                 raw = Math.max(-1.0f, Math.min(1.0f, car.clientControls.steering));
                 stick = raw;
             }
+            stick = AnalogInput.steer(joypad, stick);
             car.clientControls.steering = Steering.shape(car, raw, stick, joypad);
         }
     }
@@ -123,6 +131,135 @@ public final class Patches {
         public static void exit(@Patch.This CharacterInputComponent input,
                                 @Patch.Return(readOnly = false) boolean down) {
             down = down || HeldActions.characterHeld(input, HeldActions.FLOOR_ATTACK);
+        }
+    }
+
+    // Aim without the stick: vanilla aims only while the Aim binding (right stick by default)
+    // is down AND the aiming stick is out of its dead zone, and aims a firearm precisely only
+    // with PrecisionAim (right trigger half pressed). The held action is the keyboard Aim key:
+    // both at once, stick released or not; the reticle starts at the player (see AnalogInput).
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isAimKeyDownInternal")
+    public static class AimHeld {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input,
+                                @Patch.Return(readOnly = false) boolean down) {
+            down = down || HeldActions.characterHeld(input, HeldActions.AIM)
+                    && !input.isJoypadIgnoreAim() && !input.isJoypadIgnoreAimUntilCentered();
+        }
+    }
+
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isPrecisionAimKeyDownInternal")
+    public static class PrecisionAimHeld {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input,
+                                @Patch.Return(readOnly = false) boolean down) {
+            down = down || HeldActions.characterHeld(input, HeldActions.AIM)
+                    && !input.isJoypadIgnoreAim() && !input.isJoypadIgnoreAimUntilCentered();
+        }
+    }
+
+    // Attack, melee (shove) and run as held actions. Vanilla takes them from trigger / stick
+    // thresholds (Attack: RT 0.93, Melee: LT, Run: movement stick 0.975); these game queries
+    // also return true while the action is held. Attack still needs aiming, as with the mouse.
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isAttackButtonDown")
+    public static class AttackHeld {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input,
+                                @Patch.Return(readOnly = false) boolean down) {
+            down = down || HeldActions.characterHeld(input, HeldActions.ATTACK);
+        }
+    }
+
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isMeleeButtonDownInternal")
+    public static class MeleeHeld {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input,
+                                @Patch.Return(readOnly = false) boolean down) {
+            down = down || HeldActions.characterHeld(input, HeldActions.MELEE);
+        }
+    }
+
+    @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isRunButtonDown")
+    public static class RunHeld {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterInputComponent input,
+                                @Patch.Return(readOnly = false) boolean down) {
+            down = down || HeldActions.characterHeld(input, HeldActions.RUN) && input.isAllowRun();
+        }
+    }
+
+    // Steam "aim" (gyro, trackpad as mouse) moves the gamepad reticle target (see AnalogInput).
+    @Patch(className = "zombie.input.AimingReticle", methodName = "update")
+    public static class AimDeltas {
+        @Patch.OnEnter
+        public static void enter() {
+            AnalogInput.updateAim();
+        }
+    }
+
+    @Patch(className = "zombie.input.AimingReticle", methodName = "getAimingScreenX")
+    public static class AimTargetX {
+        @Patch.OnExit
+        public static void exit(@Patch.Argument(0) IsoPlayer player,
+                                @Patch.Return(readOnly = false) float x) {
+            x = AnalogInput.aimTarget(player, x, false);
+        }
+    }
+
+    @Patch(className = "zombie.input.AimingReticle", methodName = "getAimingScreenY")
+    public static class AimTargetY {
+        @Patch.OnExit
+        public static void exit(@Patch.Argument(0) IsoPlayer player,
+                                @Patch.Return(readOnly = false) float y) {
+            y = AnalogInput.aimTarget(player, y, true);
+        }
+    }
+
+    // Steam "move" added to the walking stick (see AnalogInput).
+    @Patch(className = "zombie.characters.CharacterJoypadAxis2dBinding", methodName = "getValueX")
+    public static class MoveX {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterJoypadAxis2dBinding binding, @Patch.Argument(0) int joypadBind,
+                                @Patch.Return(readOnly = false) float x) {
+            if (binding == CharacterJoypadAxis2dBinding.Movement) {
+                x = AnalogInput.move(joypadBind, x, false);
+            }
+        }
+    }
+
+    @Patch(className = "zombie.characters.CharacterJoypadAxis2dBinding", methodName = "getValueY")
+    public static class MoveY {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterJoypadAxis2dBinding binding, @Patch.Argument(0) int joypadBind,
+                                @Patch.Return(readOnly = false) float y) {
+            if (binding == CharacterJoypadAxis2dBinding.Movement) {
+                y = AnalogInput.move(joypadBind, y, true);
+            }
+        }
+    }
+
+    // Bindings on the walking stick's length (Run: LeftStick at 0.975 and more) read the stick
+    // axis itself, not the Movement binding, so they miss the Steam "move" action.
+    @Patch(className = "zombie.characters.CharacterJoypadButtonBinding$Axis2dMinMaxBinding", methodName = "isDown")
+    public static class MoveAxisDown {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterJoypadButtonBinding.Axis2dMinMaxBinding binding,
+                                @Patch.Argument(0) int joypadBind,
+                                @Patch.Return(readOnly = false) boolean down) {
+            if (!down) {
+                down = AnalogInput.moveAxisDown(joypadBind, binding.getAxis2d(), binding.getMin(), binding.getMax());
+            }
+        }
+    }
+
+    @Patch(className = "zombie.characters.CharacterJoypadAxis2dBinding", methodName = "isApplied")
+    public static class MoveApplied {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterJoypadAxis2dBinding binding, @Patch.Argument(0) int joypadBind,
+                                @Patch.Return(readOnly = false) boolean applied) {
+            if (!applied && binding == CharacterJoypadAxis2dBinding.Movement) {
+                applied = AnalogInput.moveApplied(joypadBind);
+            }
         }
     }
 

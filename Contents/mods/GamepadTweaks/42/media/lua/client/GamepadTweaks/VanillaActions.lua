@@ -8,10 +8,12 @@
 -- (IsoPlayer.updateSneakKey -> setSneaking, BeginAutomaticReload, doZoomScroll, the prompt's
 -- handler...). No button is pressed: nothing else on any button fires, and it works whether
 -- the binding is on a button, shares it with others, or has none.
--- Held ones (sprint, floor attack, brake, the Java half of interact) set a held state that the game's own query sees
+-- Held ones (sprint, floor attack, brake, the Java half of interact, aim, attack, melee, run) set a held state that the game's own query sees
 -- (HeldActions.java). Steam only (steamOnly): the in-game editor already has the bindings.
--- "Walk To" (needs a cursor) and "Loot" (no code uses it) are left out; the analog bindings
--- (Aim, Attack, Melee, PrecisionAim, Run) are stick/trigger axes and stay with the gamepad.
+-- "Walk To" (needs a cursor) and "Loot" (no code uses it) are left out. Aim is held and works
+-- as the keyboard Aim key (aim + precision aim, no stick needed): for gyro aiming (Steam "aim"
+-- analog action), so Precision Aim has no action of its own. Attack, Melee and Run, vanilla
+-- trigger / stick thresholds, are held actions too (attack needs aiming, as with the mouse).
 
 require "GamepadTweaks/Bindings"
 require "ISUI/ISButtonPrompt"
@@ -230,9 +232,17 @@ end
 local sprintRun, sprintRelease = held("sprint")
 local floorRun, floorRelease = held("floorAttack")
 local brakeRun, brakeRelease = held("brake")
+local aimRun, aimRelease = held("aim")
+local attackRun, attackRelease = held("attack")
+local meleeRun, meleeRelease = held("melee")
+local runRun, runRelease = held("run")
 
 -- id: "vanilla" .. binding name (Steam action id, the title is the vanilla binding name).
 local ACTIONS = {
+	{ id = "vanillaAim", run = aimRun, release = aimRelease },
+	{ id = "vanillaAttack", run = attackRun, release = attackRelease },
+	{ id = "vanillaMelee", run = meleeRun, release = meleeRelease },
+	{ id = "vanillaRun", run = runRun, release = runRelease },
 	{ id = "vanillaInteract", run = interact, release = interactRelease },
 	{ id = "vanillaInteractOptions", run = prompt("InteractOptions", "getBestXButtonAction") },
 	{ id = "vanillaCancelAction", run = cancelAction },

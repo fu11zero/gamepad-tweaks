@@ -36,7 +36,30 @@ import org.lwjglx.input.Controller;
 // "Gamepad" templates, so sticks and buttons still go to the emulated gamepad.
 // libsteam_api is already loaded by the game (ZNetJNI); it's called through the flat C API
 // with the Foreign Function API. The Lua side (Bindings.lua) polls the events every frame.
+//
+// Analog actions (Analog): the player binds gyro / stick / trackpad to them in Steam, Steam does
+// the rest (gyro activation, sensitivity, dead zones). updateAnalog reads them early in the frame
+// (before the reticle update, see AnalogInput) for the controllers found by the last poll and
+// keeps them per game controller for the aim, steering and movement code.
 public final class SteamInput {
+    /** Analog actions of the manifest (tools/steam_input.py ANALOG), same ids and modes. */
+    public enum Analog {
+        /** absolute_mouse: per-frame deltas (mouse units), summed until {@link #takeDelta}. */
+        AIM("aim", true),
+        /** joystick_move: -1..1, added to the steering stick. */
+        STEER("steer", false),
+        /** joystick_move: -1..1, added to the movement stick. */
+        MOVE("move", false);
+
+        final String id;
+        final boolean delta;
+
+        Analog(String id, boolean delta) {
+            this.id = id;
+            this.delta = delta;
+        }
+    }
+
     private static final long ALL_CONTROLLERS = -1L; // STEAM_INPUT_HANDLE_ALL_CONTROLLERS
     private static final int MAX_CONTROLLERS = 16;   // STEAM_INPUT_MAX_COUNT
     private static final String ACTION_SET = "game";
@@ -46,7 +69,7 @@ public final class SteamInput {
     private static boolean tried;
     private static boolean ready;
     private static MemorySegment input;
-    private static MethodHandle runFrame, getConnectedControllers, getActionSetHandle, activateActionSet,
+    private static MethodHandle getConnectedControllers, getActionSetHandle, activateActionSet,
             getDigitalActionHandle, getDigitalActionData, getGamepadIndexForController, getInputTypeForHandle;
 
     private static final List<String> actionNames = new ArrayList<>();
@@ -70,6 +93,22 @@ public final class SteamInput {
     private static final Map<Long, String> activeLayers = new HashMap<>();
     private static final Map<String, Long> layerHandles = new HashMap<>();
     private static MethodHandle activateActionSetLayer, deactivateAllActionSetLayers;
+    private static MethodHandle getAnalogActionHandle, getAnalogActionData, deactivateActionSetLayer;
+    // controllers of the last poll, for updateAnalog: Steam handle and game controller id
+    private static long[] pollHandles = new long[0];
+    private static int[] pollIds = new int[0];
+
+    private static final Analog[] ANALOGS = Analog.values();
+    private static final long[] analogHandles = new long[ANALOGS.length];
+    // A joystick value older than this (poll stopped: menu closed, Steam gone) reads as 0.
+    private static final long ANALOG_STALE_MS = 250;
+    private static final long ANALOG_LOG_MS = 1000;
+    // game controller id -> per Analog {x, y}: joystick = last value, delta = sum not taken yet
+    private static final Map<Integer, float[][]> analogValues = new HashMap<>();
+    private static final Map<Integer, Long> analogTime = new HashMap<>();
+    // debug log: controller handle -> per Analog {sum x, sum y, min x, max x, min y, max y, frames, active frames, mode}
+    private static final Map<Long, double[][]> analogStats = new HashMap<>();
+    private static long analogLogTime;
 
     private SteamInput() {}
 
@@ -105,7 +144,7 @@ public final class SteamInput {
             Log.info("steam input: init=" + inited + ", manifest " + manifest + " loaded=" + loaded
                     + ", " + actionNames.size() + " actions");
             ready = inited;
-            dataAllocator = java.lang.foreign.SegmentAllocator.prefixAllocator(arena.allocate(16));
+            dataAllocator = java.lang.foreign.SegmentAllocator.prefixAllocator(arena.allocate(16, 8));
             handleBuffer = arena.allocate(ValueLayout.JAVA_LONG, MAX_CONTROLLERS);
             actionHandles = new long[actionNames.size()];
         } catch (Throwable t) {
@@ -133,12 +172,20 @@ public final class SteamInput {
         }
     }
 
+    // No RunFrame here: init(false) lets SteamAPI_RunCallbacks (GameWindow -> SteamUtils.runLoop,
+    // every frame before rendering) sync the state. A second sync right before reading would drop
+    // the mouse delta (absolute_mouse) collected by the first one.
+    private static int lastCount = -1;
+
     private static String pollEvents() throws Throwable {
-        runFrame.invokeExact(input, false);
         if (!resolveHandles()) {
             return null;
         }
         int count = (int) getConnectedControllers.invokeExact(input, handleBuffer);
+        if (count != lastCount) {
+            Log.info("steam input: " + count + " controller(s) connected (was " + lastCount + ")");
+            lastCount = count;
+        }
         StringBuilder events = null;
         Map<Long, boolean[]> seen = new HashMap<>();
         long now = System.currentTimeMillis();
@@ -146,7 +193,10 @@ public final class SteamInput {
             mappingTime = now;
             mapping.clear();
         }
-        for (int i = 0; i < Math.min(count, MAX_CONTROLLERS); i++) {
+        int n = Math.min(count, MAX_CONTROLLERS);
+        long[] handles = new long[n];
+        int[] ids = new int[n];
+        for (int i = 0; i < n; i++) {
             long controller = handleBuffer.getAtIndex(ValueLayout.JAVA_LONG, i);
             activateActionSet.invokeExact(input, controller, actionSet);
             boolean[] prev = held.computeIfAbsent(controller, k -> new boolean[actionNames.size()]);
@@ -158,6 +208,8 @@ public final class SteamInput {
             }
             int id = mapped;
             applyLayers(controller, id);
+            handles[i] = controller;
+            ids[i] = id;
             for (int a = 0; a < actionHandles.length; a++) {
                 if (actionHandles[a] == 0) {
                     continue;
@@ -176,10 +228,162 @@ public final class SteamInput {
                 events = append(events, actionNames.get(a), id, state);
             }
         }
+        pollHandles = handles;
+        pollIds = ids;
         // disconnected controllers: nothing to release on the Lua side (the joypad is gone too)
         held.keySet().retainAll(seen.keySet());
+        analogStats.keySet().retainAll(seen.keySet());
         activeLayers.keySet().retainAll(seen.keySet());
         return events == null ? null : events.toString();
+    }
+
+    /**
+     * Reads the analog actions of the controllers found by the last poll. Called every frame from
+     * Mouse.update (before AimingReticle.update, see AnalogInput), after SteamUtils.runLoop synced
+     * the state, so the values are from this frame for the reticle, steering and movement.
+     */
+    public static void updateAnalog() {
+        if (!ready || pollHandles.length == 0) {
+            return;
+        }
+        try {
+            long[] handles = pollHandles;
+            int[] ids = pollIds;
+            Map<Integer, float[][]> frame = new HashMap<>();
+            for (int i = 0; i < handles.length; i++) {
+                readAnalog(handles[i], frame.computeIfAbsent(ids[i], k -> new float[ANALOGS.length][2]));
+            }
+            storeAnalog(frame, System.currentTimeMillis());
+        } catch (Throwable t) {
+            Log.error("steam input analog read failed", t);
+            ready = false;
+        }
+    }
+
+    // InputAnalogActionData_t { EInputSourceMode eMode; float x, y; bool bActive; } is packed
+    // (pack 1, 13 bytes); returned as two 8-byte words, same registers / memory as the C struct.
+    private static void readAnalog(long controller, float[][] sum) throws Throwable {
+        double[][] stats = Settings.steamInputDebugLog
+                ? analogStats.computeIfAbsent(controller, k -> newStats()) : null;
+        for (int a = 0; a < ANALOGS.length; a++) {
+            if (analogHandles[a] == 0) {
+                continue;
+            }
+            MemorySegment data = (MemorySegment) getAnalogActionData.invokeExact(
+                    dataAllocator, input, controller, analogHandles[a]);
+            int mode = data.get(ValueLayout.JAVA_INT, 0);
+            float x = data.get(ValueLayout.JAVA_FLOAT, 4);
+            float y = data.get(ValueLayout.JAVA_FLOAT, 8);
+            boolean active = data.get(ValueLayout.JAVA_BYTE, 12) != 0;
+            if (!active || !Float.isFinite(x) || !Float.isFinite(y)) {
+                x = 0;
+                y = 0;
+            }
+            sum[a][0] += x;
+            sum[a][1] += y;
+            if (stats != null) {
+                double[] st = stats[a];
+                st[0] += x;
+                st[1] += y;
+                st[2] = Math.min(st[2], x);
+                st[3] = Math.max(st[3], x);
+                st[4] = Math.min(st[4], y);
+                st[5] = Math.max(st[5], y);
+                st[6]++;
+                if (active) {
+                    st[7]++;
+                }
+                st[8] = mode;
+            }
+        }
+    }
+
+    private static double[][] newStats() {
+        double[][] stats = new double[ANALOGS.length][9];
+        for (double[] st : stats) {
+            st[2] = st[4] = Double.MAX_VALUE;
+            st[3] = st[5] = -Double.MAX_VALUE;
+        }
+        return stats;
+    }
+
+    private static void storeAnalog(Map<Integer, float[][]> frame, long now) {
+        for (Map.Entry<Integer, float[][]> e : frame.entrySet()) {
+            float[][] stored = analogValues.computeIfAbsent(e.getKey(), k -> new float[ANALOGS.length][2]);
+            Long last = analogTime.get(e.getKey());
+            boolean stale = last == null || now - last > ANALOG_STALE_MS;
+            for (int a = 0; a < ANALOGS.length; a++) {
+                if (ANALOGS[a].delta && !stale) {
+                    stored[a][0] += e.getValue()[a][0];
+                    stored[a][1] += e.getValue()[a][1];
+                } else {
+                    stored[a][0] = e.getValue()[a][0];
+                    stored[a][1] = e.getValue()[a][1];
+                }
+            }
+            analogTime.put(e.getKey(), now);
+        }
+        if (Settings.steamInputDebugLog && now - analogLogTime >= ANALOG_LOG_MS) {
+            analogLogTime = now;
+            logAnalogStats();
+        }
+    }
+
+    // Once a second, per controller and action that moved: sums (deltas), ranges, frames read /
+    // frames active, source mode (EInputSourceMode).
+    private static void logAnalogStats() {
+        for (Map.Entry<Long, double[][]> e : analogStats.entrySet()) {
+            Integer id = mapping.get(e.getKey());
+            for (int a = 0; a < ANALOGS.length; a++) {
+                double[] st = e.getValue()[a];
+                if (st[6] == 0 || (st[2] == 0 && st[3] == 0 && st[4] == 0 && st[5] == 0)) {
+                    continue;
+                }
+                Log.info(String.format(java.util.Locale.ROOT,
+                        "steam input: %s controller %s: sum (%.4f, %.4f) x [%.4f..%.4f] y [%.4f..%.4f] frames %d active %d mode %d",
+                        ANALOGS[a].id, id, st[0], st[1], st[2], st[3], st[4], st[5], (int) st[6], (int) st[7], (int) st[8]));
+            }
+            e.setValue(newStats());
+        }
+    }
+
+    private static float[][] analogFor(int controllerId) {
+        float[][] v = analogValues.get(controllerId);
+        Long time = analogTime.get(controllerId);
+        if (v == null && analogValues.size() == 1) {
+            // unmapped Steam controller (-1) and a single one: it's this player's (as in Bindings.lua)
+            Map.Entry<Integer, float[][]> only = analogValues.entrySet().iterator().next();
+            if (only.getKey() < 0) {
+                v = only.getValue();
+                time = analogTime.get(only.getKey());
+            }
+        }
+        if (v == null || time == null || System.currentTimeMillis() - time > ANALOG_STALE_MS) {
+            return null;
+        }
+        return v;
+    }
+
+    /** Joystick action value {x, y} (-1..1) for a game controller (JoypadState.controllers index); 0 if none. */
+    public static void value(int controllerId, Analog action, float[] out) {
+        float[][] v = analogFor(controllerId);
+        out[0] = v == null ? 0 : v[action.ordinal()][0];
+        out[1] = v == null ? 0 : v[action.ordinal()][1];
+    }
+
+    /** Delta action movement {x, y} since the last call for a game controller; 0 if none. */
+    public static void takeDelta(int controllerId, Analog action, float[] out) {
+        float[][] v = analogFor(controllerId);
+        if (v == null) {
+            out[0] = 0;
+            out[1] = 0;
+            return;
+        }
+        float[] d = v[action.ordinal()];
+        out[0] = d[0];
+        out[1] = d[1];
+        d[0] = 0;
+        d[1] = 0;
     }
 
     /**
@@ -221,29 +425,60 @@ public final class SteamInput {
         return layers != null ? layers : defaultLayers;
     }
 
+    // Only the layers that change are touched (layers above a removed one go too, to keep the
+    // order): re-activating a layer that stays (on foot under aiming, toggled with every aim)
+    // seemed to stop Steam's gyro bindings until the overlay was opened.
     private static void applyLayers(long controller, int id) throws Throwable {
         String layers = layersFor(id);
-        if (layers.equals(activeLayers.get(controller))) {
+        String before = activeLayers.get(controller);
+        if (layers.equals(before)) {
             return;
         }
-        deactivateAllActionSetLayers.invokeExact(input, controller);
-        for (String name : layers.split(",")) {
-            if (name.isEmpty()) {
-                continue;
+        List<String> want = splitLayers(layers);
+        List<String> have = before == null ? null : splitLayers(before);
+        int keep = 0;
+        if (have == null) {
+            deactivateAllActionSetLayers.invokeExact(input, controller);
+        } else {
+            while (keep < have.size() && keep < want.size() && have.get(keep).equals(want.get(keep))) {
+                keep++;
             }
-            Long h = layerHandles.get(name);
-            if (h == null || h == 0) {
-                h = (long) getActionSetHandle.invokeExact(input, arena.allocateFrom(name));
-                layerHandles.put(name, h);
+            for (int i = have.size() - 1; i >= keep; i--) {
+                long h = layerHandle(have.get(i));
+                if (h != 0) {
+                    deactivateActionSetLayer.invokeExact(input, controller, h);
+                }
             }
+        }
+        for (int i = keep; i < want.size(); i++) {
+            long h = layerHandle(want.get(i));
             if (h != 0) {
-                activateActionSetLayer.invokeExact(input, controller, (long) h);
+                activateActionSetLayer.invokeExact(input, controller, h);
             }
         }
         activeLayers.put(controller, layers);
         if (Settings.steamInputDebugLog) {
             Log.info("steam input: layers [" + layers + "] on " + Long.toUnsignedString(controller) + " (controller " + id + ")");
         }
+    }
+
+    private static List<String> splitLayers(String layers) {
+        List<String> list = new ArrayList<>();
+        for (String name : layers.split(",")) {
+            if (!name.isEmpty()) {
+                list.add(name);
+            }
+        }
+        return list;
+    }
+
+    private static long layerHandle(String name) throws Throwable {
+        Long h = layerHandles.get(name);
+        if (h == null || h == 0) {
+            h = (long) getActionSetHandle.invokeExact(input, arena.allocateFrom(name));
+            layerHandles.put(name, h);
+        }
+        return h;
     }
 
     private static StringBuilder append(StringBuilder sb, String action, int id, boolean down) {
@@ -262,12 +497,24 @@ public final class SteamInput {
         for (long h : actionHandles) {
             missing |= h == 0;
         }
+        // analog actions aren't retried: one left out of the manifest (steer, move) stays 0
         if (!missing || now - lastHandleTry < HANDLE_RETRY_MS) {
             return actionSet != 0;
         }
         lastHandleTry = now;
         actionSet = (long) getActionSetHandle.invokeExact(input, arena.allocateFrom(ACTION_SET));
         int found = 0;
+        for (int a = 0; a < ANALOGS.length; a++) {
+            if (analogHandles[a] == 0) {
+                analogHandles[a] = (long) getAnalogActionHandle.invokeExact(input, arena.allocateFrom(ANALOGS[a].id));
+            }
+        }
+        int analogFound = 0;
+        for (long h : analogHandles) {
+            if (h != 0) {
+                analogFound++;
+            }
+        }
         for (int a = 0; a < actionHandles.length; a++) {
             if (actionHandles[a] == 0) {
                 actionHandles[a] = (long) getDigitalActionHandle.invokeExact(input, arena.allocateFrom(actionNames.get(a)));
@@ -277,7 +524,8 @@ public final class SteamInput {
             }
         }
         Log.info("steam input: action set " + (actionSet != 0 ? "found" : "not found yet")
-                + ", " + found + "/" + actionHandles.length + " action handles");
+                + ", " + found + "/" + actionHandles.length + " action handles, "
+                + analogFound + "/" + ANALOGS.length + " analog");
         return actionSet != 0;
     }
 
@@ -342,8 +590,6 @@ public final class SteamInput {
         if (input.address() == 0) {
             throw new IllegalStateException("SteamInput() is null");
         }
-        runFrame = handle("SteamAPI_ISteamInput_RunFrame",
-                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BOOLEAN));
         getConnectedControllers = handle("SteamAPI_ISteamInput_GetConnectedControllers",
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
         getActionSetHandle = handle("SteamAPI_ISteamInput_GetActionSetHandle",
@@ -352,6 +598,8 @@ public final class SteamInput {
                 FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG));
         activateActionSetLayer = handle("SteamAPI_ISteamInput_ActivateActionSetLayer",
                 FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG));
+        deactivateActionSetLayer = handle("SteamAPI_ISteamInput_DeactivateActionSetLayer",
+                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG));
         deactivateAllActionSetLayers = handle("SteamAPI_ISteamInput_DeactivateAllActionSetLayers",
                 FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
         getDigitalActionHandle = handle("SteamAPI_ISteamInput_GetDigitalActionHandle",
@@ -359,6 +607,12 @@ public final class SteamInput {
         // InputDigitalActionData_t { bool bState; bool bActive; }, returned by value
         getDigitalActionData = handle("SteamAPI_ISteamInput_GetDigitalActionData",
                 FunctionDescriptor.of(MemoryLayout.structLayout(ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_BOOLEAN),
+                        ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG));
+        getAnalogActionHandle = handle("SteamAPI_ISteamInput_GetAnalogActionHandle",
+                FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+        // InputAnalogActionData_t, returned by value: see readAnalog
+        getAnalogActionData = handle("SteamAPI_ISteamInput_GetAnalogActionData",
+                FunctionDescriptor.of(MemoryLayout.structLayout(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
                         ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG));
         getGamepadIndexForController = handle("SteamAPI_ISteamInput_GetGamepadIndexForController",
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));

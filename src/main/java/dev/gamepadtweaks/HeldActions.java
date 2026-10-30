@@ -6,13 +6,16 @@ import zombie.characters.CharacterJoypadButtonBinding;
 import zombie.characters.component.CharacterInputComponent;
 import zombie.core.physics.CarController;
 
-// Game actions that last while held: sprint, floor attack (stomp), vehicle brake, and the
-// Java half of Interact (doors, windows: IsoPlayer.updateUseKey acts on press + release).
+// Game actions that last while held: sprint, floor attack (stomp), vehicle brake, the
+// Java half of Interact (doors, windows: IsoPlayer.updateUseKey acts on press + release),
+// aim (as the keyboard Aim key: aim and precision aim), attack, melee (shove), run.
 //
 // The game has no call for these: each frame it asks whether the action is held
 // (CharacterInputComponent.isSprintButtonDown / isManualFloorAtkButtonDown /
-// isInteractButtonDownInternal, the brake in
-// CarController.updateControls) and acts on it, with its own rules (toggle-to-sprint, sprint
+// isInteractButtonDownInternal, isAimKeyDownInternal, isPrecisionAimKeyDownInternal,
+// isAttackButtonDown, isMeleeButtonDownInternal, isRunButtonDown, the brake in
+// CarController.updateControls)
+// and acts on it, with its own rules (toggle-to-sprint, sprint
 // allowed, ...). The mod's actions (Steam Input, VanillaActions.lua) set the held state per
 // controller and these queries also return true for it. No button is involved, so nothing
 // else on any button fires.
@@ -25,7 +28,13 @@ public final class HeldActions {
     public static final int FLOOR_ATTACK = 1;
     public static final int BRAKE = 2;
     public static final int INTERACT = 3;
-    private static final String[] NAMES = { "sprint", "floorAttack", "brake", "interact" };
+    public static final int AIM = 4;
+    public static final int ATTACK = 5;
+    public static final int MELEE = 6;
+    public static final int RUN = 7;
+    private static final String[] NAMES = {
+        "sprint", "floorAttack", "brake", "interact", "aim", "attack", "melee", "run",
+    };
     private static final int MAX_CONTROLLERS = 16;
 
     // [controller id][action]
