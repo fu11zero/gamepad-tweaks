@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Changed: the Java part is no longer signed for now. ZombieBuddy blocked the signed jar as "signature invalid"
+  when it could not load the author's key from the Steam profile; now it just asks to allow the mod.
 - Fixed: a controller preset made in a non-English game (e.g. Russian "Пользовательский") was not
   saved on Linux / Steam Deck (the game runs with an ASCII locale there); new presets are named "Custom".
 - Fixed: an action set to none in the mod's bindings got its default button back after reloading.
