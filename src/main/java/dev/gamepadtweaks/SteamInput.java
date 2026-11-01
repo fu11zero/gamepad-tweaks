@@ -64,7 +64,9 @@ public final class SteamInput {
     private static final int MAX_CONTROLLERS = 16;   // STEAM_INPUT_MAX_COUNT
     private static final String ACTION_SET = "game";
     private static final long HANDLE_RETRY_MS = 2000;
-    private static final Pattern BUTTON_ACTION = Pattern.compile("\"(\\w+)\"\\s+\"#act_\\w+\"");
+    private static final Pattern STEAM_PAD_NAME = Pattern.compile(" pad \\d+$");
+    private static final String XINPUT_GUID = "78696e707574"; // GLFW win32: "xinput" + subtype
+    private static final Pattern BUTTON_ACTION =Pattern.compile("\"(\\w+)\"\\s+\"#act_\\w+\"");
 
     private static boolean tried;
     private static boolean ready;
@@ -530,21 +532,36 @@ public final class SteamInput {
     }
 
     // Steam controller -> the game's controller (JoypadState.controllers index), or -1.
-    // Steam reports which emulated gamepad belongs to a controller (GetGamepadIndexForController);
-    // the game sees those as "... pad N" joysticks. -1: Lua picks the only player's joypad.
+    // Steam reports which emulated gamepad belongs to a controller (GetGamepadIndexForController).
+    // Linux: the game sees those as "... pad N" joysticks. Windows: they are XInput slots, which
+    // GLFW names "Xbox Controller" without the slot, so the N-th Steam gamepad (by index) is taken
+    // as the N-th XInput joystick (by GLFW id): GLFW scans the slots in order and gives the first
+    // free id. Without it every controller was -1, fine for one player but with two (splitscreen)
+    // Lua can't pick the player, so no Steam actions and no per-player layers at all.
+    // -1: Lua picks the only player's joypad.
     private static int controllerId(long controller) throws Throwable {
         int pad = (int) getGamepadIndexForController.invokeExact(input, controller);
         int result = -1;
         String how = "none";
         int controllers = GameWindow.GameInput.getControllerCount();
         if (pad >= 0) {
+            boolean steamNames = false;
             for (int i = 0; i < controllers; i++) {
                 Controller c = GameWindow.GameInput.getController(i);
                 String name = c == null ? null : c.getJoystickName();
+                if (name != null && STEAM_PAD_NAME.matcher(name).find()) {
+                    steamNames = true;
+                }
                 if (name != null && name.endsWith(" pad " + pad)) {
                     result = i;
                     how = "name '" + name + "'";
                     break;
+                }
+            }
+            if (result < 0 && !steamNames) {
+                result = xinputId(pad, controllers);
+                if (result >= 0) {
+                    how = "xinput order";
                 }
             }
         }
@@ -554,12 +571,37 @@ public final class SteamInput {
             StringBuilder names = new StringBuilder();
             for (int i = 0; i < controllers; i++) {
                 Controller c = GameWindow.GameInput.getController(i);
-                names.append(i).append('=').append(c == null ? "-" : c.getJoystickName()).append(", ");
+                if (c == null) {
+                    continue;
+                }
+                names.append(i).append('=').append(c.getJoystickName()).append(" [").append(c.getGUID()).append("], ");
             }
             Log.info("steam input: controller " + Long.toUnsignedString(controller) + " (type " + type
                     + ", gamepad index " + pad + ") -> " + result + " by " + how + "; game controllers: " + names);
         }
         return result;
+    }
+
+    // The rank of the gamepad index among Steam's controllers -> the joystick of the same rank
+    // among the game's XInput joysticks (GLFW GUID "xinput" in hex), or -1 if it isn't there yet
+    // (GLFW finds a new slot a bit later than Steam; the mapping is refreshed every few seconds).
+    private static int xinputId(int pad, int controllers) throws Throwable {
+        int rank = 0;
+        for (int i = 0; i < Math.min(lastCount, MAX_CONTROLLERS); i++) {
+            long other = handleBuffer.getAtIndex(ValueLayout.JAVA_LONG, i);
+            int otherPad = (int) getGamepadIndexForController.invokeExact(input, other);
+            if (otherPad >= 0 && otherPad < pad) {
+                rank++;
+            }
+        }
+        for (int i = 0; i < controllers; i++) {
+            Controller c = GameWindow.GameInput.getController(i);
+            String guid = c == null ? null : c.getGUID();
+            if (guid != null && guid.startsWith(XINPUT_GUID) && rank-- == 0) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static Path manifestPath() {

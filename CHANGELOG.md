@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Fixed: Windows splitscreen with Steam Input: with a second controller the Steam game actions and
+  context layers stopped working for both players (Steam controllers weren't matched to players on Windows).
 - Changed: the Java part is no longer signed for now. ZombieBuddy blocked the signed jar as "signature invalid"
   when it could not load the author's key from the Steam profile; now it just asks to allow the mod.
 - Fixed: a controller preset made in a non-English game (e.g. Russian "Пользовательский") was not
