@@ -11,9 +11,12 @@
 --   (JoypadControllerData:onHoldButton/onReleaseButton).
 -- So these buttons can't be used for anything else, and the actions can't be moved.
 -- The vanilla binding list is a Java enum (fixed when the class loads, saved by name in
--- InputBindings/*.xml), so the actions live here instead: bind.<action>=<button> in
--- ~/Zomboid/GamepadTweaks.properties (re-read on the fly). By default every action is on
--- its vanilla button, so nothing changes until the player rebinds it. "none" frees the button.
+-- InputBindings/*.xml), so the actions live here instead, per preset like the regular
+-- bindings: preset.<preset>.bind.<action>=<button> in ~/Zomboid/GamepadTweaks.properties
+-- (re-read on the fly). By default every action is on its vanilla button, so nothing changes
+-- until the player rebinds it. "none" frees the button. The built-in presets (Default,
+-- Original) can't be edited, so they always have the defaults; editing one makes a new preset,
+-- as vanilla does for the regular bindings.
 -- Without the Java part (jar not approved) the defaults are used.
 --
 -- Vanilla also hardcodes the buttons of two regular bindings in places (bugs when they
@@ -25,6 +28,7 @@
 --   the radial happen on RB release.
 
 require "ISUI/Gamepad/JoyPadSetup"
+require "gamepadBinding"
 require "ISUI/ISDPadWheels"
 require "ISUI/ISButtonPrompt"
 require "ISUI/ISFirearmRadialMenu"
@@ -183,14 +187,35 @@ local function settingsVersion()
 	return ok and v or 0
 end
 
+-- Presets -----------------------------------------------------------------------
+
+function Bindings.currentPreset()
+	return getCore():getOptionGamepadBindingPreset() or ""
+end
+
+-- A preset saved in InputBindings/*.xml; the built-in ones (Default, Original) are Lua only
+-- and vanilla doesn't edit them (gamepadBinding:isCurrentPresetEditable).
+function Bindings.isPresetEditable(name)
+	local preset = gamepadBinding and gamepadBinding.presets and gamepadBinding.presets[name or Bindings.currentPreset()]
+	return preset ~= nil and preset.loadedSet ~= nil
+end
+
+-- preset.<name>.bind.<id>; the name may have any characters, the key only these.
+local function presetKey(name, id)
+	local encoded = string.gsub(name, "[^%w_%-]", function(c) return "%" .. string.byte(c) .. ";" end)
+	return "preset." .. encoded .. ".bind." .. id
+end
+
 -- Returns the button set for the action (false = none), or nil when it isn't set.
 local function readBinding(action)
-	local value = readSetting("bind." .. action.id)
+	local preset = Bindings.currentPreset()
+	if not Bindings.isPresetEditable(preset) then return nil end
+	local value = readSetting(presetKey(preset, action.id))
 	if not value then return nil end
 	value = value:match("^%s*(.-)%s*$")
 	if value == "none" or value == "" then return false end
 	if buttonByName[value] then return buttonByName[value] end
-	log("WARN: bind." .. action.id .. "=" .. value .. " is not a button, using " .. tostring(action.button))
+	log("WARN: " .. presetKey(preset, action.id) .. "=" .. value .. " is not a button, using " .. tostring(action.button))
 	return nil
 end
 
@@ -213,9 +238,9 @@ local function regularWorldBindings()
 	return result
 end
 
--- Changes when a regular binding is moved (Options -> Controller, presets).
+-- Changes when a regular binding is moved or the preset changes (Options -> Controller).
 local function regularSignature()
-	local parts = {}
+	local parts = { Bindings.currentPreset() }
 	for _, binding in ipairs(CharacterJoypadButtonBinding.allBindings()) do
 		table.insert(parts, tostring(binding:getJoypadButton()))
 	end
@@ -278,7 +303,66 @@ function Bindings.reload()
 	for _, action in ipairs(defaults) do
 		assign(action, action.button, false)
 	end
-	log("button actions: " .. (#changed > 0 and table.concat(changed, " ") or "vanilla"))
+	log("button actions (" .. Bindings.currentPreset() .. "): " .. (#changed > 0 and table.concat(changed, " ") or "vanilla"))
+end
+
+-- Copies the mod bindings of a preset to a new one (a preset made from the current one).
+function Bindings.copyPreset(from, to)
+	if not GamepadTweaks_setSetting or not Bindings.isPresetEditable(from) then return end
+	for _, action in ipairs(Bindings.actions) do
+		local value = readSetting(presetKey(from, action.id))
+		if value then
+			GamepadTweaks_setSetting(presetKey(to, action.id), value)
+		end
+	end
+end
+
+-- Earlier versions kept the bindings global (bind.<action>), so a change made in one preset showed up
+-- in all of them, the built-in ones too. They go to every saved preset; with no saved preset
+-- (the player changed them only in a built-in one), a new preset is made from the current one.
+local migrated = false
+
+local function migrateGlobal()
+	migrated = true
+	if not GamepadTweaks_setSetting then return end
+	local legacy = {}
+	local any = false
+	for _, action in ipairs(Bindings.actions) do
+		local value = readSetting("bind." .. action.id)
+		if value then
+			legacy[action.id] = value
+			any = true
+		end
+	end
+	if not any then return end
+	local saved = false
+	for _, preset in pairs(gamepadBinding and gamepadBinding.presets or {}) do
+		if preset.loadedSet then saved = true end
+	end
+	if not saved and gamepadBinding and gamepadBinding.createNewFromCurrent then
+		local entry = gamepadBinding:createNewFromCurrent()
+		if entry and entry.key then
+			gamepadBinding:set(entry.key)
+			gamepadBinding:saveAll()
+			getCore():saveOptions()
+			log("bindings: new preset " .. entry.key .. " for the global bindings")
+		end
+	end
+	local names = {}
+	for name, preset in pairs(gamepadBinding and gamepadBinding.presets or {}) do
+		if preset.loadedSet then
+			table.insert(names, name)
+			for id, value in pairs(legacy) do
+				if readSetting(presetKey(name, id)) == nil then
+					GamepadTweaks_setSetting(presetKey(name, id), value)
+				end
+			end
+		end
+	end
+	for id in pairs(legacy) do
+		GamepadTweaks_setSetting("bind." .. id, nil)
+	end
+	log("bindings: global bind.* moved to the presets " .. table.concat(names, ", "))
 end
 
 local REGULAR_CHECK_MS = 500
@@ -286,6 +370,9 @@ local regularCheckedAt = 0
 local loadedRegular = nil
 
 local function refresh()
+	if not migrated then
+		migrateGlobal()
+	end
 	local reload = false
 	local v = settingsVersion()
 	if v ~= loadedVersion then
@@ -365,20 +452,27 @@ function Bindings.isTutorial()
 	return mode == "Tutorial"
 end
 
--- Puts the action on button (false/nil: none) and writes it to the settings file. Another
--- action of the same layer on that button is set to none, so a button never ends up with two.
+-- Puts the action on button (false/nil: none) in the current preset and writes it to the
+-- settings file. Another action of the same layer on that button is set to none, so a button
+-- never ends up with two. A built-in preset can't be changed (ControllerEditor.lua makes a new
+-- one first, as vanilla does).
 function Bindings.set(id, button)
 	local action = actionById[id]
 	if not action or not GamepadTweaks_setSetting then return false end
 	refresh()
+	local preset = Bindings.currentPreset()
+	if not Bindings.isPresetEditable(preset) then
+		log("WARN: preset " .. preset .. " can't be edited, " .. id .. " not changed")
+		return false
+	end
 	if button then
 		for _, other in ipairs(Bindings.actions) do
 			if other ~= action and other.layer == action.layer and other.bound == button then
-				GamepadTweaks_setSetting("bind." .. other.id, "none")
+				GamepadTweaks_setSetting(presetKey(preset, other.id), "none")
 			end
 		end
 	end
-	GamepadTweaks_setSetting("bind." .. id, button and tostring(button) or "none")
+	GamepadTweaks_setSetting(presetKey(preset, id), button and tostring(button) or "none")
 	refresh()
 	return true
 end
@@ -838,7 +932,39 @@ local function steamTick()
 	end
 end
 
+-- Held actions with followsButton (camera pan) run while their button is down, whenever it was
+-- pressed: vanilla reads RB every frame while aiming (PlayerCamera.update), so RB pressed before
+-- aiming pans too, and the player can pick "look far" first and aim after. The press dispatch
+-- (aiming layer) only catches presses made while aiming.
+local followed = {} -- ["<joypad>:<action>"] = true while the button holds the action
+
+local function followButtons()
+	for _, action in ipairs(Bindings.actions) do
+		if action.followsButton and action.run and action.release then
+			local button = Bindings.getButton(action.id)
+			for i = 1, getMaxActivePlayers() do
+				local jd = JoypadState.players[i]
+				if jd and jd.id then
+					local key = tostring(jd.id) .. ":" .. action.id
+					local down = button ~= nil and jd.focus == nil and button:isDown(jd.id) and isInWorld(jd)
+					if down ~= (followed[key] == true) then
+						followed[key] = down or nil
+						local ok, err = pcall(down and action.run or action.release, jd.controller, jd)
+						if not ok then log("ERROR: " .. action.id .. " failed: " .. tostring(err)) end
+					end
+				end
+			end
+		end
+	end
+end
+
+local function tick()
+	local ok, err = pcall(followButtons)
+	if not ok then log("ERROR: held buttons: " .. tostring(err)) end
+	steamTick()
+end
+
 -- Every frame, also in the main menu (registers the manifest early) and while paused.
-Events.OnRenderTick.Add(steamTick)
+Events.OnRenderTick.Add(tick)
 
 Events.OnGameStart.Add(refresh)

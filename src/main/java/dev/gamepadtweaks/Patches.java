@@ -4,6 +4,7 @@ import me.zed_0xff.zombie_buddy.Patch;
 import zombie.characters.CharacterJoypadAxis2dBinding;
 import zombie.characters.CharacterJoypadButtonBinding;
 import zombie.characters.IsoPlayer;
+import zombie.input.AimingMode;
 import zombie.characters.component.CharacterInputComponent;
 import zombie.core.physics.CarController;
 import zombie.input.JoypadManager;
@@ -256,6 +257,21 @@ public final class Patches {
         public static void exit(@Patch.Argument(0) IsoPlayer player,
                                 @Patch.Return(readOnly = false) float y) {
             y = AnalogInput.aimTarget(player, y, true);
+        }
+    }
+
+    // Aiming without the Aim binding (the stick), e.g. half RT (PrecisionAim) alone: vanilla snaps
+    // the reticle in front of the player, so the gyro had nothing to move. Once the gyro moves it
+    // (AnalogInput.gyroAiming), it is treated as the aim stick; melee / unarmed still snap.
+    @Patch(className = "zombie.input.AimingMode", methodName = "shouldSnapAimInFrontOfPlayer")
+    public static class GyroAimNoSnap {
+        @Patch.OnExit
+        public static void exit(@Patch.This AimingMode mode,
+                                @Patch.Argument(0) IsoPlayer player,
+                                @Patch.Return(readOnly = false) boolean snap) {
+            if (snap && AnalogInput.gyroAiming(player)) {
+                snap = mode.fixedAtMinDistance && mode.minDistanceAmount == -1.0F;
+            }
         }
     }
 

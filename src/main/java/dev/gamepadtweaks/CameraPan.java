@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import zombie.characters.IsoPlayer;
 import zombie.core.Core;
 import zombie.input.AimingReticle;
+import zombie.input.JoypadManager;
 import zombie.iso.IsoCamera;
 import zombie.iso.PlayerCamera;
 import zombie.vehicles.BaseVehicle;
@@ -19,8 +20,8 @@ import zombie.vehicles.BaseVehicle;
 //
 // Here RB reads as released inside PlayerCamera.update (Patches.CameraRB), so the pan follows
 // the action alone; its default button is RB while aiming (Bindings.lua "aiming" layer).
-// While the action is held, the camera eases (vanilla rate) towards the reticle instead:
-// it follows the stick as before, and the gyro too (the stick may be centered then). Applied
+// While the action is held, the camera eases (vanilla rate) towards the stick as before, or
+// towards the reticle if it is farther (gyro, free aiming; the stick may be centered then). Applied
 // after vanilla's update, from the pan values it had before, so vanilla's return to the center
 // in that frame is undone.
 public final class CameraPan {
@@ -90,8 +91,20 @@ public final class CameraPan {
         if (centerX <= 0 || centerY <= 0) {
             return;
         }
+        // Vanilla's target: aiming stick * 1500. The reticle alone isn't enough: with the stick
+        // (AimingMode.RANGED) it sits at a fixed short distance, so the camera barely moved; only
+        // free aiming (half RT, gyro) takes it to the screen edge. The farther of the two wins.
         float targetX = (AimingReticle.getXA(i) / centerX - 1.0F) * 1500.0F;
         float targetY = (AimingReticle.getYA(i) / centerY - 1.0F) * 1500.0F;
+        int joypad = player.getJoypadBind();
+        if (joypad >= 0) {
+            float stickX = JoypadManager.instance.getAimingAxisX(joypad) * 1500.0F;
+            float stickY = JoypadManager.instance.getAimingAxisY(joypad) * 1500.0F;
+            if (stickX * stickX + stickY * stickY > targetX * targetX + targetY * targetY) {
+                targetX = stickX;
+                targetY = stickY;
+            }
+        }
         // vanilla: step = (target - pos) / (80 * mult), mult = 1 / (seconds * 110) / (0.5 * zoom)
         float seconds = beforeTime[i] < 0 ? 1.0F / 110.0F
                 : (System.currentTimeMillis() - beforeTime[i]) / 1000.0F;

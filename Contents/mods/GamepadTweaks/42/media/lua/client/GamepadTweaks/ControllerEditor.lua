@@ -10,8 +10,10 @@
 -- - populateWithEditableElements: a list per action (another action instead, or "< Remove >");
 -- - createJoypadButtonBindingCBox ("< Add New >"): the actions not on the button yet,
 --   "[Category] Name", sorted by category.
--- Changes are written to ~/Zomboid/GamepadTweaks.properties at once (Bindings.set); they are
--- not part of the vanilla presets. If the vanilla editor changes, the wrappers only log.
+-- Changes are written to ~/Zomboid/GamepadTweaks.properties at once (Bindings.set), for the
+-- current preset. A built-in preset (Default, Original) can't be edited: as with a regular
+-- binding, the first change makes a new preset from it, and a new preset gets the mod bindings
+-- of the one it is made from. If the vanilla editor changes, the wrappers only log.
 
 require "ISUI/Gamepad/CharacterJoypadBindingUIRow"
 require "GamepadTweaks/Bindings"
@@ -120,6 +122,17 @@ function CharacterJoypadBindingUIRow:populateWithReadOnlyLabels(...)
 	return result
 end
 
+-- Vanilla makes a new preset from a built-in one on the first change
+-- (GameOptionControllerTab:onJoypadButtonBindingEdited); the mod's changes go the same way.
+local function editablePreset(row)
+	if Bindings.isPresetEditable() then return true end
+	local ui = row.uiBinding
+	if ui and ui.onJoypadButtonBindingEdited then
+		ui:onJoypadButtonBindingEdited()
+	end
+	return Bindings.isPresetEditable()
+end
+
 -- Editable row ---------------------------------------------------------------------
 
 -- Options: the action itself, the actions not on this button, "< Remove >".
@@ -137,6 +150,11 @@ end
 
 function CharacterJoypadBindingUIRow:onGamepadTweaksActionChanged(box, currentId)
 	local data = box:getSelectedData()
+	if (data == REMOVE or type(data) == "string" and data:sub(1, #PREFIX) == PREFIX)
+			and not editablePreset(self) then
+		refreshAll(self)
+		return
+	end
 	if data == REMOVE then
 		Bindings.set(currentId, false)
 	elseif type(data) == "string" and data:sub(1, #PREFIX) == PREFIX then
@@ -241,7 +259,9 @@ local vanillaAddNewChanged = CharacterJoypadBindingUIRow.onAddNewJoypadBindingCh
 function CharacterJoypadBindingUIRow:onAddNewJoypadBindingChanged(senderBox, bindingKey, ...)
 	local data = senderBox:getSelectedData()
 	if type(data) == "string" and data:sub(1, #PREFIX) == PREFIX then
-		Bindings.set(data:sub(#PREFIX + 1), bindingKey)
+		if editablePreset(self) then
+			Bindings.set(data:sub(#PREFIX + 1), bindingKey)
+		end
 		refreshAll(self)
 		return
 	end
@@ -265,11 +285,17 @@ end
 if gamepadBinding and gamepadBinding.createNewFromCurrent and CharacterInputBindingSet then
 	local vanillaCreateNew = gamepadBinding.createNewFromCurrent
 	function gamepadBinding:createNewFromCurrent(...)
+		local from = Bindings.currentPreset()
+		local entry
 		if isAscii(getText("IGUI_Custom")) then
-			return vanillaCreateNew(self, ...)
+			entry = vanillaCreateNew(self, ...)
+		else
+			entry = self:addInputSet(CharacterInputBindingSet.createNewFromCurrent("Custom"))
 		end
-		local newSet = CharacterInputBindingSet.createNewFromCurrent("Custom")
-		return self:addInputSet(newSet)
+		if entry and entry.key then
+			Bindings.copyPreset(from, entry.key)
+		end
+		return entry
 	end
 else
 	log("WARN: gamepadBinding.createNewFromCurrent not found, new presets keep the translated name")

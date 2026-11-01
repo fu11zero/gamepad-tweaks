@@ -209,7 +209,8 @@ local function held(name)
 end
 
 -- Camera pan while aiming ("look far"): vanilla pans a gamepad player's camera only with RB
--- held (PlayerCamera.update, hardcoded); CameraPan.java, towards the reticle.
+-- held (PlayerCamera.update, hardcoded); CameraPan.java, towards the stick or the reticle.
+-- followsButton: held whenever the button is down, also if pressed before aiming (Bindings.lua).
 local panRun, panRelease = held("panCamera")
 
 -- AnimalContextMenu.showRadialMenu (ANIMAL_RADIAL_MENU key, ISUIHandler: player 0 only);
@@ -633,7 +634,7 @@ local ACTIONS = {
 	{ id = "fireMode", label = "UI_GamepadTweaks_action_fireMode", run = fireMode },
 	{ id = "useTool", label = "UI_GamepadTweaks_action_useTool", run = useTool },
 	{ id = "panCamera", label = "PanCamera", run = panRun, release = panRelease,
-		layer = "aiming", button = Joypad.RBumper },
+		layer = "aiming", button = Joypad.RBumper, followsButton = true },
 	{ id = "sitOnGround", label = "SitOnGround", run = sitOnGround },
 	{ id = "searchMode", label = "Toggle Search Mode", run = searchMode },
 	{ id = "shout", label = "Shout", run = shout },

@@ -135,82 +135,87 @@ public final class Settings {
 
             # --- Button actions ---------------------------------------------------
             # Actions that vanilla hardcodes to buttons (media/lua/client/GamepadTweaks/Bindings.lua).
-            # bind.<action>=<button>: A B X Y LeftBump RightBump LeftStick RightStick
-            # Back Start Guide DPadUp DPadDown DPadLeft DPadRight, or none to free the
-            # button for the regular bindings (Options -> Controller).
+            # Per controller preset (Options -> Controller), like the regular bindings:
+            # preset.<preset>.bind.<action>=<button>: A B X Y LeftBump RightBump LeftStick
+            # RightStick Back Start Guide DPadUp DPadDown DPadLeft DPadRight, or none to free
+            # the button for the regular bindings. Characters other than letters, digits, _ and -
+            # in the preset name are written as %<code>; (a space: %32;).
             # A missing line = the vanilla button. An action set to a button takes it from
-            # the action that has it by default.
-            #bind.vehicleWheel=DPadUp
-            #bind.emoteWheel=DPadDown
-            #bind.equipWheel=DPadLeft
-            #bind.extraWheel=DPadRight
-            #bind.commandWheel=Back
-            #bind.pause=Start
+            # the action that has it by default. The built-in presets (Default, Original)
+            # always have the defaults.
+            #preset.Custom.bind.vehicleWheel=DPadUp
+            #preset.Custom.bind.emoteWheel=DPadDown
+            #preset.Custom.bind.equipWheel=DPadLeft
+            #preset.Custom.bind.extraWheel=DPadRight
+            #preset.Custom.bind.commandWheel=Back
+            #preset.Custom.bind.pause=Start
             # cruiseFaster/cruiseSlower: while driving with the CruiseControl button held.
             # stickRadial: held in the world (crouch/sit/auto-walk radial, if enabled in options).
             # uiNavigation: held in a UI (panel navigation); uiNavigateParent: released while navigating.
-            #bind.cruiseFaster=DPadUp
-            #bind.cruiseSlower=DPadDown
-            #bind.stickRadial=LeftStick
-            #bind.uiNavigation=RightBump
-            #bind.uiNavigateParent=LeftBump
+            #preset.Custom.bind.cruiseFaster=DPadUp
+            #preset.Custom.bind.cruiseSlower=DPadDown
+            #preset.Custom.bind.stickRadial=LeftStick
+            #preset.Custom.bind.uiNavigation=RightBump
+            #preset.Custom.bind.uiNavigateParent=LeftBump
+            # panCamera: camera pan ("look far") while aiming, the button vanilla hardcodes for it.
+            #preset.Custom.bind.panCamera=RightBump
             # Keyboard-only actions, unbound by default (media/lua/client/GamepadTweaks/KeyActions.lua).
             # Main:
-            #bind.lightSource=
-            #bind.dropPrimary=
-            #bind.dropSecondary=
-            #bind.dropBothHands=
-            #bind.dropBag=
-            #bind.dropHandsAndBag=
-            #bind.grabCorpse=
-            #bind.sharpenWeapon=
-            #bind.sitOnGround=
-            #bind.searchMode=
-            #bind.shout=
-            #bind.releaseRope=
-            #bind.engine=
-            #bind.headlights=
-            #bind.heater=
-            #bind.horn=
-            #bind.switchSeat=
-            #bind.vehicleInfo=
+            #preset.Custom.bind.lightSource=
+            #preset.Custom.bind.dropPrimary=
+            #preset.Custom.bind.dropSecondary=
+            #preset.Custom.bind.dropBothHands=
+            #preset.Custom.bind.dropBag=
+            #preset.Custom.bind.dropHandsAndBag=
+            #preset.Custom.bind.grabCorpse=
+            #preset.Custom.bind.sharpenWeapon=
+            #preset.Custom.bind.sitOnGround=
+            #preset.Custom.bind.searchMode=
+            #preset.Custom.bind.shout=
+            #preset.Custom.bind.releaseRope=
+            #preset.Custom.bind.engine=
+            #preset.Custom.bind.headlights=
+            #preset.Custom.bind.heater=
+            #preset.Custom.bind.horn=
+            #preset.Custom.bind.switchSeat=
+            #preset.Custom.bind.vehicleInfo=
             # Extra:
-            #bind.map=
-            #bind.craftingMenu=
-            #bind.buildingMenu=
-            #bind.skills=
-            #bind.health=
-            #bind.protection=
-            #bind.info=
-            #bind.survivalGuide=
-            #bind.hotbar1=
-            #bind.hotbar2=
-            #bind.hotbar3=
-            #bind.hotbar4=
-            #bind.hotbar5=
-            #bind.hotbar6=
-            #bind.hotbar7=
-            #bind.hotbar8=
-            #bind.timePause=
-            #bind.timeNormal=
-            #bind.timeFast1=
-            #bind.timeFast2=
-            #bind.timeFast3=
-            #bind.moveFurniture=
-            #bind.toggleUI=
-            #bind.screenshot=
-            #bind.pvp=
+            #preset.Custom.bind.map=
+            #preset.Custom.bind.craftingMenu=
+            #preset.Custom.bind.buildingMenu=
+            #preset.Custom.bind.skills=
+            #preset.Custom.bind.health=
+            #preset.Custom.bind.protection=
+            #preset.Custom.bind.info=
+            #preset.Custom.bind.survivalGuide=
+            #preset.Custom.bind.hotbar1=
+            #preset.Custom.bind.hotbar2=
+            #preset.Custom.bind.hotbar3=
+            #preset.Custom.bind.hotbar4=
+            #preset.Custom.bind.hotbar5=
+            #preset.Custom.bind.hotbar6=
+            #preset.Custom.bind.hotbar7=
+            #preset.Custom.bind.hotbar8=
+            #preset.Custom.bind.timePause=
+            #preset.Custom.bind.timeNormal=
+            #preset.Custom.bind.timeFast1=
+            #preset.Custom.bind.timeFast2=
+            #preset.Custom.bind.timeFast3=
+            #preset.Custom.bind.moveFurniture=
+            #preset.Custom.bind.toggleUI=
+            #preset.Custom.bind.screenshot=
+            #preset.Custom.bind.pvp=
             # Inventory, unbound by default: pressed while the inventory or loot window has the
             # focus, instead of what vanilla does with that button there (InventoryActions.lua).
-            #bind.invTransferAll=
-            #bind.invTransferSameType=
-            #bind.invTransferSameTypeNearby=
-            #bind.invAllToFloor=
-            #bind.invDropSelected=
-            #bind.invTransferStack=
-            #bind.invTransferOne=
-            #bind.invUse=
-            #bind.invUnpack=
+            #preset.Custom.bind.invTransferAll=
+            #preset.Custom.bind.invTransferSameType=
+            #preset.Custom.bind.invTransferSameTypeNearby=
+            #preset.Custom.bind.invAllToFloor=
+            #preset.Custom.bind.invDropSelected=
+            #preset.Custom.bind.invTransferStack=
+            #preset.Custom.bind.invTransferOne=
+            #preset.Custom.bind.invUse=
+            #preset.Custom.bind.invUnpack=
             """;
 
     public static volatile boolean steeringEnabled = true;

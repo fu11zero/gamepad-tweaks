@@ -97,7 +97,11 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
 
   The vanilla binding list is a Java enum (`CharacterJoypadButtonBinding`, fixed at class load and
   saved by name in `InputBindings/*.xml`), so it isn't extended; the actions live in the mod:
-  `bind.<action>=<button>`, `none` frees the button for the regular bindings. Actions are in layers
+  `preset.<preset>.bind.<action>=<button>`, `none` frees the button for the regular bindings.
+  Per vanilla preset (`getCore():getOptionGamepadBindingPreset()`), as the regular bindings are: the built-in
+  Default and Original (Lua only, no `loadedSet`) always have the defaults, and the first change in them
+  makes a new preset (vanilla `GameOptionControllerTab:onJoypadButtonBindingEdited`); a new preset copies
+  the mod bindings of the one it's made from. The old global `bind.<action>` lines move to every saved preset. Actions are in layers
   (one button = one action per layer): `world` press (`vehicleWheel`, `emoteWheel`, `equipWheel`,
   `extraWheel`, `commandWheel`, `pause`), `cruise` press while driving with the CruiseControl
   button held, checked first (`cruiseFaster`, `cruiseSlower`, repeat while held), `hold`
@@ -182,9 +186,9 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   and the mod adds its actions: in each button row the actions on that button (mod colour, with the
   context: cruise held, hold, ...), in the edit row a list per action (another action instead, or
   `< Remove >`), and in `< Add New >` the actions not on the button yet ("[Category] Name", by
-  category). `Bindings.set` writes `bind.<id>` at once through `GamepadTweaks_setSetting` (Java:
+  category). `Bindings.set` writes `preset.<preset>.bind.<id>` at once through `GamepadTweaks_setSetting` (Java:
   replaces the line or adds it after its `#` example, keeps the rest of the file); an action of the
-  same layer on that button is set to `none`. Mod actions are not part of the vanilla presets.
+  same layer on that button is set to `none`.
   Names: vanilla key binding names, mod strings in `media/lua/shared/Translate/{EN,RU}/UI.json`.
 
 - **Mod actions as Steam Input game actions** (`SteamInput.java`, `Bindings.lua` Steam Input
@@ -298,6 +302,11 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   `SteamInput.updateAnalog`), after `SteamAPI_RunCallbacks` ran Steam's frame. `aim` is declared
   in the `aiming` layer (only there it means anything), so the gyro is bound there. With the held
   Aim action, the stick isn't needed at all.
+  Aiming without the Aim binding (half RT, PrecisionAim, stick released) snaps the reticle in front of
+  the player (`AimingMode.shouldSnapAimInFrontOfPlayer`: no stick, nothing to aim with). The first gyro
+  delta then takes the reticle from where it stands (offset = reticle - stick target) and the player
+  counts as aimed until aiming ends (`AnalogInput.gyroAiming`, `Patches.GyroAimNoSnap`); modes that
+  always snap (melee, unarmed: `fixedAtMinDistance`, `minDistanceAmount == -1`) still do.
   Steering and movement analog actions (`steer` in the `vehicle` layer, `move` in `onfoot`,
   `joystick_move`) are added to the steering stick (`Patches.SteeringInput`, before the mod's
   shaping) and to the Movement axis binding (`Patches.MoveX/Y`, `MoveApplied`; Run at full

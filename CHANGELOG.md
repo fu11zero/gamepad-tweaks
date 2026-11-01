@@ -5,8 +5,20 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Fixed: gyro aiming did nothing when aiming with the trigger alone (half RT, stick released): the
+  reticle stayed in front of the player. Now the gyro moves it from there.
+- Changed: mod button actions are saved per controller preset, like the regular bindings. Default and
+  Original always have the mod's defaults (a change there makes a new preset, as in vanilla). Bindings
+  made before move to your own presets.
+- Fixed: Look far (camera pan while aiming) moved the camera only a little when aiming with the stick;
+  it pans as far as in vanilla again (and still follows the gyro / free aiming).
+- Fixed: Look far works in any order, as in vanilla: hold its button first and then aim (it worked only
+  when pressed while already aiming).
 - Fixed: Windows splitscreen with Steam Input: with a second controller the Steam game actions and
   context layers stopped working for both players (Steam controllers weren't matched to players on Windows).
+
+## Update: 31 Oct @ 5:13pm
+
 - Changed: the Java part is no longer signed for now. ZombieBuddy blocked the signed jar as "signature invalid"
   when it could not load the author's key from the Steam profile; now it just asks to allow the mod.
 - Fixed: a controller preset made in a non-English game (e.g. Russian "Пользовательский") was not
