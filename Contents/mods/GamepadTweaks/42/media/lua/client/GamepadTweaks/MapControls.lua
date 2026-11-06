@@ -62,3 +62,33 @@ function ISMap:updateJoypad()
 		vanillaMapUpdateJoypad(self)
 	end
 end
+
+-- Fliers and stash maps under the gamepad cross.
+-- Vanilla ISWorldMap:renderPrintMedia / renderStashMaps look for the icon under the map center
+-- when the gamepad is used, but then also require self:isPointOver(getMouseX(), getMouseY()):
+-- the real mouse cursor must be over the map and not under another top-level UI. With a gamepad
+-- the cursor is anywhere (in splitscreen usually on another player's screen), so the icon is never
+-- highlighted and A does nothing; streets (pickMouseOverStreet) have no such check and work.
+-- Patch: while these run in gamepad mode, isPointOver tests the cross instead of the cursor.
+local function isJoypadMode(self)
+	return self.playerNum ~= nil and (self.playerNum ~= 0
+		or (getJoypadData(self.playerNum) ~= nil and not wasMouseActiveMoreRecentlyThanJoypad()))
+end
+
+local function crossIsPointOver(self)
+	local jo = self.javaObject
+	return jo:isPointOver(jo:getAbsoluteX() + self.width / 2, jo:getAbsoluteY() + self.height / 2)
+end
+
+local function underCross(vanilla)
+	return function(self, ...)
+		if not isJoypadMode(self) then return vanilla(self, ...) end
+		self.isPointOver = crossIsPointOver
+		local ok, err = pcall(vanilla, self, ...)
+		self.isPointOver = nil
+		if not ok then error(err, 0) end
+	end
+end
+
+ISWorldMap.renderPrintMedia = underCross(ISWorldMap.renderPrintMedia)
+ISWorldMap.renderStashMaps = underCross(ISWorldMap.renderStashMaps)

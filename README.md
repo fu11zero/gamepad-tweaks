@@ -73,6 +73,11 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - zoom speed = `map.zoomSpeed` levels per second x trigger^`map.zoomExponent` (RT in, LT out),
     `setZoom` around the map center, no step animation;
   - while rotating an annotation the stick keeps rotating it (no panning);
+  - fliers and stash maps under the cross: vanilla `renderPrintMedia` / `renderStashMaps` pick the
+    icon under the map center but then also require `isPointOver(getMouseX(), getMouseY())`, the real
+    mouse cursor over the map (in splitscreen it is usually on another screen), so the icon never
+    highlighted and A did nothing (streets have no such check). While they run in gamepad mode
+    `isPointOver` tests the cross (Lua only, works without the jar);
   - without the jar (`GamepadTweaks_updateMap` missing) vanilla runs.
 
 - **Fliers work with a controller** (`media/lua/client/GamepadTweaks/PrintMedia.lua`).

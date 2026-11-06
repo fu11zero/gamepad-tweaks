@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Fixed: fliers and stash maps on the world map didn't react to the controller cross (they needed the
+  mouse cursor over the map, in splitscreen it is on another screen); now A opens them like the mouse.
 - Fixed: gyro aiming did nothing when aiming with the trigger alone (half RT, stick released): the
   reticle stayed in front of the player. Now the gyro moves it from there.
 - Changed: mod button actions are saved per controller preset, like the regular bindings. Default and
