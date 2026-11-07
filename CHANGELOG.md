@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+## Update: 7 Nov @ 1:39pm
+
 - Fixed: fliers and stash maps on the world map didn't react to the controller cross (they needed the
   mouse cursor over the map, in splitscreen it is on another screen); now A opens them like the mouse.
 - Fixed: gyro aiming did nothing when aiming with the trigger alone (half RT, stick released): the
