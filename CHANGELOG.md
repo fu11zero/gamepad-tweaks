@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+## Update: 12 Nov @ 5:00am
+
 - Added: analog gas and brake on the triggers (vanilla: on/off at 70% of the travel). Each pedal position
   has its own cruising speed: a light press rolls the car slowly and keeps that speed instead of slowly
   accelerating to top speed; easing off brakes with the engine; full pedal works as in vanilla. LT brakes
