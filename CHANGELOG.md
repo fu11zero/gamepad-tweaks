@@ -13,6 +13,7 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
   Turns itself off while Tsuki's AnalogThrottle is active.
 - Added (experimental, off by default): brake hold. LT that brakes the car stops and holds it instead of
   backing up at once; release and press again to reverse. Works with vanilla pedals too.
+- Changed: the Java part is signed by the author (ZombieBuddy shows "FullZero"; trust the author once and mod updates no longer ask for approval).
 
 ## Update: 7 Nov @ 1:39pm
 
