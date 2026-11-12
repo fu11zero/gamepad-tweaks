@@ -6,7 +6,7 @@
 -- and "Apply" writes back only what the player changed (GamepadTweaks_setSetting), so
 -- hand-tuned values outside a slider's range survive. Changes apply at once, no reload.
 --
--- Only features can be turned off or tuned (steering, triggers, press actions, map,
+-- Only features can be turned off or tuned (steering, throttle, triggers, press actions, map,
 -- Steam Input). Bug fixes always run: UI presses leaking to the character, fliers,
 -- cruise control / reload following their bindings. Button rebinding is in
 -- Options -> Controller (ControllerEditor.lua); advanced values only in the file.
@@ -36,6 +36,13 @@ local SPEC = {
 		requires = { "steering.enabled", "steering.constantRateWheel" } },
 	{ key = "steering.returnRate", min = 0.005, max = 0.2, step = 0.005, default = 0.06,
 		requires = { "steering.enabled", "steering.constantRateWheel" } },
+
+	{ title = "throttle" },
+	{ key = "throttle.analog", tick = true },
+	{ key = "throttle.deadZone", min = 0, max = 0.1, step = 0.005, default = 0.02, requires = { "throttle.analog" } },
+	{ key = "throttle.curve", min = 0.5, max = 3, step = 0.1, default = 1.5, requires = { "throttle.analog" } },
+	{ key = "throttle.dragExponent", min = 1, max = 4, step = 0.1, default = 2.0, requires = { "throttle.analog" } },
+	{ key = "throttle.engineBraking", min = 0, max = 3, step = 0.1, default = 1.0, requires = { "throttle.analog" } },
 
 	{ title = "buttons" },
 	{ key = "triggers.noDeadZone", tick = true },

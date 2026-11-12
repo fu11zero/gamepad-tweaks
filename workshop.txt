@@ -9,7 +9,7 @@ description=[*][b]Steering without dead zones.[/b] Driving a vehicle with a cont
 description=[*][b]No more driving in arcs (stick drift fix).[/b] A released stick rarely rests at exactly zero, and the offset slowly pulls the car aside. The mod learns where the stick rests, so the car goes straight. No dead zone needed.
 description=[*][b]Speed-sensitive steering.[/b] Soft center at high speed, full stick = maximum wheel angle allowed at the current speed. No more oversteering on the highway.
 description=[*][b]Wheel without lag.[/b] The steering wheel follows the stick at a constant rate instead of a slow exponential (up to ~3 s steering delay at top speed). Keyboard steering stays vanilla.
-description=[*][b]Triggers without dead zone.[/b] LT/RT (L2/R2) use the raw analog trigger axis: gas and brake respond from the first millimeter. The options screen dead zone still applies to the sticks.
+description=[*][b]Analog gas and brake.[/b] Vanilla pedals are on/off at 70% of LT/RT (L2/R2). Now a light press rolls the car slowly and holds that speed, more gas = faster, easing off brakes with the engine, full pedal = vanilla. Triggers have no dead zone.
 description=[*][b]Smooth map controls.[/b] World map and paper maps: past the game's stick dead zone the map pans smoothly, stick deflection = scroll speed (also in isometric view, diagonals work, no jumps). Triggers zoom smoothly, how far you press = zoom speed, instead of one zoom step per click. The paper map can now be moved with the stick too.
 description=[*][b]Fliers and brochures work with a controller.[/b] Vanilla threw a Lua error, so B, X and Y did nothing and the window closed only with Esc. Fixed. Fliers and stash maps on the world map now open with A under the cross (vanilla needed the mouse).
 description=[*][b]Controller presets save in any language.[/b] On Linux and Steam Deck a new controller preset in a non-English game (e.g. "Пользовательский") failed to save, so your bindings were lost. New presets are now named "Custom".
@@ -27,7 +27,7 @@ description=[*][b]Actions on press, not on release.[/b] Crouch (sneak) toggle an
 description=[/list]
 description=
 description=[h2]Settings[/h2]
-description=[b]Options -> Mods -> Gamepad Tweaks[/b]: turn off any feature you don't want (steering without dead zone, stick center learning, wheel without lag, triggers without dead zone, crouch/sprint on press, smooth map, Steam Input) and tune it for your controller: steering dead zone, steering curve, wheel speed, map pan and zoom speed. Changes apply at once, in game too. Bug fixes always stay on.
+description=[b]Options -> Mods -> Gamepad Tweaks[/b]: turn off any feature you don't want (steering without dead zone, stick center learning, wheel without lag, analog gas, triggers without dead zone, crouch/sprint on press, smooth map, Steam Input) and tune it for your controller: steering dead zone, steering curve, wheel speed, map pan and zoom speed. Changes apply at once, in game too. Bug fixes always stay on.
 description=Advanced: ~/Zomboid/GamepadTweaks.properties (same settings and more, re-read while the game runs). Button actions: Options -> Controller.
 description=
 description=[h2]Requirements[/h2]
@@ -40,6 +40,6 @@ description=[h2]Source code and bug reports[/h2]
 description=[url=https://github.com/fu11zero/gamepad-tweaks]github.com/fu11zero/gamepad-tweaks[/url]
 description=
 description=[h2]Keywords[/h2]
-description=analog steering, analog movement, Steam Deck back buttons, L4, R4, L5, R5, M1, M2, Xbox Elite paddles, DualSense Edge, configurable, steering sensitivity, joypad, Steam Input API, action layers, gyroscope, motion controls, trackpad aiming, flick, attack button, run button, pan camera, driver seat, select fire, chop tree, farming, water plants, push to talk, voice chat, animal menu, flyer, remap, keybind, dpad, firearm radial, eject magazine, unload, quick slots, take all, move to floor, drop all, drop to floor, crouch button, foraging, couch co-op
+description=analog steering, analog throttle, analog gas pedal, analog movement, Steam Deck back buttons, L4, R4, L5, R5, M1, M2, Xbox Elite paddles, DualSense Edge, configurable, steering sensitivity, joypad, Steam Input API, action layers, gyroscope, motion controls, trackpad aiming, flick, attack button, run button, pan camera, driver seat, select fire, chop tree, farming, water plants, push to talk, voice chat, animal menu, flyer, remap, keybind, dpad, firearm radial, eject magazine, unload, quick slots, take all, move to floor, drop all, drop to floor, crouch button, foraging, couch co-op
 tags=Build 42;Interface;Vehicles;QoL
 visibility=public

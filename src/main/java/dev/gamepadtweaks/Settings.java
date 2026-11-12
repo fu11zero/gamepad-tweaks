@@ -84,6 +84,36 @@ public final class Settings {
             # 0 = none: jitter averages out, the curve squashes it at speed.
             steering.noiseDeadZone=0
 
+            # --- Throttle ---------------------------------------------------------
+            # Analog gas (RT) and brake / reverse (LT) for a gamepad driver (vanilla: on/off
+            # at 70% of the travel). Every pedal position has its own cruising speed: the
+            # push fades as the car speeds up and is gone at maxSpeed * pedal ^ (1/dragExponent),
+            # easing off brakes with the engine down to the new speed. Full pedal = vanilla.
+            # false = vanilla pedals (everything below is off).
+            throttle.analog=true
+            # Trigger travel (0..1) ignored as noise (a drifting trigger would creep the car and
+            # start the engine), and travel that counts as fully pressed. 0 is fine for triggers
+            # that rest exactly at zero.
+            throttle.deadZone=0.02
+            throttle.fullAt=0.98
+            # Pedal = travel ^ curve (1 = linear, more = finer at a light press).
+            # With 1.5 and dragExponent 2: 10% travel ~ 18% of the top speed, 30% ~ 40%,
+            # 50% ~ 60%, 75% ~ 80%.
+            throttle.curve=1.5
+            # How fast the drag grows with speed: 2 = like air drag, 1 = linear
+            # (cruising speed = maxSpeed * pedal).
+            throttle.dragExponent=2.0
+            # Engine braking above the pedal's speed, x the vanilla released-pedal braking.
+            throttle.engineBraking=1.0
+            # Brake pedal (LT going forward, RT rolling back) = travel ^ brakeCurve.
+            throttle.brakeCurve=1.0
+            # With analog pedals the tachometer and the engine sound show an RPM from the speed
+            # (vanilla revs up at a fixed rate on any pedal); gears and physics stay vanilla.
+            # How fast the engine load sound parameter follows the pedal, share per second.
+            throttle.soundRate=4.0
+            # Log pedals, forces and RPM once a second.
+            throttle.debugLog=false
+
             # --- Triggers ---------------------------------------------------------
             # The game's dead zone is not applied to the triggers (they rest at zero
             # and need none). false = vanilla (the options screen stick dead zone).
@@ -239,6 +269,15 @@ public final class Settings {
     public static volatile float releaseMaxMs = 200f;
     public static volatile float releaseSettleMs = 500f;
     public static volatile float disarmDistance = 0.025f;
+    public static volatile boolean throttleAnalog = true;
+    public static volatile float throttleDeadZone = 0.02f;
+    public static volatile float throttleFullAt = 0.98f;
+    public static volatile float throttleCurve = 1.5f;
+    public static volatile float throttleDragExponent = 2.0f;
+    public static volatile float throttleEngineBraking = 1.0f;
+    public static volatile float throttleBrakeCurve = 1.0f;
+    public static volatile float throttleSoundRate = 4.0f;
+    public static volatile boolean throttleDebugLog = false;
     public static volatile boolean triggersNoDeadZone = true;
     public static volatile boolean triggersDebugLog = false;
     public static volatile boolean crouchOnPress = true;
@@ -391,6 +430,15 @@ public final class Settings {
         releaseMaxMs = num(p, "steering.releaseMaxMs", 200f, 10f, 2000f);
         releaseSettleMs = num(p, "steering.releaseSettleMs", 500f, 0f, 5000f);
         disarmDistance = num(p, "steering.disarmDistance", 0.025f, 0.001f, 0.5f);
+        throttleAnalog = bool(p, "throttle.analog", true);
+        throttleDeadZone = num(p, "throttle.deadZone", 0.02f, 0f, 0.5f);
+        throttleFullAt = num(p, "throttle.fullAt", 0.98f, 0.5f, 1f);
+        throttleCurve = num(p, "throttle.curve", 1.5f, 0.2f, 5f);
+        throttleDragExponent = num(p, "throttle.dragExponent", 2.0f, 0.5f, 5f);
+        throttleEngineBraking = num(p, "throttle.engineBraking", 1.0f, 0f, 10f);
+        throttleBrakeCurve = num(p, "throttle.brakeCurve", 1.0f, 0.2f, 5f);
+        throttleSoundRate = num(p, "throttle.soundRate", 4.0f, 0.1f, 100f);
+        throttleDebugLog = bool(p, "throttle.debugLog", false);
         triggersNoDeadZone = bool(p, "triggers.noDeadZone", true);
         triggersDebugLog = bool(p, "triggers.debugLog", false);
         crouchOnPress = bool(p, "actions.crouchOnPress", true);
@@ -418,6 +466,10 @@ public final class Settings {
                 + " noiseDeadZone=" + noiseDeadZone
                 + " release=" + releaseFrom + "/" + releaseMaxMs + "ms settle=" + releaseSettleMs
                 + "ms disarm=" + disarmDistance
+                + " throttle: analog=" + throttleAnalog + " deadZone=" + throttleDeadZone + ".." + throttleFullAt
+                + " curve=" + throttleCurve + " drag^" + throttleDragExponent + " engineBraking=" + throttleEngineBraking
+                + " brakeCurve=" + throttleBrakeCurve
+                + " soundRate=" + throttleSoundRate + " debugLog=" + throttleDebugLog
                 + " triggers.noDeadZone=" + triggersNoDeadZone + " triggers.debugLog=" + triggersDebugLog
                 + " actions: crouchOnPress=" + crouchOnPress + " sprintOnPress=" + sprintOnPress
                 + " vehicleOnlyByPrompt=" + vehicleOnlyByPrompt

@@ -31,6 +31,7 @@ public final class Patches {
             int joypad = car.vehicleObject.getJoypad();
             HeldActions.brake(car, joypad);
             Settings.refresh();
+            Throttle.controls(car, joypad);
             if (joypad == -1) {
                 return;
             }
@@ -49,6 +50,71 @@ public final class Patches {
             }
             stick = AnalogInput.steer(joypad, stick);
             car.clientControls.steering = Steering.shape(car, raw, stick, joypad);
+        }
+    }
+
+    // Analog pedals (see Throttle).
+    @Patch(className = "zombie.core.physics.CarController", methodName = "control_ForwardNew")
+    public static class ThrottleForward {
+        @Patch.OnExit
+        public static void exit(@Patch.This CarController car, @Patch.Argument(0) float speed) {
+            Throttle.forward(car, speed);
+        }
+    }
+
+    @Patch(className = "zombie.core.physics.CarController", methodName = "control_Reverse")
+    public static class ThrottleReverse {
+        @Patch.OnExit
+        public static void exit(@Patch.This CarController car, @Patch.Argument(0) float speed) {
+            Throttle.reverse(car, speed);
+        }
+    }
+
+    // The engine RPM: vanilla's during CarController.update, from the speed outside it.
+    @Patch(className = "zombie.core.physics.CarController", methodName = "update")
+    public static class ThrottleRpm {
+        @Patch.OnEnter
+        public static void enter(@Patch.This CarController car) {
+            Throttle.beginUpdate(car);
+        }
+
+        @Patch.OnExit
+        public static void exit(@Patch.This CarController car) {
+            Throttle.endUpdate(car);
+        }
+    }
+
+    @Patch(className = "zombie.core.physics.CarController", methodName = "control_NoControl")
+    public static class ThrottleCoasting {
+        @Patch.OnExit
+        public static void exit(@Patch.This CarController car) {
+            Throttle.coasting(car);
+        }
+    }
+
+    @Patch(className = "zombie.core.physics.CarController", methodName = "control_Braking")
+    public static class ThrottleBraking {
+        @Patch.OnExit
+        public static void exit(@Patch.This CarController car) {
+            Throttle.braking(car);
+        }
+    }
+
+    // Engine sound load: the vehicle's own parameter (audio.parameters) and the shared vehicle
+    // sound code's (vehicleSound.parameters), both take the BaseVehicle of a driven car.
+    @Patch(className = "zombie.audio.parameters.ParameterVehicleLoad", methodName = "calculateCurrentValue")
+    public static class ThrottleSoundLoad {
+        @Patch.OnExit
+        public static void exit(@Patch.This Object parameter, @Patch.Return(readOnly = false) float value) {
+            value = Throttle.soundLoad(parameter, value);
+        }
+    }
+
+    @Patch(className = "zombie.vehicleSound.parameters.ParameterVehicleLoad", methodName = "calculateCurrentValue")
+    public static class ThrottleSoundLoad2 {
+        @Patch.OnExit
+        public static void exit(@Patch.This Object parameter, @Patch.Return(readOnly = false) float value) {
+            value = Throttle.soundLoad(parameter, value);
         }
     }
 

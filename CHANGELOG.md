@@ -5,6 +5,13 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Added: analog gas and brake on the triggers (vanilla: on/off at 70% of the travel). Each pedal position
+  has its own cruising speed: a light press rolls the car slowly and keeps that speed instead of slowly
+  accelerating to top speed; easing off brakes with the engine; full pedal works as in vanilla. LT brakes
+  as hard as it is pressed. The engine RPM shown (tachometer and sound) follows the speed in the current
+  gear instead of revving up on its own; gears, neutral and the driving physics stay vanilla. Options -> Mods -> Gamepad Tweaks.
+  Turns itself off while Tsuki's AnalogThrottle is active.
+
 ## Update: 7 Nov @ 1:39pm
 
 - Fixed: fliers and stash maps on the world map didn't react to the controller cross (they needed the

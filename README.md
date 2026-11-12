@@ -42,6 +42,38 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   inside the 0.1 dead zone. Instead the wheel moves towards the stick at a constant rate,
   faster back to center. Only for gamepad drivers; keyboard steering stays vanilla.
 
+- **Analog gas and brake** (`Throttle`, `Patches.Throttle*`, `throttle.*` settings). Vanilla
+  `CarController.updateControls` makes the triggers on/off pedals (RT/LT > 0.7), and
+  `control_ForwardNew` / `control_Reverse` / `control_Braking` push or brake with full force. Scaling
+  the force by the pedal (as other mods do) only scales the acceleration: the game has almost no drag,
+  so a light pedal still takes the car to top speed, slowly. Instead:
+  - pedals count from the first bit of travel (`throttle.deadZone`), pedal = travel^`throttle.curve`;
+  - resistance share `r = (speed / maxSpeed)^dragExponent`, engine force x `(pedal - r) / (1 - r)`:
+    at a standstill the push = pedal, it fades with speed and is gone at `maxSpeed * pedal^(1/dragExponent)`,
+    so every pedal position holds its own speed; full pedal = vanilla, traits / towing / offroad /
+    MP speed limit stay on top; under the cruise control speed vanilla;
+  - above that speed (`pedal < r`) the engine brakes, up to the vanilla released-pedal 10
+    (x `throttle.engineBraking`), so easing off has no jolt;
+  - a pedal against the motion (LT forward, RT rolling back) brakes from that up to the vehicle braking
+    force by the pedal; B (x13), both pedals, unloaded chunk ahead stay vanilla;
+  - RPM shown by the speed (`Patches.ThrottleRpm` on `CarController.update`): in vanilla the engine
+    speed is a number of its own, not tied to the wheels. `control_ForwardNew` revs it at a fixed rate
+    towards the gear change RPM on any pedal and shifts up once both the RPM and the speed reach the
+    gear's top; released pedal / brake put the gearbox in N and the RPM falls to idle; no downshift in
+    gear. The tachometer and the sound show it, so on a light pedal the engine revs while the car
+    crawls. Vanilla keeps its number and does everything with it (force, shifts, N, released-pedal
+    braking): the update runs with the vanilla RPM, and after it the engine shows an RPM from the speed
+    across the current vanilla gear's band (idle or `afterGearChange` to `gearChange` at the gear's top
+    speed), in proportion to the speed below and past the band (not below idle), never above vanilla's
+    (on a full pedal vanilla's lags behind the speed: it shifts only once its own RPM reaches `gearChange`,
+    a quick start outruns it and it then skips gears, 1 -> 3; that lag is shown as without the mod). In N the shown RPM falls by vanilla's steps from where it was (vanilla's is
+    usually higher, it would jump up on release), down to vanilla's or idle. R, engine off: vanilla;
+  - sound: the `VehicleLoad` parameter (vanilla 0/1, `isGasPedalPressed`) gets the smoothed share of
+    the engine force (`ParameterVehicleLoad`, both the `audio` and `vehicleSound` ones);
+  - off while Tsuki's AnalogThrottle is active (`ForeignThrottle`: its `ATBridge.enabled`; 0.1.3 runs
+    only on 42.21). Both patch the same `CarController` methods: the force would be scaled twice and its
+    RPM changes inside `update` would drive vanilla's shifts here.
+
 - **Triggers without dead zone** (`Triggers`, `Patches.*TriggerValue`). Vanilla
   `Joypad.getLTValue/getRTValue` apply the per-axis dead zone that the options screen
   dead zone buttons set for all axes at once (default 0.2 = first 10% of the travel).
