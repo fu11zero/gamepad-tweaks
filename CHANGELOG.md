@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Fixed: "invalid signature" in ZombieBuddy, the Java part blocked: the signature is removed again, ZombieBuddy asks to approve the mod as before.
+
 ## Update: 12 Nov @ 5:00am
 
 - Added: analog gas and brake on the triggers (vanilla: on/off at 70% of the travel). Each pedal position
