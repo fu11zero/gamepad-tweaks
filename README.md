@@ -74,6 +74,13 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     only on 42.21). Both patch the same `CarController` methods: the force would be scaled twice and its
     RPM changes inside `update` would drive vanilla's shifts here.
 
+- **Brake hold**, experimental, off by default (`Throttle.hold`, `throttle.brakeHold`, also with the vanilla on/off pedals). Vanilla
+  `CarController.update` turns LT into a brake while the car moves forward and into reverse the moment it
+  stops (`velocity . forward <= 0`), so a brake held a moment too long backs the car up, reverse beeper
+  and all. Here LT that started braking (above 1 km/h) holds the car near the stop as the brake
+  (`clientControls.brake`, as B) until it is released; the next press reverses. RT while backing up
+  stays vanilla (brakes, then drives forward): after reversing the next move is almost always forward.
+
 - **Triggers without dead zone** (`Triggers`, `Patches.*TriggerValue`). Vanilla
   `Joypad.getLTValue/getRTValue` apply the per-axis dead zone that the options screen
   dead zone buttons set for all axes at once (default 0.2 = first 10% of the travel).

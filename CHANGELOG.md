@@ -11,6 +11,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
   as hard as it is pressed. The engine RPM shown (tachometer and sound) follows the speed in the current
   gear instead of revving up on its own; gears, neutral and the driving physics stay vanilla. Options -> Mods -> Gamepad Tweaks.
   Turns itself off while Tsuki's AnalogThrottle is active.
+- Added (experimental, off by default): brake hold. LT that brakes the car stops and holds it instead of
+  backing up at once; release and press again to reverse. Works with vanilla pedals too.
 
 ## Update: 7 Nov @ 1:39pm
 

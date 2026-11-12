@@ -107,6 +107,10 @@ public final class Settings {
             throttle.engineBraking=1.0
             # Brake pedal (LT going forward, RT rolling back) = travel ^ brakeCurve.
             throttle.brakeCurve=1.0
+            # Experimental: LT that brakes the car going forward holds it at the stop until
+            # released; pressed again it reverses (vanilla: reverses at once). RT while backing
+            # up stays vanilla. Works with the vanilla on/off pedals too.
+            throttle.brakeHold=false
             # With analog pedals the tachometer and the engine sound show an RPM from the speed
             # (vanilla revs up at a fixed rate on any pedal); gears and physics stay vanilla.
             # How fast the engine load sound parameter follows the pedal, share per second.
@@ -276,6 +280,7 @@ public final class Settings {
     public static volatile float throttleDragExponent = 2.0f;
     public static volatile float throttleEngineBraking = 1.0f;
     public static volatile float throttleBrakeCurve = 1.0f;
+    public static volatile boolean throttleBrakeHold = false;
     public static volatile float throttleSoundRate = 4.0f;
     public static volatile boolean throttleDebugLog = false;
     public static volatile boolean triggersNoDeadZone = true;
@@ -437,6 +442,7 @@ public final class Settings {
         throttleDragExponent = num(p, "throttle.dragExponent", 2.0f, 0.5f, 5f);
         throttleEngineBraking = num(p, "throttle.engineBraking", 1.0f, 0f, 10f);
         throttleBrakeCurve = num(p, "throttle.brakeCurve", 1.0f, 0.2f, 5f);
+        throttleBrakeHold = bool(p, "throttle.brakeHold", false);
         throttleSoundRate = num(p, "throttle.soundRate", 4.0f, 0.1f, 100f);
         throttleDebugLog = bool(p, "throttle.debugLog", false);
         triggersNoDeadZone = bool(p, "triggers.noDeadZone", true);
@@ -468,7 +474,7 @@ public final class Settings {
                 + "ms disarm=" + disarmDistance
                 + " throttle: analog=" + throttleAnalog + " deadZone=" + throttleDeadZone + ".." + throttleFullAt
                 + " curve=" + throttleCurve + " drag^" + throttleDragExponent + " engineBraking=" + throttleEngineBraking
-                + " brakeCurve=" + throttleBrakeCurve
+                + " brakeCurve=" + throttleBrakeCurve + " brakeHold=" + throttleBrakeHold
                 + " soundRate=" + throttleSoundRate + " debugLog=" + throttleDebugLog
                 + " triggers.noDeadZone=" + triggersNoDeadZone + " triggers.debugLog=" + triggersDebugLog
                 + " actions: crouchOnPress=" + crouchOnPress + " sprintOnPress=" + sprintOnPress

@@ -70,6 +70,8 @@
     "UI_GamepadTweaks_opt_throttle_curve": "Кривая газа (больше — тоньше слабое нажатие)",
     "UI_GamepadTweaks_opt_throttle_dragExponent": "Рост сопротивления со скоростью (2 — как воздух)",
     "UI_GamepadTweaks_opt_throttle_engineBraking": "Торможение двигателем (1 — как с отпущенной педалью)",
+    "UI_GamepadTweaks_opt_throttle_brakeHold": "Тормоз до остановки, задний ход — со второго нажатия (эксперимент)",
+    "UI_GamepadTweaks_opt_throttle_brakeHold_tooltip": "Ваниль: LT, удержанный после остановки, включает задний ход. Здесь LT, которым тормозили, держит машину на месте; отпусти и нажми снова, чтобы ехать назад. Газ при движении назад — как в ванилле. Работает и с ванильными вкл/выкл педалями.",
     "UI_GamepadTweaks_opt_title_buttons": "Триггеры и кнопки",
     "UI_GamepadTweaks_opt_triggers_noDeadZone": "Триггеры без мёртвой зоны",
     "UI_GamepadTweaks_opt_triggers_noDeadZone_tooltip": "Ваниль применяет к триггерам мёртвую зону стиков, и начало хода ничего не делает (газ, тормоз, зум карты).",

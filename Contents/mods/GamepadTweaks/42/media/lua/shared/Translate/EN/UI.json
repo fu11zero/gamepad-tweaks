@@ -70,6 +70,8 @@
     "UI_GamepadTweaks_opt_throttle_curve": "Gas curve (more = finer light press)",
     "UI_GamepadTweaks_opt_throttle_dragExponent": "Drag growth with speed (2 = like air)",
     "UI_GamepadTweaks_opt_throttle_engineBraking": "Engine braking (1 = released pedal)",
+    "UI_GamepadTweaks_opt_throttle_brakeHold": "Brake stops the car, reverse on the next press (experimental)",
+    "UI_GamepadTweaks_opt_throttle_brakeHold_tooltip": "Vanilla: LT held after the car stops starts reversing. Here LT that braked holds the car at the stop; release it and press again to reverse. Gas while backing up stays vanilla. Works with vanilla on/off pedals too.",
     "UI_GamepadTweaks_opt_title_buttons": "Triggers and buttons",
     "UI_GamepadTweaks_opt_triggers_noDeadZone": "Triggers without dead zone",
     "UI_GamepadTweaks_opt_triggers_noDeadZone_tooltip": "Vanilla applies the stick dead zone to the triggers too, so the first part of the travel does nothing (throttle, brake, map zoom).",

@@ -57,6 +57,15 @@ import zombie.vehicles.VehicleEngineRPM;
 // the vanilla RPM.
 // If something outside the update changed the RPM (engine stalled, started), that is vanilla's.
 //
+// Brake hold (throttle.brakeHold, also with the vanilla on/off pedals): vanilla turns a pedal
+// against the motion into a brake while the car moves (updateControls -> update: LT with the
+// velocity along the car's forward > 0 is isBreak) and into the opposite gear the moment it
+// stops, so a brake held a moment too long backs the car up (with the reverse beeper). Here the
+// LT that started braking going forward (above HOLD_SPEED) keeps braking: near a stop it becomes
+// the brake (clientControls.brake, as B) and holds the car until LT is released; pressed again it
+// reverses. Only LT: after backing up the next move is almost always forward, so RT while rolling
+// back still brakes and then drives forward, as vanilla. Experimental, off by default.
+//
 // Tsuki's AnalogThrottle patches the same methods: while it is active (ForeignThrottle) the
 // analog pedals here are off.
 //
@@ -66,6 +75,7 @@ public final class Throttle {
     private static final float RELEASED_PEDAL_BRAKE = 10.0f; // control_NoControl
     private static final long STALE_MS = 500;
     private static final float MAX_SHOWN_RPM = 7000.0f; // ParameterVehicleRPM clamps to it
+    private static final float HOLD_SPEED = 1.0f; // km/h: a pedal pressed slower than this drives the other way at once
 
     public static final class State {
         volatile float gas;      // shaped RT, 0..1
@@ -81,6 +91,8 @@ public final class Throttle {
     }
 
     private static final Map<BaseVehicle, State> states = new ConcurrentHashMap<>();
+    // Brake hold: vehicles whose LT braked forward motion and is still pressed.
+    private static final Map<BaseVehicle, Boolean> holds = new ConcurrentHashMap<>();
     private static final Map<Class<?>, Field> vehicleFields = new ConcurrentHashMap<>();
 
     private Throttle() {}
@@ -90,6 +102,7 @@ public final class Throttle {
         BaseVehicle vehicle = car.vehicleObject;
         if (joypad == -1) {
             states.remove(vehicle);
+            holds.remove(vehicle);
             return;
         }
         if (analog()) {
@@ -97,6 +110,7 @@ public final class Throttle {
         } else {
             states.remove(vehicle);
         }
+        hold(car);
     }
 
     private static boolean analog() {
@@ -115,6 +129,31 @@ public final class Throttle {
         controls.forward = s.gas > 0.0f;
         controls.backward = s.brake > 0.0f;
         prune(s.updated);
+    }
+
+    /** Brake hold: LT that braked the car going forward holds it at the stop until released. */
+    private static void hold(CarController car) {
+        BaseVehicle vehicle = car.vehicleObject;
+        CarController.ClientControls controls = car.clientControls;
+        if (!Settings.throttleBrakeHold || !controls.backward) {
+            holds.remove(vehicle); // LT released: the next press may reverse
+            return;
+        }
+        if (controls.forward) {
+            return; // both pedals: vanilla brakes; the hold stays for LT if it is left pressed
+        }
+        float speed = vehicle.getCurrentSpeedKmHour(); // < 0 rolling back
+        if (holds.get(vehicle) == null) {
+            if (speed <= HOLD_SPEED) {
+                return; // pressed at a stop or rolling back: reverse, as vanilla
+            }
+            holds.put(vehicle, Boolean.TRUE);
+        }
+        if (speed > HOLD_SPEED) {
+            return; // still moving: vanilla brakes with LT (analog in braking())
+        }
+        controls.backward = false;
+        controls.brake = true;
     }
 
     /** After control_ForwardNew. */

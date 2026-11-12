@@ -43,6 +43,7 @@ local SPEC = {
 	{ key = "throttle.curve", min = 0.5, max = 3, step = 0.1, default = 1.5, requires = { "throttle.analog" } },
 	{ key = "throttle.dragExponent", min = 1, max = 4, step = 0.1, default = 2.0, requires = { "throttle.analog" } },
 	{ key = "throttle.engineBraking", min = 0, max = 3, step = 0.1, default = 1.0, requires = { "throttle.analog" } },
+	{ key = "throttle.brakeHold", tick = true },
 
 	{ title = "buttons" },
 	{ key = "triggers.noDeadZone", tick = true },
