@@ -5,6 +5,13 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Added: more vibration: vehicle crashes and running over zombies, running into a wall, bumps, falls and landings, hits blocked by clothing, smashing windows, zombies banging on doors nearby, thunder (with the sound), jump scares.
+- Added: vehicle vibration: suspension bumps, bottoming out, bodies under the wheels, leaving the asphalt, a feel of its own for grass, dirt roads, gravel, sand, snow, plowed fields and railway (fades on long off-road drives), zombies banging on the car and its windows. Left wheels in the left grip, right in the right; on Xbox One / Series pads a short accent in the trigger motors for knocks at the front.
+- Added: motor test button in the vibration options.
+- Added: vibration for vaulting fences, burns, axe on doors and trees, prying boards, forcing doors with a crowbar.
+- Changed: window vibration comes when the window actually opens, not when you press the button.
+- Added: vibration settings in Options -> Mods: on/off, overall strength, strength per event.
+
 - Added: controller vibration (through Steam Input): gunshots by the gun, melee hits, getting hurt, heartbeat when panicked. Strength per event in GamepadTweaks.properties (rumble.*).
 
 ## Update: 12 Nov @ 10:24am

@@ -7,7 +7,7 @@
 -- hand-tuned values outside a slider's range survive. Changes apply at once, no reload.
 --
 -- Only features can be turned off or tuned (steering, throttle, triggers, press actions, map,
--- Steam Input). Bug fixes always run: UI presses leaking to the character, fliers,
+-- Steam Input, vibration). Bug fixes always run: UI presses leaking to the character, fliers,
 -- cruise control / reload following their bindings. Button rebinding is in
 -- Options -> Controller (ControllerEditor.lua); advanced values only in the file.
 
@@ -60,6 +60,29 @@ local SPEC = {
 	{ title = "steamInput" },
 	{ key = "steamInput.enabled", tick = true },
 	{ key = "steamInput.passengerLayer", combo = { "vehicle", "onfoot" }, requires = { "steamInput.enabled" } },
+
+	{ title = "rumble" },
+	{ key = "rumble.enabled", tick = true, requires = { "steamInput.enabled" } },
+	{ key = "rumble.strength", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ button = "rumble_test", run = function()
+		if GamepadTweaks_rumbleTest then GamepadTweaks_rumbleTest() end
+	end },
+	{ key = "rumble.triggers", tick = true, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.triggerGain", min = 0, max = 2, step = 0.1, default = 0.6, requires = { "steamInput.enabled", "rumble.enabled", "rumble.triggers" } },
+	{ key = "rumble.shot", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.hit", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.damage", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.bump", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.fall", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.vehicle", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.suspension", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.road", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.window", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.tool", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.thump", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.thunder", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.scare", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.heartbeat", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
 }
 
 local function textKey(key)
@@ -128,6 +151,11 @@ end
 for _, spec in ipairs(SPEC) do
 	if spec.title then
 		options:addTitle("UI_GamepadTweaks_opt_title_" .. spec.title)
+	elseif spec.button then
+		-- an action, not a setting (no key: not read or written)
+		local name = "UI_GamepadTweaks_opt_" .. spec.button
+		local tooltip = getTextOrNull(name .. "_tooltip") and name .. "_tooltip" or nil
+		spec.option = options:addButton(spec.button, name, tooltip, spec.run)
 	else
 		local name = textKey(spec.key)
 		local tooltip = getTextOrNull(name .. "_tooltip") and name .. "_tooltip" or nil

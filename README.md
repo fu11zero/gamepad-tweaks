@@ -372,8 +372,57 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - melee hit: `OnWeaponHitCharacter`, by damage;
   - getting hurt: health lost in one tick (bites, falls, car crashes, fire; bleeding and hunger
     stay under the threshold);
-  - heartbeat: double beat while panicked (panic moodle 2+), faster and stronger with the level.
-  Each event has its own strength (`rumble.shot/hit/damage/heartbeat`), plus `rumble.strength`.
+  - heartbeat: double beat while panicked (panic moodle 2+), faster and stronger with the level;
+  - thunder: `OnThunderEvent` comes with the flash, the pulse follows with the sound
+    (`dist / 300` s, as `ThunderStorm.enqueueThunderEvent`), a crack for a strike, a long roll for
+    rumble, by distance, half indoors;
+  - body (`RumbleEvents.update`): the player's action states (`media/actiongroups/player`) are
+    watched every frame: `collide` (sprinting into a wall), `bumped`, `knockeddown`, `falldown`,
+    landing (leaving `falling`, `climbfence`, `climbwall`, `climbwindow`), `hitreaction*` (also
+    hits stopped by clothing);
+  - burns: `OnPlayerGetDamage` `FIRE` (vanilla shows no reaction, and each step is too small for
+    the health check), uneven bursts while burning;
+  - window opening: `IsoWindow.ToggleWindow`, when it actually opens or closes (a stuck window
+    only on the try that works), not when the action starts;
+  - tools: weapon on a door / window / barricade (`OnWeaponHitThumpable`) by damage, axe in a tree
+    (`OnWeaponHitTree` and `ISChopTreeAction` `ChopTree`, also on an MP client), prying boards
+    (`ISUnbarricadeAction`: creaks while it goes, a pop when it comes off), forcing a lock with
+    a crowbar (`ISForceOpen`: each `ForceOpenAttempt`, success);
+  - vehicle (`VehicleRumble`, every controller player in it): the grip motors carry the vehicle
+    by side (left wheels front and rear = left grip, right = right grip), impacts panned by where
+    they come from with some on both grips. Trigger motors (Xbox One / Series, Steam's
+    `TriggerVibrationExtended`) differ in frequency and power from the grips, so they don't
+    stand for front vs rear: they add a short accent to knocks at the front (front wheel knocks,
+    impacts and bodies ahead), never the surface texture (`rumble.triggers`,
+    `rumble.triggerGain`). Steam drives trigger motors only on pads it sees as Xbox One
+    (`GetInputTypeForHandle` = 3); on others the accent goes to the grip of that side. Crash
+    (`BaseVehicle.crash`, before damage, so also without injuries) by impact, from the velocity
+    change (`lastLinearVelocity` vs
+    `jniLinearVelocity` in the body's axes); running someone over
+    (`playSoundVehicleHitCharacter`) by speed, where the body is; zombies banging on the vehicle
+    or its window (their `ZombieThumpVehicle(Window)` sound in `CharacterSoundEmitter.playSound`
+    with the vehicle as proxy), where the zombie is;
+  - suspension: per wheel `wheelInfo.suspensionLength` against the script's rest length and
+    travel; a quick compression or drop is a knock on that wheel's side, reaching the end of
+    the travel a hard hit; a body under a wheel (`testCollisionWithProneCharacter` per-wheel
+    impulse) a knock on its side;
+  - road surface per wheel (floor sprite, as `ParameterVehicleRoadMaterial`, plus plowed land
+    `vegetation_farming_*`): a knock on the wheel that leaves or gets back on the asphalt, and
+    each wheel's side gets the texture of its own surface (grips only); speed makes it stronger and denser
+    (grain intervals are for 40 km/h, scaled by 40 / speed within x0.4..x3): grass soft swells,
+    dirt road uneven with ruts, gravel a fine fast crunch, sand long smooth waves, snow barely,
+    furrows and railway sleepers a beat per 0.7 / 0.65 tiles driven. It fades to a third over
+    continuous off-road time (a long dirt road stays bearable) and comes back after 10 s on
+    asphalt;
+  - motor test (Options -> Mods button, `GamepadTweaks_rumbleTest`): each motor alone in turn,
+    left grip, right grip, left trigger, right trigger, to see which is where on a given pad;
+  - glass breaking within 3 tiles (`IsoWindow.smashWindow`) and zombies banging on doors, windows
+    and barricades within 4 tiles (`IsoGameCharacter.setTimeThumping`, bumped once per thump by
+    `ThumpState.execute`), weaker further away;
+  - jump scare: the "ZombieSurprisedPlayer" sting of `IsoPlayer.updateLOS` (caught in
+    `CharacterSoundEmitter.playSoundImpl`), a hard kick, by the game's jump scare volume (0 = none).
+  Each event has its own strength (`rumble.<event>`), plus `rumble.strength`; also in
+  Options -> Mods.
 
 - **Brakes follow their binding** (`HeldActions.brake`, after `CarController.updateControls`).
   Vanilla brakes a gamepad driver's car on B (`JoypadManager.isBPressed`), past the Brakes binding;

@@ -1,9 +1,16 @@
 -- Controller vibration: picks the game events and sends pulses to Java (Rumble.java), which
 -- mixes them and drives the motors through Steam Input. Vanilla has no vibration.
+-- Events Lua can't see (vehicle crashes, action states like falls and bumps, windows, zombies
+-- banging) are in RumbleEvents.java.
 --
 -- GamepadTweaks_rumble(controller, event, low, high, trigger, ms): controller = the player's
 -- joypad (player:getJoypadBind()), event = the rumble.<event> strength setting, low / high = the
 -- big / small motor, trigger = the right trigger motor, 0..1 each; the pulse fades out over ms.
+
+require "TimedActions/ISBaseTimedAction"
+require "TimedActions/ISChopTreeAction"
+require "TimedActions/ISUnbarricadeAction"
+require "TimedActions/ISForceOpen"
 
 local Rumble = {}
 GamepadTweaks = GamepadTweaks or {}
@@ -78,9 +85,62 @@ local function heartbeat(player, s, now)
 	s.dubK = k * 0.7
 end
 
-local function onTick()
+-- Thunder: OnThunderEvent(x, y, strike, lightning, rumble) comes with the flash, the sound
+-- dist / 300 s later (ThunderStorm.enqueueThunderEvent: soundDelay = dist / 300 * 60 frames),
+-- and the vibration with the sound. strike = a crack, rumble = a long low roll; indoors half.
+-- None at fast forward, where vanilla plays no thunder either.
+local thunder = {} -- { at, player, low, high, ms }
+
+local function onThunder(x, y, strike, light, roll)
 	if not available() then return end
+	local speed = UIManager.getSpeedControls() and UIManager.getSpeedControls():getCurrentGameSpeed() or 1
+	if speed > 1 then return end
 	local now = getTimestampMs()
+	for i = 0, getMaxActivePlayers() - 1 do
+		local player = getSpecificPlayer(i)
+		if player and joypadOf(player) and not player:isDead() then
+			local dx, dy = player:getX() - x, player:getY() - y
+			local dist = math.sqrt(dx * dx + dy * dy)
+			local indoor = player:getCurrentSquare() and not player:getCurrentSquare():isOutside()
+			local m = indoor and 0.5 or 1
+			local at = now + dist / 300 * 1000
+			if strike then
+				local k = clamp(1 - dist / 2500) * m
+				if k > 0.05 then
+					table.insert(thunder, { at = at, player = player, low = 0.4 + 0.6 * k, high = 0.6 * k, ms = 300 + 500 * k })
+				end
+			end
+			if roll then
+				local k = clamp(1 - dist / 5000) * m
+				if k > 0.05 then
+					table.insert(thunder, { at = at, player = player, low = 0.15 + 0.35 * k, high = 0, ms = 1200 + 1300 * k })
+				end
+			end
+		end
+	end
+end
+
+local function thunderTick(now)
+	for i = #thunder, 1, -1 do
+		local t = thunder[i]
+		if now >= t.at then
+			table.remove(thunder, i)
+			if not t.player:isDead() then
+				pulse(t.player, "thunder", t.low, t.high, 0, t.ms)
+			end
+		elseif now < t.at - 60000 then
+			table.remove(thunder, i) -- clock jumped
+		end
+	end
+end
+
+local function onTick()
+	if not available() then
+		thunder = {}
+		return
+	end
+	local now = getTimestampMs()
+	thunderTick(now)
 	for i = 0, getMaxActivePlayers() - 1 do
 		local player = getSpecificPlayer(i)
 		if player and joypadOf(player) and not player:isDead() then
@@ -106,8 +166,90 @@ local function onTick()
 	end
 end
 
+
+-- Burns: standing in fire takes health in small steps (under the per-tick damage threshold) and
+-- vanilla shows no reaction at all, so OnPlayerGetDamage "FIRE" (IsoGameCharacter, every tick
+-- while burning) shakes the controller in uneven bursts.
+local lastBurn = {} -- [player] = time
+
+local function onPlayerGetDamage(player, kind, amount)
+	if kind ~= "FIRE" or not joypadOf(player) or not available() then return end
+	local now = getTimestampMs()
+	if lastBurn[player] and now - lastBurn[player] < 250 then return end
+	lastBurn[player] = now
+	local k = 0.6 + 0.4 * ZombRandFloat(0, 1)
+	pulse(player, "damage", 0.45 * k, 0.55 * k, 0, 220)
+end
+
+-- Tools and blows on objects.
+-- A weapon hitting a door, window, barricade or wall (OnWeaponHitThumpable from IsoDoor /
+-- IsoThumpable / IsoWindow / IsoBarricade WeaponHit): by the weapon's damage (axe ~2..3).
+local function onWeaponHitThumpable(character, weapon, object)
+	if not joypadOf(character) or not available() then return end
+	local k = clamp(((weapon and weapon:getMaxDamage()) or 0.5) / 3)
+	pulse(character, "tool", 0.4 + 0.5 * k, 0.35 + 0.3 * k, 0, 140 + 80 * k)
+end
+
+-- An axe in a tree: OnWeaponHitTree (a hit while attacking) and ISChopTreeAction's ChopTree anim
+-- event (chopping, also on an MP client, where the action doesn't fire the event).
+local function treeHit(character)
+	if not joypadOf(character) or not available() then return end
+	pulse(character, "tool", 0.55, 0.45, 0, 180)
+end
+
+local function onWeaponHitTree(character, weapon)
+	treeHit(character)
+end
+
+local chopAnimEvent = ISChopTreeAction.animEvent
+function ISChopTreeAction:animEvent(event, parameter)
+	if event == "ChopTree" and self.axe then treeHit(self.character) end
+	return chopAnimEvent(self, event, parameter)
+end
+
+-- Prying boards / metal off a window or door (ISUnbarricadeAction): a creaking strain now and
+-- then while it goes, a pop when it comes off.
+local unbarricadeUpdate = ISUnbarricadeAction.update
+function ISUnbarricadeAction:update()
+	local now = getTimestampMs()
+	if available() and joypadOf(self.character) and (not self.nextCreak or now >= self.nextCreak) then
+		if self.nextCreak then
+			local k = 0.6 + 0.4 * ZombRandFloat(0, 1)
+			pulse(self.character, "tool", 0.25 * k, 0.2 * k, 0, 160)
+		end
+		self.nextCreak = now + 500 + ZombRand(500)
+	end
+	return unbarricadeUpdate(self)
+end
+
+local unbarricadePerform = ISUnbarricadeAction.perform
+function ISUnbarricadeAction:perform()
+	if available() then pulse(self.character, "tool", 0.65, 0.6, 0, 240) end
+	return unbarricadePerform(self)
+end
+
+-- Forcing a locked door or window with a crowbar (ISForceOpen): each try (ForceOpenAttempt anim
+-- event) strains, success (perform) gives way.
+local forceAnimEvent = ISForceOpen.animEvent
+function ISForceOpen:animEvent(event, parameter)
+	if event == "ForceOpenAttempt" and available() then
+		pulse(self.character, "tool", 0.45, 0.35, 0, 200)
+	end
+	return forceAnimEvent(self, event, parameter)
+end
+
+local forcePerform = ISForceOpen.perform
+function ISForceOpen:perform()
+	if available() then pulse(self.character, "tool", 0.75, 0.6, 0, 280) end
+	return forcePerform(self)
+end
+
 Events.OnWeaponSwingHitPoint.Add(onSwingHitPoint)
 Events.OnWeaponHitCharacter.Add(onWeaponHitCharacter)
 Events.OnTick.Add(onTick)
+Events.OnThunderEvent.Add(onThunder)
+Events.OnPlayerGetDamage.Add(onPlayerGetDamage)
+Events.OnWeaponHitThumpable.Add(onWeaponHitThumpable)
+Events.OnWeaponHitTree.Add(onWeaponHitTree)
 
 return Rumble

@@ -246,6 +246,28 @@ public final class SteamInput {
         return ready;
     }
 
+    // ESteamInputType: only Xbox One / Series pads (3) get Steam's trigger rumble
+    // (TriggerVibrationExtended); the rest, also pads with trigger motors seen as a generic or
+    // Xbox 360 pad (Flydigi Vader in XInput mode: 4), drop it.
+    private static final int INPUT_TYPE_XBOX_ONE = 3;
+    private static final Map<Long, Integer> inputTypes = new HashMap<>();
+
+    /** True if Steam drives the trigger motors of this controller. */
+    static boolean hasTriggerMotors(long controller) {
+        Integer type = inputTypes.get(controller);
+        if (type == null) {
+            try {
+                type = (int) getInputTypeForHandle.invokeExact(input, controller);
+            } catch (Throwable t) {
+                type = 0;
+            }
+            inputTypes.put(controller, type);
+            Log.info("steam input: controller " + Long.toUnsignedString(controller) + " type " + type
+                    + (type == INPUT_TYPE_XBOX_ONE ? ": trigger motors" : ": no trigger motors through Steam, triggers go to the grips"));
+        }
+        return type == INPUT_TYPE_XBOX_ONE;
+    }
+
     /**
      * Sets the motor speeds of a Steam controller (0..1 each): the big (left) and small (right)
      * rumble motors and the trigger motors. Steam keeps them running until the next call.
