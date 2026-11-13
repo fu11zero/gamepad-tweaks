@@ -96,6 +96,7 @@ public final class SteamInput {
     private static final Map<String, Long> layerHandles = new HashMap<>();
     private static MethodHandle activateActionSetLayer, deactivateAllActionSetLayers;
     private static MethodHandle getAnalogActionHandle, getAnalogActionData, deactivateActionSetLayer;
+    private static MethodHandle triggerVibrationExtended;
     // controllers of the last poll, for updateAnalog: Steam handle and game controller id
     private static long[] pollHandles = new long[0];
     private static int[] pollIds = new int[0];
@@ -232,11 +233,42 @@ public final class SteamInput {
         }
         pollHandles = handles;
         pollIds = ids;
+        Rumble.update(handles, ids);
         // disconnected controllers: nothing to release on the Lua side (the joypad is gone too)
         held.keySet().retainAll(seen.keySet());
         analogStats.keySet().retainAll(seen.keySet());
         activeLayers.keySet().retainAll(seen.keySet());
+        Rumble.retain(seen.keySet());
         return events == null ? null : events.toString();
+    }
+
+    public static boolean isReady() {
+        return ready;
+    }
+
+    /**
+     * Sets the motor speeds of a Steam controller (0..1 each): the big (left) and small (right)
+     * rumble motors and the trigger motors. Steam keeps them running until the next call.
+     * Controllers without trigger motors ignore those; false if the call failed.
+     */
+    static boolean vibrate(long controller, float left, float right, float leftTrigger, float rightTrigger) {
+        if (!ready || triggerVibrationExtended == null) {
+            return false;
+        }
+        try {
+            triggerVibrationExtended.invokeExact(input, controller, speed(left), speed(right),
+                    speed(leftTrigger), speed(rightTrigger));
+            return true;
+        } catch (Throwable t) {
+            Log.error("steam input vibration failed", t);
+            triggerVibrationExtended = null;
+            return false;
+        }
+    }
+
+    // unsigned short motor speed
+    private static short speed(float v) {
+        return (short) Math.round(Math.max(0, Math.min(1, v)) * 65535);
     }
 
     /**
@@ -660,6 +692,11 @@ public final class SteamInput {
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
         getInputTypeForHandle = handle("SteamAPI_ISteamInput_GetInputTypeForHandle",
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+        // void TriggerVibrationExtended(InputHandle_t, unsigned short usLeftSpeed, unsigned short usRightSpeed,
+        //                               unsigned short usLeftTriggerSpeed, unsigned short usRightTriggerSpeed)
+        triggerVibrationExtended = handle("SteamAPI_ISteamInput_TriggerVibrationExtended",
+                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.JAVA_SHORT,
+                        ValueLayout.JAVA_SHORT, ValueLayout.JAVA_SHORT, ValueLayout.JAVA_SHORT));
     }
 
     private static MethodHandle handle(String name, FunctionDescriptor fd) {

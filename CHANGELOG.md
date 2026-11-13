@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Added: controller vibration (through Steam Input): gunshots by the gun, melee hits, getting hurt, heartbeat when panicked. Strength per event in GamepadTweaks.properties (rumble.*).
+
 ## Update: 12 Nov @ 10:24am
 
 - Fixed: "invalid signature" in ZombieBuddy, the Java part blocked: the signature is removed again, ZombieBuddy asks to approve the mod as before.

@@ -360,6 +360,21 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   Layers are switched by difference (`DeactivateActionSetLayer` / `ActivateActionSetLayer` of the
   changed ones only).
 
+- **Controller vibration** (`Rumble.java`, `media/lua/client/GamepadTweaks/Rumble.lua`, `rumble.*`
+  settings). Vanilla has no vibration at all: input goes through GLFW, which can't drive the
+  motors. Steam Input can, for every controller Steam handles: `SteamInput.vibrate` calls
+  `ISteamInput::TriggerVibrationExtended` (big and small motor, right trigger motor on Xbox
+  One / Series pads), so it needs `steamInput.enabled` and the game started from Steam.
+  Lua picks the events and sends pulses (start at full, fade out linearly), Java mixes them per
+  controller (strongest value per motor) and sends the speeds every frame from `pollEvents`:
+  - shot: `OnWeaponSwingHitPoint` with a ranged weapon that isn't dry firing
+    (`isRangedWeaponEmpty`), stronger and longer with the gun's sound radius (pistol < rifle < shotgun);
+  - melee hit: `OnWeaponHitCharacter`, by damage;
+  - getting hurt: health lost in one tick (bites, falls, car crashes, fire; bleeding and hunger
+    stay under the threshold);
+  - heartbeat: double beat while panicked (panic moodle 2+), faster and stronger with the level.
+  Each event has its own strength (`rumble.shot/hit/damage/heartbeat`), plus `rumble.strength`.
+
 - **Brakes follow their binding** (`HeldActions.brake`, after `CarController.updateControls`).
   Vanilla brakes a gamepad driver's car on B (`JoypadManager.isBPressed`), past the Brakes binding;
   now it is the binding (B by default), plus the Steam action. The forced brake stays.

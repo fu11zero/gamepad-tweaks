@@ -167,6 +167,22 @@ public final class Settings {
             # Log every Steam action press/release and controller mapping.
             steamInput.debugLog=false
 
+            # --- Vibration --------------------------------------------------------
+            # Controller vibration (vanilla has none). Works through Steam Input, so
+            # it needs steamInput.enabled=true and the game started from Steam.
+            rumble.enabled=true
+            # Overall strength, 0..2 (motor speed is capped at full).
+            rumble.strength=1.0
+            # Strength per event, 0 = off: firing a gun (by the gun), melee hit on
+            # a target (by damage), getting hurt (by health lost), heartbeat while
+            # panicked (by the panic level).
+            rumble.shot=1.0
+            rumble.hit=1.0
+            rumble.damage=1.0
+            rumble.heartbeat=1.0
+            # Log every pulse.
+            rumble.debugLog=false
+
             # --- Button actions ---------------------------------------------------
             # Actions that vanilla hardcodes to buttons (media/lua/client/GamepadTweaks/Bindings.lua).
             # Per controller preset (Options -> Controller), like the regular bindings:
@@ -297,6 +313,9 @@ public final class Settings {
     public static volatile float mapTriggerDeadZone = 0.05f;
     public static volatile boolean steamInput = true;
     public static volatile boolean steamInputDebugLog = false;
+    public static volatile boolean rumble = true;
+    public static volatile float rumbleStrength = 1.0f;
+    public static volatile boolean rumbleDebugLog = false;
 
     // All values as read, for the Lua side (button actions).
     private static volatile Properties raw = new Properties();
@@ -459,6 +478,9 @@ public final class Settings {
         mapTriggerDeadZone = num(p, "map.triggerDeadZone", 0.05f, 0f, 0.5f);
         steamInput = bool(p, "steamInput.enabled", true);
         steamInputDebugLog = bool(p, "steamInput.debugLog", false);
+        rumble = bool(p, "rumble.enabled", true);
+        rumbleStrength = num(p, "rumble.strength", 1.0f, 0f, 2f);
+        rumbleDebugLog = bool(p, "rumble.debugLog", false);
         raw = p;
         version++;
         Log.info("settings loaded: steering=" + steeringEnabled + " rawStick=" + rawStick
@@ -480,7 +502,13 @@ public final class Settings {
                 + " actions: crouchOnPress=" + crouchOnPress + " sprintOnPress=" + sprintOnPress
                 + " vehicleOnlyByPrompt=" + vehicleOnlyByPrompt
                 + " map: smooth=" + mapSmooth + " pan=" + mapPanSpeed + "^" + mapPanExponent + " dpad=" + mapDpadDeflection
-                + " zoom=" + mapZoomSpeed + "^" + mapZoomExponent + " triggerDeadZone=" + mapTriggerDeadZone);
+                + " zoom=" + mapZoomSpeed + "^" + mapZoomExponent + " triggerDeadZone=" + mapTriggerDeadZone
+                + " rumble=" + rumble + " strength=" + rumbleStrength);
+    }
+
+    /** rumble.&lt;event&gt; strength multiplier, 0..2 (1 if missing). */
+    public static float rumbleEvent(String event) {
+        return event == null ? 1f : num(raw, "rumble." + event, 1.0f, 0f, 2f);
     }
 
     private static boolean bool(Properties p, String key, boolean def) {
