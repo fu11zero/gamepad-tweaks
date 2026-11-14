@@ -128,6 +128,15 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   doesn't leave the focus on a hidden element; a B prompt in the bottom bar. Splitscreen issues
   of this window (shared `worldMapFlier`, `getPlayer()`) are fixed in SplitscreenFixes.
 
+- **A confirms world cursors again (42.22)** (`media/lua/client/GamepadTweaks/BuildCursor.lua`).
+  Cursors derived from `ISBuildingObject` (chop tree, disassemble, extinguish, paint, rake dung,
+  scythe grass, place item, crafting build, traps...) build once `draggingItem.build` is set in
+  `DoTileBuilding`. 42.21 set it from `isBuildButtonReleased()` for every input; 42.22 skips that
+  for joypad players and nothing replaces it (`ISBuildingObject:onJoypadPressButton` has no A),
+  so the prompt says "A: Chop Tree" and A does nothing. The mod wraps
+  `ISBuildingObject.onJoypadPressButton` (on `OnGameStart`, the file is in `server/`): A sets
+  `build` when `canBeBuild`. `ISMoveableCursor` handles A itself and is untouched.
+
 - **Rebindable hardcoded buttons** (`media/lua/client/GamepadTweaks/Bindings.lua`, values via
   `Settings` globals `GamepadTweaks_getSetting` / `GamepadTweaks_settingsVersion`).
   Vanilla handles these directly, past the binding system, so the buttons can't be used for

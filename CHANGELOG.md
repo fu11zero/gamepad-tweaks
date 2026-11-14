@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Fixed: A confirms world cursors again on 42.22 (chop tree, disassemble, extinguish, paint, rake, scythe, place item, crafting build): vanilla 42.22 ignored A on them.
+
 ## Update: 14 Nov @ 3:02am
 
 - Added: more vibration: vehicle crashes and running over zombies, running into a wall, bumps, falls and landings, hits blocked by clothing, smashing windows, zombies banging on doors nearby, thunder (with the sound), jump scares.
