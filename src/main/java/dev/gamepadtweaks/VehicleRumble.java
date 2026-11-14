@@ -54,14 +54,21 @@ import zombie.vehicles.BaseVehicle;
 public final class VehicleRumble {
     private VehicleRumble() {}
 
-    /** Same pulse for everyone in the vehicle: grip motors low / high, trigger motors lt / rt. */
+    /**
+     * Same pulse for everyone in the vehicle: grip motors low / high, trigger motors lt / rt.
+     * Passengers (any seat but the driver's) get it scaled by rumble.passenger: in splitscreen
+     * they feel the road the driver picks, which reads as vibration for no reason.
+     */
     public static void all(BaseVehicle vehicle, String event, float low, float high, float lt, float rt, float ms) {
         if (vehicle == null) {
             return;
         }
         for (int seat = 0; seat < vehicle.getMaxPassengers(); seat++) {
             if (vehicle.getCharacter(seat) instanceof IsoPlayer p && p.isLocalPlayer() && p.getJoypadBind() >= 0) {
-                Rumble.pulse(p.getJoypadBind(), event, low, high, lt, rt, ms);
+                float k = seat == 0 ? 1 : Settings.rumblePassenger;
+                if (k > 0) {
+                    Rumble.pulse(p.getJoypadBind(), event, low * k, high * k, lt * k, rt * k, ms);
+                }
             }
         }
     }

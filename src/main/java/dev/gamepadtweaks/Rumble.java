@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import zombie.characters.IsoPlayer;
 import se.krka.kahlua.integration.annotations.LuaMethod;
 
 // Controller vibration.
@@ -53,7 +54,8 @@ public final class Rumble {
         if (!Settings.rumble || controller < 0 || ms <= 0 || !SteamInput.isReady()) {
             return;
         }
-        float k = Settings.rumbleStrength * Settings.rumbleEvent(event);
+        int player = playerOf((int) controller);
+        float k = Settings.rumbleStrength * Settings.rumbleEvent(event) * Settings.rumblePlayer(player);
         if (k <= 0) {
             return;
         }
@@ -69,9 +71,34 @@ public final class Rumble {
             pulses.add(p);
         }
         if (Settings.rumbleDebugLog && !"road".equals(event)) { // road: a grain every ~50 ms
-            Log.info("rumble: " + event + " controller " + p.controller + " low=" + p.low + " high=" + p.high
+            Log.info("rumble: " + event + " player " + player + " controller " + p.controller + " low=" + p.low + " high=" + p.high
                     + " triggers=" + p.leftTrigger + "/" + p.trigger + " " + Math.round(ms) + "ms");
         }
+    }
+
+    // The local player on a game controller (0..3), -1 if none.
+    static int playerOf(int controller) {
+        for (int i = 0; i < IsoPlayer.players.length; i++) {
+            IsoPlayer p = IsoPlayer.players[i];
+            if (p != null && p.isLocalPlayer() && p.getJoypadBind() == controller) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // The game controller of the only local player on a joypad, or -1 when there are none or several.
+    private static int onlyJoypad() {
+        int found = -1;
+        for (IsoPlayer p : IsoPlayer.players) {
+            if (p != null && p.isLocalPlayer() && p.getJoypadBind() >= 0) {
+                if (found >= 0) {
+                    return -1;
+                }
+                found = p.getJoypadBind();
+            }
+        }
+        return found;
     }
 
     // Motor test (options button): each motor alone in turn, TEST_ON ms on, then a gap.
@@ -118,8 +145,10 @@ public final class Rumble {
 
     /**
      * Mixes the pulses and sends the motor speeds to the Steam controllers. ids[i] = the game
-     * controller of handles[i], -1 if unknown (then a single controller takes every pulse, as
-     * in Bindings.lua: it's the only player's).
+     * controller of handles[i], -1 if unknown. An unknown single Steam controller takes the pulses
+     * of the only joypad player (as in Bindings.lua), but only when there is exactly one: with
+     * several joypad players (one on a pad Steam doesn't handle) it used to take everyone's
+     * pulses, so that player felt the others' events.
      */
     static void update(long[] handles, int[] ids) {
         if (Settings.rumble) {
@@ -130,7 +159,7 @@ public final class Rumble {
             }
         }
         long now = System.currentTimeMillis();
-        boolean single = handles.length == 1 && ids[0] < 0;
+        int only = handles.length == 1 && ids[0] < 0 ? onlyJoypad() : -1;
         Map<Integer, float[]> mix = new HashMap<>();
         synchronized (pulses) {
             for (Iterator<Pulse> it = pulses.iterator(); it.hasNext(); ) {
@@ -141,7 +170,10 @@ public final class Rumble {
                     continue;
                 }
                 float fade = 1 - Math.max(0, t);
-                float[] m = mix.computeIfAbsent(single ? ids[0] : p.controller, k -> new float[4]);
+                if (only >= 0 && p.controller != only) {
+                    continue;
+                }
+                float[] m = mix.computeIfAbsent(only >= 0 ? -1 : p.controller, k -> new float[4]);
                 m[0] = Math.max(m[0], p.low * fade);
                 m[1] = Math.max(m[1], p.high * fade);
                 m[2] = Math.max(m[2], p.leftTrigger * fade);
@@ -175,6 +207,10 @@ public final class Rumble {
                 if (!zero && !changed && time != null && now - time < RESEND_MS) {
                     continue;
                 }
+            }
+            if (Settings.rumbleDebugLog && !zero && (last == null || (last[0] == 0 && last[1] == 0 && last[2] == 0 && last[3] == 0))) {
+                Log.info("rumble: motors on, steam controller " + Long.toUnsignedString(handles[i]) + " -> controller "
+                        + ids[i] + " (player " + (ids[i] >= 0 ? playerOf(ids[i]) : only >= 0 ? playerOf(only) : -1) + ")");
             }
             if (SteamInput.vibrate(handles[i], m[0], m[1], m[2], m[3])) {
                 sent.put(handles[i], m);

@@ -432,6 +432,14 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     `CharacterSoundEmitter.playSoundImpl`), a hard kick, by the game's jump scare volume (0 = none).
   Each event has its own strength (`rumble.<event>`), plus `rumble.strength`; also in
   Options -> Mods.
+  Splitscreen: every pulse goes to one game controller (`player:getJoypadBind()`), and
+  `SteamInput.controllerId` maps it to its Steam handle. Shared events reach several players on
+  purpose (vehicle: everyone in it; thunder; glass and zombie thumps nearby), so a passenger feels
+  the road the driver picks: `rumble.passenger` scales vehicle vibration for every seat but the
+  driver's. `rumble.player1..4` turns vibration off for one splitscreen player (IsoPlayer index + 1).
+  A single Steam controller the mod couldn't map takes the pulses of the only joypad player, and
+  none when several players are on joypads (it used to take everyone's). `rumble.debugLog` logs
+  each pulse with its player and which Steam controller starts vibrating for which player.
 
 - **Brakes follow their binding** (`HeldActions.brake`, after `CarController.updateControls`).
   Vanilla brakes a gamepad driver's car on B (`JoypadManager.isBPressed`), past the Brakes binding;

@@ -208,6 +208,14 @@ public final class Settings {
             rumble.triggers=true
             # Strength of that trigger accent.
             rumble.triggerGain=0.6
+            # Vehicle vibration for passengers (everyone but the driver), 0 = off: in
+            # splitscreen they feel the road the driver picks.
+            rumble.passenger=1.0
+            # Vibration per splitscreen player (player 1 = the first to join), false = off.
+            rumble.player1=true
+            rumble.player2=true
+            rumble.player3=true
+            rumble.player4=true
             # Log every pulse and the player's action states.
             rumble.debugLog=false
 
@@ -346,6 +354,7 @@ public final class Settings {
     public static volatile boolean rumbleDebugLog = false;
     public static volatile boolean rumbleTriggers = true;
     public static volatile float rumbleTriggerGain = 0.6f;
+    public static volatile float rumblePassenger = 1.0f;
 
     // All values as read, for the Lua side (button actions).
     private static volatile Properties raw = new Properties();
@@ -551,6 +560,7 @@ public final class Settings {
         rumbleDebugLog = bool(p, "rumble.debugLog", false);
         rumbleTriggers = bool(p, "rumble.triggers", true);
         rumbleTriggerGain = num(p, "rumble.triggerGain", 0.6f, 0f, 2f);
+        rumblePassenger = num(p, "rumble.passenger", 1.0f, 0f, 2f);
         raw = p;
         version++;
         Log.info("settings loaded: steering=" + steeringEnabled + " rawStick=" + rawStick
@@ -579,6 +589,11 @@ public final class Settings {
     /** rumble.&lt;event&gt; strength multiplier, 0..2 (1 if missing). */
     public static float rumbleEvent(String event) {
         return event == null ? 1f : num(raw, "rumble." + event, 1.0f, 0f, 2f);
+    }
+
+    /** 1 if vibration is on for splitscreen player n (0..3, IsoPlayer index), 0 if rumble.player&lt;n+1&gt;=false. */
+    public static float rumblePlayer(int n) {
+        return n < 0 || bool(raw, "rumble.player" + (n + 1), true) ? 1f : 0f;
     }
 
     private static boolean bool(Properties p, String key, boolean def) {
