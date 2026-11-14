@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+## Update: 14 Nov @ 3:02am
+
 - Added: more vibration: vehicle crashes and running over zombies, running into a wall, bumps, falls and landings, hits blocked by clothing, smashing windows, zombies banging on doors nearby, thunder (with the sound), jump scares.
 - Added: vehicle vibration: suspension bumps, bottoming out, bodies under the wheels, leaving the asphalt, a feel of its own for grass, dirt roads, gravel, sand, snow, plowed fields and railway (fades on long off-road drives), zombies banging on the car and its windows. Left wheels in the left grip, right in the right; on Xbox One / Series pads a short accent in the trigger motors for knocks at the front.
 - Added: motor test button in the vibration options.
