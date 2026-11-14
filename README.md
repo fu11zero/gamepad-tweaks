@@ -47,7 +47,7 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   `control_ForwardNew` / `control_Reverse` / `control_Braking` push or brake with full force. Scaling
   the force by the pedal (as other mods do) only scales the acceleration: the game has almost no drag,
   so a light pedal still takes the car to top speed, slowly. Instead:
-  - pedals count from the first bit of travel (`throttle.deadZone`), pedal = travel^`throttle.curve`;
+  - pedals count from the first bit of travel (`throttle.deadZone`), pedal = travel^`throttle.pedalCurve` (0.7: a car at a stop needs ~10% of the force to start rolling, that is ~5% of the travel; the old `throttle.curve` 1.5 needed ~20% and is migrated);
   - resistance share `r = (speed / maxSpeed)^dragExponent`, engine force x `(pedal - r) / (1 - r)`:
     at a standstill the push = pedal, it fades with speed and is gone at `maxSpeed * pedal^(1/dragExponent)`,
     so every pedal position holds its own speed; full pedal = vanilla, traits / towing / offroad /

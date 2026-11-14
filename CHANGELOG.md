@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Changed: analog gas responds from the start of the trigger travel, like a real pedal (curve 0.7 instead of 1.5; your old curve setting is reset once).
+
 ## Update: 14 Nov @ 12:58pm
 
 - Fixed: A confirms world cursors again on 42.22 (chop tree, disassemble, extinguish, paint, rake, scythe, place item, crafting build): vanilla 42.22 ignored A on them.

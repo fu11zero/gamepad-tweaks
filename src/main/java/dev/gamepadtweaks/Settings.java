@@ -96,10 +96,12 @@ public final class Settings {
             # that rest exactly at zero.
             throttle.deadZone=0.02
             throttle.fullAt=0.98
-            # Pedal = travel ^ curve (1 = linear, more = finer at a light press).
-            # With 1.5 and dragExponent 2: 10% travel ~ 18% of the top speed, 30% ~ 40%,
-            # 50% ~ 60%, 75% ~ 80%.
-            throttle.curve=1.5
+            # Pedal = travel ^ pedalCurve (1 = linear, less = more push at the start of the
+            # travel, like a real car's pedal, more = finer at a light press but laggy).
+            # A car at a stop needs ~10% of the full force to start rolling: with 0.7 that is
+            # ~5% of the travel, with 1.5 ~20%. Cruising speeds with dragExponent 2 (flat road):
+            # 10% travel ~ 45% of the top speed, 30% ~ 65%, 50% ~ 80%.
+            throttle.pedalCurve=0.7
             # How fast the drag grows with speed: 2 = like air drag, 1 = linear
             # (cruising speed = maxSpeed * pedal).
             throttle.dragExponent=2.0
@@ -318,7 +320,7 @@ public final class Settings {
     public static volatile boolean throttleAnalog = true;
     public static volatile float throttleDeadZone = 0.02f;
     public static volatile float throttleFullAt = 0.98f;
-    public static volatile float throttleCurve = 1.5f;
+    public static volatile float throttleCurve = 0.7f;
     public static volatile float throttleDragExponent = 2.0f;
     public static volatile float throttleEngineBraking = 1.0f;
     public static volatile float throttleBrakeCurve = 1.0f;
@@ -449,11 +451,49 @@ public final class Settings {
             if (modified == lastModified) {
                 return;
             }
+            if (migrate()) {
+                modified = Files.getLastModifiedTime(path).toMillis();
+            }
             lastModified = modified;
             load();
         } catch (IOException | RuntimeException e) {
             Log.error("can't read settings", e);
         }
+    }
+
+    // Old throttle.curve (default 1.5) was written into every file from the template: a light
+    // press barely moved the car (~20% of the travel before it starts rolling). It is replaced by
+    // throttle.pedalCurve at the new default, comment included, so players get the new feel.
+    private static final String OLD_CURVE_COMMENT = """
+            # Pedal = travel ^ curve (1 = linear, more = finer at a light press).
+            # With 1.5 and dragExponent 2: 10% travel ~ 18% of the top speed, 30% ~ 40%,
+            # 50% ~ 60%, 75% ~ 80%.
+            """;
+
+    private static boolean migrate() throws IOException {
+        String text = Files.readString(path, StandardCharsets.UTF_8);
+        if (!text.lines().anyMatch(l -> isKeyLine(l.trim(), "throttle.curve"))) {
+            return false;
+        }
+        String block = DEFAULTS.substring(DEFAULTS.indexOf("# Pedal = travel ^ pedalCurve"));
+        block = block.substring(0, block.indexOf('\n', block.indexOf("throttle.pedalCurve=")) + 1);
+        String newline = text.contains("\r\n") ? "\r\n" : "\n";
+        String oldComment = OLD_CURVE_COMMENT.replace("\n", newline);
+        boolean hasNew = text.lines().anyMatch(l -> isKeyLine(l.trim(), "throttle.pedalCurve"));
+        StringBuilder out = new StringBuilder();
+        for (String line : text.split("\\R", -1)) {
+            if (isKeyLine(line.trim(), "throttle.curve")) {
+                if (!hasNew) {
+                    out.append(block.replace("\n", newline));
+                }
+            } else {
+                out.append(line).append(newline);
+            }
+        }
+        String result = out.substring(0, out.length() - newline.length()).replace(oldComment, "");
+        Files.writeString(path, result, StandardCharsets.UTF_8);
+        Log.info("settings: throttle.curve replaced by throttle.pedalCurve");
+        return true;
     }
 
     private static void load() throws IOException {
@@ -485,7 +525,7 @@ public final class Settings {
         throttleAnalog = bool(p, "throttle.analog", true);
         throttleDeadZone = num(p, "throttle.deadZone", 0.02f, 0f, 0.5f);
         throttleFullAt = num(p, "throttle.fullAt", 0.98f, 0.5f, 1f);
-        throttleCurve = num(p, "throttle.curve", 1.5f, 0.2f, 5f);
+        throttleCurve = num(p, "throttle.pedalCurve", 0.7f, 0.2f, 5f);
         throttleDragExponent = num(p, "throttle.dragExponent", 2.0f, 0.5f, 5f);
         throttleEngineBraking = num(p, "throttle.engineBraking", 1.0f, 0f, 10f);
         throttleBrakeCurve = num(p, "throttle.brakeCurve", 1.0f, 0.2f, 5f);
