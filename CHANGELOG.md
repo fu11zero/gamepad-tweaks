@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+## Update: 15 Nov @ 10:56am
+
 - Fixed: the X (interact) menu now shows fences and walls south and east of the character, so chain-link and metal fences can be disassembled from any side.
 
 ## Update: 14 Nov @ 4:21pm
