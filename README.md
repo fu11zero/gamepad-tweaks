@@ -137,6 +137,17 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   `ISBuildingObject.onJoypadPressButton` (on `OnGameStart`, the file is in `server/`): A sets
   `build` when `canBeBuild`. `ISMoveableCursor` handles A itself and is untouched.
 
+- **X menu sees fences and walls to the south and east** (`media/lua/client/GamepadTweaks/WallEdge.lua`).
+  `ISButtonPrompt:getInteractOptionsButtonObjects` takes the player's square and the three in front,
+  but drops every square behind a non-hoppable wall. Walls and fences live only on the north/west
+  edges of a square, so the ones south/east of the player belong to the square in front and vanish
+  with it: a tall chain-link or metal fence there can't be disassembled from X, while the same fence
+  north/west can. The mod adds back only the objects on that shared edge (wall/fence/door/window
+  flags, `isNorth()` of thumpables, doors, windows; no containers) and, while that X menu is built,
+  keeps their squares from being expanded into the whole room behind: `fetchSquares` pre-marked
+  (Java `ISWorldObjectContextMenuLogic.fetch`), `ISMenuContextWorld.getObjectsSquare` skipped,
+  `ISDisassembleMenu` / `ISRadioAndTvMenu` (fed by Java `getAllObjects`) filtered.
+
 - **Rebindable hardcoded buttons** (`media/lua/client/GamepadTweaks/Bindings.lua`, values via
   `Settings` globals `GamepadTweaks_getSetting` / `GamepadTweaks_settingsVersion`).
   Vanilla handles these directly, past the binding system, so the buttons can't be used for

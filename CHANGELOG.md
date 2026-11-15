@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Fixed: the X (interact) menu now shows fences and walls south and east of the character, so chain-link and metal fences can be disassembled from any side.
+
 ## Update: 14 Nov @ 4:21pm
 
 - Added: splitscreen vibration per player: Options -> Mods -> "Vibration for player 1..4" turns it off for one player only.
