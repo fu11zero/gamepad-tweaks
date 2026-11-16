@@ -125,6 +125,46 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - enter/exit vehicle: vanilla also does it on an Interact click for any nearby vehicle,
     on top of the A prompt (on press); for the gamepad only the prompt is left.
 
+- **Interact (A) picks what the character faces** (`InteractTarget`, `interact.*` settings,
+  gamepad players only). Vanilla `IsoPlayer.updateUseKey` runs `doContext` on release (or after
+  0.5 s held): it collects contextual actions on the facing side (`doContextNSWE`; for a diagonal
+  facing both cardinal sides, ordered by the position inside the tile), then doors / windows /
+  frames on the opposite sides marked `behind`, and `pickBestContextualAction` takes the highest
+  priority, behind or not. Doors and windows are 100, furniture, animals, hutches 90
+  (`ContextualAction.Action`), so the window behind beats the sofa in front, and with nothing in
+  front the window behind opens anyway; the Lua prompts (`ISButtonPrompt`
+  `getBestInteractButtonAction` / `getBestClimbThroughButtonAction`) offer it too.
+  - `interact.notBehind`: `getContextDoorOrWindowOrWindowFrame` returns nothing for a side
+    opposite to `getForwardIsoDirection` except an open door, so behind A only closes a door
+    (what vanilla's behind check is for: A to open, A to close it after you, running from
+    zombies). It is used when nothing is in front, or before anything in front when the player
+    stepped onto its square through that edge less than 3 s ago (square history per player,
+    updated every frame from `updateUseKey`); the prompt shows it first too
+    (`GamepadTweaks_interactRecentDoor`, `InteractPrompt.lua`).
+  - `interact.facing`: `pickBestContextualAction` takes the action whose side is closest to the
+    continuous facing vector; priority only breaks ties.
+  - `interact.cursor`: with a world cursor (`IsoCell.getDrag`: place / pick up furniture, chop,
+    disassemble, build) A goes to the cursor (`JoyPadSetup onPressButtonNoFocus`), but the Java
+    poll still ran `doContext` on release and sat on the sofa or opened the window next to the
+    cursor. A press that started on a cursor, or a release with a cursor up, skips `doContext`.
+    Same for the prompt's own handlers (`InteractPrompt.lua`): light switches, stoves, radios and
+    crafting entities act on press in Lua while `doContext` acts on release, so an EXIT lamp by a
+    door toggled and the door opened. A handled press (`GamepadTweaks_interactHandled`) skips
+    `doContext`; facing diagonally the prompt also checks doors / windows on both sides before
+    lights (vanilla took the first side's lamp, Java opened the other side's door).
+  - `interact.lootFacing` (`LootFacing.lua`): vanilla `ISInventoryPage:refreshBackpacks` selects
+    the gamepad's container by index (`backpackChoice`, 1 by default), and the buttons are built
+    square by square from the north-west corner, so the loot window opened on the container up-left
+    on the screen (the wall cabinet "above" the player). On Y (`ISButtonPrompt.cmdShowLoot`) and
+    whenever the player turns or changes square, the container whose square is closest to the
+    facing is selected (own square ranks between front and side); LB/RB still cycle.
+- **Half RT doesn't turn the character** (`AimSnap`, `aim.snapFix`). Without the Aim stick the
+  reticle snaps one tile ahead of the animated facing (`AimingMode.snapAimInFrontOfPlayer`) at
+  height 0.57 (melee, unarmed) / 0.468 (firearm), but the facing is read back from it
+  (`IsoPlayer.calculateAimVector`) at the chest, `getAimOriginPosZ` = z + 0.495. A point drawn
+  higher than it's read lands further up the screen: each frame the facing gets a bias towards
+  screen-up (down for 0.468) and the character turns until it faces straight up. The snapped
+  point is now put at the read height.
 - **Smooth map controls** (`MapControls.java`, called from the Lua override of
   `ISWorldMap:updateJoypad` / `ISMap:updateJoypad` in `media/lua/client/GamepadTweaks/MapControls.lua`).
   Vanilla treats the stick and triggers as buttons: stick below 0.5 per axis is ignored (on top
@@ -565,6 +605,8 @@ launch, re-read while the game runs).
   - `steering.scaleToSpeedClamp`: full stick = the clamp;
   - `triggers.noDeadZone`: `Triggers.value` / `Triggers.deadZone`;
   - `actions.crouchOnPress`, `actions.sprintOnPress`, `actions.vehicleOnlyByPrompt`: `PressActions`;
+  - `interact.notBehind`, `interact.facing`, `interact.cursor`, `interact.lootFacing`: `InteractTarget`, `LootFacing.lua`;
+  - `aim.snapFix`: `AimSnap`;
   - `map.smooth`: `MapControls.update` returns false, Lua runs vanilla;
   - `steamInput.enabled` (restart), `steamInput.passengerLayer`.
   Sliders: steering dead zone, center drift zone, curve exponents and their speed, wheel rates,

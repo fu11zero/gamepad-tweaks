@@ -5,6 +5,13 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Fixed: A no longer opens a door or window behind the character (vanilla preferred a window behind over the sofa in front, and opened it when nothing was in front). Behind, A only closes an open door: when nothing is in front, or first thing for 3 s after walking through it (A to open, A to close behind you).
+- Changed: facing diagonally, A uses the side the character faces more, not a door or window on the other side.
+- Fixed: A on a cursor (place or pick up furniture, chop, disassemble, build) no longer also sits on the sofa or opens the window next to the character.
+- Fixed: a light switch or lamp next to a door (EXIT sign) no longer toggles together with the door: one press does what the prompt says, and a door ahead comes before the lamp.
+- Changed: the loot window (Y) opens on the container the character faces, not the first one around (the cabinet up-left on the screen). Re-picked when you turn or step; LB/RB still cycle.
+- Fixed: half RT without the aim stick no longer slowly turns the character towards the top of the screen (melee, unarmed).
+
 ## Update: 16 Nov @ 6:08pm
 
 - Added: easy driving, per splitscreen player (off by default, Options -> Mods): the left stick points where to go on the screen, its deflection is the gas; pointing behind the car reverses. For players new to driving. Servers can forbid it with a sandbox option.

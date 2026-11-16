@@ -56,6 +56,11 @@ local SPEC = {
 	{ key = "actions.crouchOnPress", tick = true },
 	{ key = "actions.sprintOnPress", tick = true },
 	{ key = "actions.vehicleOnlyByPrompt", tick = true },
+	{ key = "interact.notBehind", tick = true },
+	{ key = "interact.facing", tick = true },
+	{ key = "interact.cursor", tick = true },
+	{ key = "interact.lootFacing", tick = true },
+	{ key = "aim.snapFix", tick = true },
 
 	{ title = "map" },
 	{ key = "map.smooth", tick = true },

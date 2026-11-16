@@ -147,6 +147,19 @@ public final class Settings {
             # Enter/exit a vehicle only with the A button prompt; vanilla also does it on
             # an Interact click for any vehicle nearby.
             actions.vehicleOnlyByPrompt=true
+            # Interact (A) in the world picks what the character faces: doors and windows
+            # behind the character are never used (vanilla opens a window behind instead of
+            # the sofa in front), and the side the character faces more wins.
+            interact.notBehind=true
+            interact.facing=true
+            # A press that confirms a world cursor (place / pick up furniture, chop, build...)
+            # doesn't also sit on the sofa or open the window next to it.
+            interact.cursor=true
+            # Loot window (Y): select the container the character faces, not the first one.
+            interact.lootFacing=true
+            interact.debugLog=false
+            # Half RT alone (no aim stick) doesn't slowly turn the character up the screen.
+            aim.snapFix=true
 
             # --- Map --------------------------------------------------------------
             # World map and paper maps: past the game's stick dead zone the map pans
@@ -360,6 +373,11 @@ public final class Settings {
     public static volatile boolean crouchOnPress = true;
     public static volatile boolean sprintOnPress = true;
     public static volatile boolean vehicleOnlyByPrompt = true;
+    public static volatile boolean interactNotBehind = true;
+    public static volatile boolean interactFacing = true;
+    public static volatile boolean interactCursor = true;
+    public static volatile boolean interactDebugLog = false;
+    public static volatile boolean aimSnapFix = true;
     public static volatile boolean mapSmooth = true;
     public static volatile float mapPanSpeed = 1.0f;
     public static volatile float mapPanExponent = 1.0f;
@@ -568,6 +586,11 @@ public final class Settings {
         crouchOnPress = bool(p, "actions.crouchOnPress", true);
         sprintOnPress = bool(p, "actions.sprintOnPress", true);
         vehicleOnlyByPrompt = bool(p, "actions.vehicleOnlyByPrompt", true);
+        interactNotBehind = bool(p, "interact.notBehind", true);
+        interactFacing = bool(p, "interact.facing", true);
+        interactCursor = bool(p, "interact.cursor", true);
+        interactDebugLog = bool(p, "interact.debugLog", false);
+        aimSnapFix = bool(p, "aim.snapFix", true);
         mapSmooth = bool(p, "map.smooth", true);
         mapPanSpeed = num(p, "map.panSpeed", 1.0f, 0.01f, 20f);
         mapPanExponent = num(p, "map.panExponent", 1.0f, 0.1f, 5f);

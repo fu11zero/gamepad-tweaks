@@ -4,6 +4,11 @@ import me.zed_0xff.zombie_buddy.Patch;
 import zombie.characters.CharacterJoypadAxis2dBinding;
 import zombie.characters.CharacterJoypadButtonBinding;
 import zombie.characters.IsoPlayer;
+import zombie.characters.ContextualAction;
+import zombie.iso.IsoDirections;
+import zombie.iso.IsoObject;
+import zombie.iso.Vector2;
+import java.util.ArrayList;
 import zombie.input.AimingMode;
 import zombie.characters.component.CharacterInputComponent;
 import zombie.core.physics.CarController;
@@ -418,6 +423,56 @@ public final class Patches {
         public static void exit(@Patch.This CharacterInputComponent input,
                                 @Patch.Return(readOnly = false) boolean down) {
             down = down || HeldActions.characterHeld(input, HeldActions.INTERACT);
+        }
+    }
+
+    // Half RT alone must not turn the character (see AimSnap).
+    @Patch(className = "zombie.input.AimingMode", methodName = "snapAimInFrontOfPlayer")
+    public static class AimSnapLevel {
+        @Patch.OnExit
+        public static void exit(@Patch.Argument(0) IsoPlayer player, @Patch.Argument(1) float zoom,
+                                @Patch.Argument(2) Vector2 out) {
+            AimSnap.fix(player, zoom, out);
+        }
+    }
+
+    // What Interact picks in the world (see InteractTarget).
+    @Patch(className = "zombie.characters.IsoPlayer", methodName = "updateUseKey")
+    public static class InteractUseKey {
+        @Patch.OnEnter
+        public static void enter(@Patch.This IsoPlayer player) {
+            InteractTarget.beforeUseKey(player);
+        }
+
+        @Patch.OnExit
+        public static void exit(@Patch.This IsoPlayer player) {
+            InteractTarget.afterUseKey(player);
+        }
+    }
+
+    @Patch(className = "zombie.characters.IsoPlayer", methodName = "doContext")
+    public static class InteractNotOnCursor {
+        @Patch.OnEnter(skipOn = true)
+        public static boolean enter(@Patch.This IsoPlayer player) {
+            return InteractTarget.skipContext(player);
+        }
+    }
+
+    @Patch(className = "zombie.characters.IsoPlayer", methodName = "getContextDoorOrWindowOrWindowFrame")
+    public static class InteractNotBehind {
+        @Patch.OnExit
+        public static void exit(@Patch.This IsoPlayer player, @Patch.Argument(0) IsoDirections side,
+                                @Patch.Return(readOnly = false) IsoObject found) {
+            found = InteractTarget.filterBehind(player, side, found);
+        }
+    }
+
+    @Patch(className = "zombie.characters.IsoPlayer", methodName = "pickBestContextualAction")
+    public static class InteractFacing {
+        @Patch.OnExit
+        public static void exit(@Patch.This IsoPlayer player, @Patch.Argument(0) ArrayList<ContextualAction> actions,
+                                @Patch.Return(readOnly = false) ContextualAction best) {
+            best = InteractTarget.pick(player, actions, best);
         }
     }
 
