@@ -89,19 +89,23 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
 
 - **Easy driving**, per splitscreen player, off by default (`EasyDriving`, `easyDriving.player<n>`).
   Vanilla steers with the stick X relative to the car, so a car heading down the screen steers
-  mirrored, and reversing takes LT and a mirrored wheel: too hard for a player new to driving. Here
-  the left stick points where to go on the screen and its deflection is the gas:
+  mirrored, and reversing takes a mirrored wheel: too hard for a player new to driving. Here the
+  left stick points where to go on the screen and the wheel turns the car there:
   - the stick becomes a world direction as walking does it (`IsoPlayer.updateMovementFromInput`),
     with the game's radial stick dead zone (`getMovementAxisXRaw/YRaw`);
   - the angle to the car's heading (`BaseVehicle.getForwardVector`) turns the wheel, full lock at
     40 degrees, times the vanilla clamp for the speed (`VehicleScript.getSteeringClamp`);
+  - the triggers stay the pedals (a stick's short travel doses the gas poorly at low speed);
+    backing up (rolling back, or LT alone at a stop) the wheel turns mirrored to point the rear at
+    the stick.
+  `easyDriving.stickPedals=true` (off by default) takes the pedals from the stick too:
   - the deflection is the gas, down to 35% with the target 90 degrees or more off, so sharp turns
     are slower; a target behind the car (past 120 degrees, back under 70) reverses: the deflection
-    goes on the brake pedal (brakes, then reverses at the stop) and the wheel turns mirrored to point
-    the rear at it; while the car still rolls the other way the wheel stays straight;
+    goes on the brake pedal (brakes, then reverses at the stop); while the car still rolls the
+    other way the wheel stays straight;
   - the pedals go through `AnalogInput.pedals` and `Throttle` as stick pedals, with their own curve
-    (`throttle.stickCurve`, default 2: the trigger curve 0.7 makes a short stick travel twitchy), so
-    the analog gas and the triggers still work; the brake hold is off for that driver.
+    (`throttle.stickCurve`, default 2), so the analog gas and the triggers still work; the brake
+    hold is off for that driver.
   Servers can forbid it: sandbox option `GamepadTweaks.EasyDriving` (`media/sandbox-options.txt`,
   page "Gamepad Tweaks", allowed by default), which the server sends to its clients. It is a client
   check, a modified client can bypass it. `steering.debugLog` logs it once a second.

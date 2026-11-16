@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Changed: easy driving now only steers: the stick points where to go, the triggers stay the gas and the brake (dosing the gas with a stick was hard at low speed). Backing up (LT at a stop) the wheel points the rear at the stick. The old stick gas is an option: "Easy driving: the stick is the gas too".
+
 ## Update: 16 Nov @ 11:39pm
 
 - Fixed: A no longer opens a door or window behind the character (vanilla preferred a window behind over the sofa in front, and opened it when nothing was in front). Behind, A only closes an open door: when nothing is in front, or first thing for 3 s after walking through it (A to open, A to close behind you).

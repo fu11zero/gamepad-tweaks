@@ -50,6 +50,7 @@ local SPEC = {
 	{ key = "easyDriving.player2", tick = true, default = false },
 	{ key = "easyDriving.player3", tick = true, default = false },
 	{ key = "easyDriving.player4", tick = true, default = false },
+	{ key = "easyDriving.stickPedals", tick = true, default = false },
 
 	{ title = "buttons" },
 	{ key = "triggers.noDeadZone", tick = true },

@@ -121,7 +121,7 @@ public final class Throttle {
             car.clientControls.forward |= Math.max(steam[0], steam[2]) > VANILLA_PRESSED;
             car.clientControls.backward |= Math.max(steam[1], steam[3]) > VANILLA_PRESSED;
         }
-        if (EasyDriving.active(joypad)) {
+        if (EasyDriving.stickPedals(joypad)) {
             holds.remove(vehicle); // the stick pointing back means reverse
         } else {
             hold(car);
@@ -407,7 +407,7 @@ public final class Throttle {
     }
 
     /** Trigger value (-1 released .. 1 pressed) to travel 0..1. */
-    private static float travel(float value) {
+    public static float travel(float value) {
         return Math.max(0.0f, Math.min(1.0f, (value + 1.0f) * 0.5f));
     }
 

@@ -8,25 +8,32 @@ import zombie.core.physics.CarController;
 import zombie.input.JoypadManager;
 import zombie.vehicles.BaseVehicle;
 
-// Easy driving: the left stick points where to go on the screen, its deflection is the gas.
+// Easy driving: the left stick points where to go on the screen, the wheel turns the car there.
 //
 // Vanilla steers with the stick X relative to the car (left / right of the driver), so a car
-// heading south (down the screen) steers mirrored, and reversing needs LT plus a mirrored
-// wheel: hard for a novice in splitscreen. Here, per splitscreen player (easyDriving.player<n>):
+// heading south (down the screen) steers mirrored, and reversing needs a mirrored wheel too:
+// hard for a novice in splitscreen. Here, per splitscreen player (easyDriving.player<n>):
 //   - the stick direction becomes a world direction the way walking does it
 //     (IsoPlayer.updateMovementFromInput: world = (y + x, y - x));
 //   - the angle between it and the car's heading (BaseVehicle.getForwardVector: physics x, z =
 //     world x, y) turns the wheel: full lock at FULL_LOCK, times the vanilla clamp for the speed
 //     (VehicleScript.getSteeringClamp), as Steering.shape does for the stick;
+//   - backing up, the wheel points the rear at the target (mirrored).
+// By default the triggers stay the pedals: a stick's short travel makes a poor gas pedal at low
+// speed, and the driver who doses the gas with RT can point the stick exactly. Backing up is
+// decided by the motion (rolling back past ROLLING_KMH), at a stop by the pedal (LT alone =
+// vanilla reverse, RT = forward).
+// easyDriving.stickPedals=true also takes the pedals from the stick:
 //   - the deflection is the gas pedal, less when the target is off to the side (MIN_PUSH at 90
 //     degrees and more), so the car slows down for a sharp turn instead of sliding into it;
 //   - a target behind the car (past REVERSE_ANGLE) switches to reverse: the deflection goes on
-//     the brake pedal (vanilla: brakes, then reverses at the stop) and the wheel points the rear
-//     at the target (mirrored); back to forward under FORWARD_ANGLE (hysteresis, no flapping);
-//   - while the car still rolls the other way, the wheel stays straight (braking in a line).
-// The pedals go through the regular gas and brake as stick pedals (AnalogInput.pedals, Throttle:
-// throttle.stickCurve), so the analog gas and the triggers still work; the brake hold (throttle.brakeHold) is off for this driver.
-// A released stick: no gas, wheel back to center (the mod's wheel rate).
+//     the brake pedal (vanilla: brakes, then reverses at the stop); back to forward under
+//     FORWARD_ANGLE (hysteresis, no flapping);
+//   - while the car still rolls the other way, the wheel stays straight (braking in a line);
+//   - the pedals go through the regular gas and brake as stick pedals (AnalogInput.pedals,
+//     Throttle: throttle.stickCurve), so the analog gas and the triggers still work; the brake
+//     hold (throttle.brakeHold) is off for this driver.
+// A released stick: wheel back to center (the mod's wheel rate), no stick gas.
 //
 // Servers can forbid it: sandbox option GamepadTweaks.EasyDriving (media/sandbox-options.txt),
 // sent to the clients with the other sandbox options. A client-side check: a modified client
@@ -39,13 +46,16 @@ public final class EasyDriving {
     private static final double FORWARD_ANGLE = Math.toRadians(70);
     private static final float MIN_PUSH = 0.35f;
     private static final float ROLLING_KMH = 3.0f;
+    private static final float PEDAL_PRESSED = 0.05f;
 
     private static final boolean[] active = new boolean[MAX_CONTROLLERS];
+    private static final boolean[] stickPedals = new boolean[MAX_CONTROLLERS];
     private static final boolean[] reverse = new boolean[MAX_CONTROLLERS];
     private static final float[] gas = new float[MAX_CONTROLLERS];
     private static final float[] brake = new float[MAX_CONTROLLERS];
     private static final float[] steering = new float[MAX_CONTROLLERS];
     private static final Vector3f forward = new Vector3f();
+    private static final float[] tmp = new float[2];
     private static long lastLog;
 
     private EasyDriving() {}
@@ -76,6 +86,7 @@ public final class EasyDriving {
             return false;
         }
         active[joypad] = true;
+        stickPedals[joypad] = Settings.easyDrivingPedals;
         // the game's radial stick dead zone, rescaled (as the map)
         float sx = pad.getMovementAxisXRaw();
         float sy = pad.getMovementAxisYRaw();
@@ -91,19 +102,24 @@ public final class EasyDriving {
         // > 0: the target is clockwise on the screen, to the driver's right (steering +1 = right)
         double angle = Math.atan2(fx * ty - fy * tx, fx * tx + fy * ty);
         double off = Math.abs(angle);
-        if (reverse[joypad] ? off < FORWARD_ANGLE : off > REVERSE_ANGLE) {
-            reverse[joypad] = !reverse[joypad];
-        }
         float speed = vehicle.getCurrentSpeedKmHour(); // < 0 rolling back
         float clamp = vehicle.getScript() == null ? 1.0f : vehicle.getScript().getSteeringClamp(Math.abs(speed));
-        if (reverse[joypad]) {
-            double rear = angle > 0 ? angle - Math.PI : angle + Math.PI; // from the rear to the target
-            brake[joypad] = pedal(push, rear);
+        double rear = angle > 0 ? angle - Math.PI : angle + Math.PI; // from the rear to the target
+        if (!stickPedals[joypad]) {
+            reverse[joypad] = backingUp(pad, joypad, speed, reverse[joypad]);
             // reversing, the wheel to the left turns the rear to the right (clockwise)
-            steering[joypad] = speed > ROLLING_KMH ? 0 : -lock(rear) * clamp;
+            steering[joypad] = reverse[joypad] ? -lock(rear) * clamp : lock(angle) * clamp;
         } else {
-            gas[joypad] = pedal(push, angle);
-            steering[joypad] = speed < -ROLLING_KMH ? 0 : lock(angle) * clamp;
+            if (reverse[joypad] ? off < FORWARD_ANGLE : off > REVERSE_ANGLE) {
+                reverse[joypad] = !reverse[joypad];
+            }
+            if (reverse[joypad]) {
+                brake[joypad] = pedal(push, rear);
+                steering[joypad] = speed > ROLLING_KMH ? 0 : -lock(rear) * clamp;
+            } else {
+                gas[joypad] = pedal(push, angle);
+                steering[joypad] = speed < -ROLLING_KMH ? 0 : lock(angle) * clamp;
+            }
         }
         if (Settings.debugLog) {
             long now = System.currentTimeMillis();
@@ -115,6 +131,27 @@ public final class EasyDriving {
             }
         }
         return true;
+    }
+
+    /**
+     * Trigger pedals: the car backs up when it rolls back; at a stop LT alone reverses (vanilla
+     * control_Reverse at a stop) and RT drives forward; otherwise the last direction stays.
+     */
+    private static boolean backingUp(JoypadManager.Joypad pad, int joypad, float speed, boolean was) {
+        if (speed < -ROLLING_KMH) {
+            return true;
+        }
+        if (speed > ROLLING_KMH) {
+            return false;
+        }
+        SteamInput.value(joypad, SteamInput.Analog.GAS, tmp);
+        float rt = Math.max(Throttle.travel(pad.getRTValue()), tmp[0]);
+        SteamInput.value(joypad, SteamInput.Analog.BRAKE, tmp);
+        float lt = Math.max(Throttle.travel(pad.getLTValue()), tmp[0]);
+        if (rt > PEDAL_PRESSED) {
+            return false;
+        }
+        return lt > PEDAL_PRESSED || was;
     }
 
     private static float pedal(float push, double angle) {
@@ -129,13 +166,18 @@ public final class EasyDriving {
         return joypad >= 0 && joypad < MAX_CONTROLLERS && active[joypad];
     }
 
+    /** The stick drives the pedals too (easyDriving.stickPedals): no brake hold for this driver. */
+    public static boolean stickPedals(int joypad) {
+        return active(joypad) && stickPedals[joypad];
+    }
+
     public static float steering(int joypad) {
         return active(joypad) ? steering[joypad] : 0;
     }
 
     /** Adds the easy gas and brake to the stick pedals (AnalogInput.pedals: out[2], out[3]). */
     public static void pedals(int joypad, float[] out) {
-        if (active(joypad)) {
+        if (stickPedals(joypad)) {
             out[2] = Math.max(out[2], gas[joypad]);
             out[3] = Math.max(out[3], brake[joypad]);
         }

@@ -10,7 +10,7 @@ description=[*][b]No more driving in arcs (stick drift fix).[/b] The mod learns 
 description=[*][b]Speed-sensitive steering.[/b] Soft center at high speed, full stick = max wheel angle for the speed. No more oversteering on the highway.
 description=[*][b]Wheel without lag.[/b] The wheel follows the stick at a constant rate (vanilla lags up to ~3 s at top speed). Keyboard steering stays vanilla.
 description=[*][b]Analog gas and brake.[/b] Vanilla LT/RT (L2/R2) are on/off at 70%. Now a light press rolls the car slowly and holds that speed, easing off brakes with the engine, full pedal = vanilla. No trigger dead zone. Optional: LT brakes to a stop without backing up, press again to reverse.
-description=[*][b]Easy driving (splitscreen).[/b] Per player: stick = where to go on screen, deflection = gas, behind the car = reverse. For a partner new to driving. Servers can forbid it.
+description=[*][b]Easy driving (splitscreen).[/b] Per player: stick = where to go on screen, triggers = pedals (or the stick is the gas too). For a partner new to driving. Servers can forbid it.
 description=[*][b]Smooth map controls.[/b] World and paper maps pan smoothly by stick deflection, triggers zoom by how far you press, not one step per click.
 description=[*][b]Fliers and brochures work with a controller.[/b] Vanilla threw a Lua error. Fliers and stash maps on the world map now open with A under the cross (vanilla needed the mouse).
 description=[*][b]A confirms chop tree, build and place item cursors[/b] (broken in 42.22).

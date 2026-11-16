@@ -123,13 +123,16 @@ public final class Settings {
             # Log pedals, forces and RPM once a second.
             throttle.debugLog=false
             # Easy driving per splitscreen player (player 1 = the first to join): the left
-            # stick points where to go on the screen, its deflection is the gas; pointing
-            # behind the car reverses. For players new to driving. Servers can forbid it
+            # stick points where to go on the screen, the wheel turns the car there; the
+            # triggers stay the pedals. For players new to driving. Servers can forbid it
             # (sandbox option "Easy driving"). steering.debugLog logs it.
             easyDriving.player1=false
             easyDriving.player2=false
             easyDriving.player3=false
             easyDriving.player4=false
+            # Easy driving: the stick deflection is also the gas, pointing behind the car
+            # reverses (no triggers needed, but slow driving is harder to dose).
+            easyDriving.stickPedals=false
 
             # --- Triggers ---------------------------------------------------------
             # The game's dead zone is not applied to the triggers (they rest at zero
@@ -366,6 +369,7 @@ public final class Settings {
     public static volatile float throttleBrakeCurve = 1.0f;
     public static volatile float throttleStickCurve = 2.0f;
     public static volatile boolean throttleBrakeHold = false;
+    public static volatile boolean easyDrivingPedals = false;
     public static volatile float throttleSoundRate = 4.0f;
     public static volatile boolean throttleDebugLog = false;
     public static volatile boolean triggersNoDeadZone = true;
@@ -579,6 +583,7 @@ public final class Settings {
         throttleBrakeCurve = num(p, "throttle.brakeCurve", 1.0f, 0.2f, 5f);
         throttleStickCurve = num(p, "throttle.stickCurve", 2.0f, 0.2f, 5f);
         throttleBrakeHold = bool(p, "throttle.brakeHold", false);
+        easyDrivingPedals = bool(p, "easyDriving.stickPedals", false);
         throttleSoundRate = num(p, "throttle.soundRate", 4.0f, 0.1f, 100f);
         throttleDebugLog = bool(p, "throttle.debugLog", false);
         triggersNoDeadZone = bool(p, "triggers.noDeadZone", true);
@@ -622,7 +627,7 @@ public final class Settings {
                 + "ms disarm=" + disarmDistance
                 + " throttle: analog=" + throttleAnalog + " deadZone=" + throttleDeadZone + ".." + throttleFullAt
                 + " curve=" + throttleCurve + " drag^" + throttleDragExponent + " engineBraking=" + throttleEngineBraking
-                + " brakeCurve=" + throttleBrakeCurve + " stickCurve=" + throttleStickCurve + " brakeHold=" + throttleBrakeHold
+                + " brakeCurve=" + throttleBrakeCurve + " stickCurve=" + throttleStickCurve + " brakeHold=" + throttleBrakeHold + " easyPedals=" + easyDrivingPedals
                 + " soundRate=" + throttleSoundRate + " debugLog=" + throttleDebugLog
                 + " triggers.noDeadZone=" + triggersNoDeadZone + " triggers.debugLog=" + triggersDebugLog
                 + " actions: crouchOnPress=" + crouchOnPress + " sprintOnPress=" + sprintOnPress
