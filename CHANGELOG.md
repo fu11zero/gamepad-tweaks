@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+## Update: 16 Nov @ 11:58pm
+
 - Changed: easy driving now only steers: the stick points where to go, the triggers stay the gas and the brake (dosing the gas with a stick was hard at low speed). Backing up (LT at a stop) the wheel points the rear at the stick. The old stick gas is an option: "Easy driving: the stick is the gas too".
 
 ## Update: 16 Nov @ 11:39pm
