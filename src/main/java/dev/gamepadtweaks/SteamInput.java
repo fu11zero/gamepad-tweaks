@@ -49,7 +49,13 @@ public final class SteamInput {
         /** joystick_move: -1..1, added to the steering stick. */
         STEER("steer", false),
         /** joystick_move: -1..1, added to the movement stick. */
-        MOVE("move", false);
+        MOVE("move", false),
+        /** joystick_move: x as STEER, y up (positive) = gas, down = brake / reverse: a car on one stick. */
+        STEER_PEDALS("steerPedals", false),
+        /** AnalogTrigger: 0..1 x, as RT. */
+        GAS("gasPedal", false),
+        /** AnalogTrigger: 0..1 x, as LT. */
+        BRAKE("brakePedal", false);
 
         final String id;
         final boolean delta;

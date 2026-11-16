@@ -72,7 +72,13 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     the engine force (`ParameterVehicleLoad`, both the `audio` and `vehicleSound` ones);
   - off while Tsuki's AnalogThrottle is active (`ForeignThrottle`: its `ATBridge.enabled`; 0.1.3 runs
     only on 42.21). Both patch the same `CarController` methods: the force would be scaled twice and its
-    RPM changes inside `update` would drive vanilla's shifts here.
+    RPM changes inside `update` would drive vanilla's shifts here;
+  - blocked driver (`Patches.BlockedDriver`, `Throttle.release`): with the world map open
+    (`IsoPlayer.isBlockMovement`) `BaseVehicle.updateControls` skips `CarController.updateControls`, so
+    the pedals kept their state from the moment the map opened (vanilla: RT held past 0.7 drove on).
+    With the analog gas any press is a pressed pedal, and once the analog state went stale vanilla
+    full gas took over: revs at the limit while rolling. Now the pedals are released, the analog
+    state and the brake hold dropped while the driver is blocked.
 
 - **Brake hold**, experimental, off by default (`Throttle.hold`, `throttle.brakeHold`, also with the vanilla on/off pedals). Vanilla
   `CarController.update` turns LT into a brake while the car moves forward and into reverse the moment it
@@ -80,6 +86,25 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   and all. Here LT that started braking (above 1 km/h) holds the car near the stop as the brake
   (`clientControls.brake`, as B) until it is released; the next press reverses. RT while backing up
   stays vanilla (brakes, then drives forward): after reversing the next move is almost always forward.
+
+- **Easy driving**, per splitscreen player, off by default (`EasyDriving`, `easyDriving.player<n>`).
+  Vanilla steers with the stick X relative to the car, so a car heading down the screen steers
+  mirrored, and reversing takes LT and a mirrored wheel: too hard for a player new to driving. Here
+  the left stick points where to go on the screen and its deflection is the gas:
+  - the stick becomes a world direction as walking does it (`IsoPlayer.updateMovementFromInput`),
+    with the game's radial stick dead zone (`getMovementAxisXRaw/YRaw`);
+  - the angle to the car's heading (`BaseVehicle.getForwardVector`) turns the wheel, full lock at
+    40 degrees, times the vanilla clamp for the speed (`VehicleScript.getSteeringClamp`);
+  - the deflection is the gas, down to 35% with the target 90 degrees or more off, so sharp turns
+    are slower; a target behind the car (past 120 degrees, back under 70) reverses: the deflection
+    goes on the brake pedal (brakes, then reverses at the stop) and the wheel turns mirrored to point
+    the rear at it; while the car still rolls the other way the wheel stays straight;
+  - the pedals go through `AnalogInput.pedals` and `Throttle` as stick pedals, with their own curve
+    (`throttle.stickCurve`, default 2: the trigger curve 0.7 makes a short stick travel twitchy), so
+    the analog gas and the triggers still work; the brake hold is off for that driver.
+  Servers can forbid it: sandbox option `GamepadTweaks.EasyDriving` (`media/sandbox-options.txt`,
+  page "Gamepad Tweaks", allowed by default), which the server sends to its clients. It is a client
+  check, a modified client can bypass it. `steering.debugLog` logs it once a second.
 
 - **Triggers without dead zone** (`Triggers`, `Patches.*TriggerValue`). Vanilla
   `Joypad.getLTValue/getRTValue` apply the per-axis dead zone that the options screen
@@ -107,7 +132,8 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   at high zoom), isometric view drops diagonals; LT/RT (> 0.7) zoom one level per press, holding
   repeats only after the zoom animation ends; the paper map ignores the stick. Instead:
   - past the game's radial stick dead zone, pan speed = `map.panSpeed` map heights per second
-    x deflection^`map.panExponent`, in screen directions (screen offset converted to world through
+    x deflection^`map.panExponent` (default 1, linear: with 2 small deflections barely moved and
+    new players clicked the stick instead), in screen directions (screen offset converted to world through
     the map projection, so isometric works too); D-pad = deflection `map.dpadDeflection`;
   - zoom speed = `map.zoomSpeed` levels per second x trigger^`map.zoomExponent` (RT in, LT out),
     `setZoom` around the map center, no step animation;
@@ -273,7 +299,8 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     point to a Steam template (paths are files next to the manifest), so the template is copied;
   - action set layers follow the player's situation (`Bindings.lua` picks them every frame,
     `GamepadTweaks_steamInputSetLayers`, Java activates them per Steam controller when they change),
-    bottom to top: `onfoot` or `vehicle` (passengers: `steamInput.passengerLayer`), `aiming`, `ui`
+    bottom to top: `onfoot` or `vehicle` (passengers: `steamInput.passengerLayer`), `aiming` (firearm
+    in hand only: vanilla's aiming is any combat stance, melee too), `ui`
     (a panel or radial has the joypad focus), `inventory` (the inventory or loot window), `map`; `menu` on every controller in the main menu and
     the pause menu. A layer overrides only what is bound in it, so one paddle can be the light on
     foot and the horn in a car, the gyro can be a mouse only in panels or only while aiming.
@@ -366,6 +393,10 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   `SteamInput.updateAnalog`), after `SteamAPI_RunCallbacks` ran Steam's frame. `aim` is declared
   in the `aiming` layer (only there it means anything), so the gyro is bound there. With the held
   Aim action, the stick isn't needed at all.
+  Firearms only (`isRangedWeaponEquipped`; the `aiming` layer too): vanilla's "aiming" is also the
+  melee / unarmed combat stance, where there's no reticle, so the offset turned the player unseen
+  (a shift of the body and the character faced away, the stick no longer matching the facing).
+  Melee and unarmed aim with the stick alone; the offset is dropped as when aiming ends.
   Aiming without the Aim binding (half RT, PrecisionAim, stick released) snaps the reticle in front of
   the player (`AimingMode.shouldSnapAimInFrontOfPlayer`: no stick, nothing to aim with). The first gyro
   delta then takes the reticle from where it stands (offset = reticle - stick target) and the player
@@ -377,6 +408,21 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   deflection sees it via `Patches.MoveAxisDown`). They are meant for a stick or trackpad, not the
   gyro: Steam drops gyro-to-joystick output after any action set layer change until the game
   window loses and regains focus.
+  Pedal actions in the `vehicle` layer (`AnalogInput.pedals`, read by `Throttle`): `gasPedal` /
+  `brakePedal` (`AnalogTrigger`, 0..1: the pedals on other triggers, e.g. swapped for the left hand)
+  and `steerPedals` (`joystick_move`: X added to the steering, stick up = gas, down = brake /
+  reverse: a whole car on one stick). Steam can't split one stick into several analog actions (a
+  stick's directions give only digital commands), hence the combined one. The vanilla `Brakes`
+  binding (B) is titled "Handbrake" in Steam: it brakes x13, as a handbrake. Each pedal is the larger of its trigger
+  (RT / LT) and these, so the analog gas, the brake hold and everything else work the same; with the
+  analog gas off they press the vanilla on/off pedals past 0.7. The `steerPedals` Y (up > 0 in
+  Steam) gets the game's stick dead zone (controller options, the movement Y axis), rescaled: a
+  stick resting slightly off center or pushed sideways to steer held a light pedal, and the analog
+  gas keeps a slow speed on any press. The steering part gets none.
+  The map (`ISWorldMap`, `ISMap` focused) drops the world layers (`onfoot` / `vehicle` / `aiming`,
+  `Bindings.lua playerLayers`): the map pans with the plain gamepad stick, and a stick bound in the
+  vehicle layer to `steer` kept steering instead. Other windows keep them (Steam world actions work
+  with a window open).
   Layers are switched by difference (`DeactivateActionSetLayer` / `ActivateActionSetLayer` of the
   changed ones only).
 
@@ -386,20 +432,41 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   `ISteamInput::TriggerVibrationExtended` (big and small motor, right trigger motor on Xbox
   One / Series pads), so it needs `steamInput.enabled` and the game started from Steam.
   Lua picks the events and sends pulses (start at full, fade out linearly), Java mixes them per
-  controller (strongest value per motor) and sends the speeds every frame from `pollEvents`:
+  controller (strongest value per motor) and sends the speeds every frame from `pollEvents`.
+  Speeds under 0.04 are cut (a motor left that low stalls and spins up by itself, felt as a
+  growing buzz), and the stop is sent 3 more times 80 ms apart: a stop right after a speed change
+  was sometimes lost and the motors kept going after a shot or a short knock until the next
+  pulse ended. While aiming a firearm, ambient events (heartbeat, thunder, thumps, glass, tools)
+  are scaled by `rumble.aiming` (0.3): the shaking moves a gyro reticle; wounds, falls and shots
+  are not. The events:
   - shot: `OnWeaponSwingHitPoint` with a ranged weapon that isn't dry firing
     (`isRangedWeaponEmpty`), stronger and longer with the gun's sound radius (pistol < rifle < shotgun);
   - melee hit: `OnWeaponHitCharacter`, by damage;
-  - getting hurt: health lost in one tick (bites, falls, car crashes, fire; bleeding and hunger
-    stay under the threshold);
-  - heartbeat: double beat while panicked (panic moodle 2+), faster and stronger with the level;
+  - zombie wounds (`RumbleEvents.wound`): `BodyDamage.AddRandomDamageFromZombie` plays the pain
+    voice (`IsoPlayer.playerVoiceSound` "PainFromScratch / Lacerate / Bite", also "PainFromGlassCut")
+    exactly when a scratch, laceration or bite gets through the clothes (also on an MP client,
+    before it sends the hit): a sharp kick plus a high, slowly fading sting, longer and stronger
+    for a bite, then a heartbeat (8 s after a scratch or cut, 20 s after a bite). Health loss
+    alone was easy to miss;
+  - getting hurt otherwise: health lost in one tick (falls, car crashes, hits in MP; bleeding and
+    hunger stay under the threshold);
+  - heartbeat: double beat while panicked (panic moodle 2+) or after a wound, faster and stronger
+    with the level;
   - thunder: `OnThunderEvent` comes with the flash, the pulse follows with the sound
     (`dist / 300` s, as `ThunderStorm.enqueueThunderEvent`), a crack for a strike, a long roll for
     rumble, by distance, half indoors;
   - body (`RumbleEvents.update`): the player's action states (`media/actiongroups/player`) are
-    watched every frame: `collide` (sprinting into a wall), `bumped`, `knockeddown`, `falldown`,
-    landing (leaving `falling`, `climbfence`, `climbwall`, `climbwindow`), `hitreaction*` (also
-    hits stopped by clothing);
+    watched every frame: `collide` (sprinting into a wall), `bumped`, the start of `knockeddown`
+    and `falldown`, landing from a height (leaving `falling`), `hitreaction*` (also hits stopped
+    by clothing);
+  - vaulting, climbing, tripping (`RumbleEvents.bodySound`): the animation sounds of the player
+    (anim events `PlaySound`, `PlayFenceSound`, `PlayTripSound` in `media/AnimSets/player`, all
+    through `CharacterSoundEmitter.playSoundImpl`) fall on the exact frame: a light kick for the
+    hands on the fence / window frame / wall (`ClimbOverFenceLow`, `ClimbThroughWindow`,
+    `ClimbOverFenceHigh*`), a firmer one for the feet on the ground (`LandLight`, `LandHeavy`),
+    a hard one for tripping and the body hitting the ground (`TripOverObstacle`, `FallLight`,
+    `FallHeavy`, `BodyHitGround`). Leaving the climb state came well after the landing, so the
+    kick read as an unrelated event;
   - burns: `OnPlayerGetDamage` `FIRE` (vanilla shows no reaction, and each step is too small for
     the health check), uneven bursts while burning;
   - window opening: `IsoWindow.ToggleWindow`, when it actually opens or closes (a stuck window
@@ -421,7 +488,11 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     `jniLinearVelocity` in the body's axes); running someone over
     (`playSoundVehicleHitCharacter`) by speed, where the body is; zombies banging on the vehicle
     or its window (their `ZombieThumpVehicle(Window)` sound in `CharacterSoundEmitter.playSound`
-    with the vehicle as proxy), where the zombie is;
+    with the vehicle as proxy), where the zombie is; light objects that don't stop the vehicle,
+    so no crash comes (a cone in front of a wall): cones, signs and such
+    (`applyImpulseFromHitObject` below their break speed, `IsoObject.HitByVehicle` above it; not
+    on an MP client, where `IsoObject.Collision` doesn't run), bushes and small trees
+    (`applyImpulseFromHitPlant`), once per contact, by speed, where the object is;
   - suspension: per wheel `wheelInfo.suspensionLength` against the script's rest length and
     travel; a quick compression or drop is a knock on that wheel's side, reaching the end of
     the travel a hard hit; a body under a wheel (`testCollisionWithProneCharacter` per-wheel
@@ -429,16 +500,22 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - road surface per wheel (floor sprite, as `ParameterVehicleRoadMaterial`, plus plowed land
     `vegetation_farming_*`): a knock on the wheel that leaves or gets back on the asphalt, and
     each wheel's side gets the texture of its own surface (grips only); speed makes it stronger and denser
-    (grain intervals are for 40 km/h, scaled by 40 / speed within x0.4..x3): grass soft swells,
-    dirt road uneven with ruts, gravel a fine fast crunch, sand long smooth waves, snow barely,
-    furrows and railway sleepers a beat per 0.7 / 0.65 tiles driven. It fades to a third over
-    continuous off-road time (a long dirt road stays bearable) and comes back after 10 s on
-    asphalt;
+    (grain intervals are for 40 km/h, scaled by 40 / speed within x0.4..x3). Surfaces differ in
+    strength and gaps, not only rhythm (dense grains of close strength make one even buzz, and a
+    dirt road felt like grass): a gravel road (`blends_street_01_48/53/54/55`, the long country
+    roads) is nearly smooth with a faint sparse crunch, a dirt road (brown rutted track) uneven with
+    ruts now and then, grass soft swells, sand long waves, snow barely, furrows a firm beat per 0.7 tiles,
+    railway sleepers the hardest clack per 0.65 tiles (with a trigger accent at the front).
+    Grass and the like fade to a third over continuous off-road time and come back after 10 s on
+    asphalt; furrows and rails don't fade. `rumble.debugLog` logs the floor sprite under wheel 0
+    when its surface changes;
   - motor test (Options -> Mods button, `GamepadTweaks_rumbleTest`): each motor alone in turn,
     left grip, right grip, left trigger, right trigger, to see which is where on a given pad;
-  - glass breaking within 3 tiles (`IsoWindow.smashWindow`) and zombies banging on doors, windows
-    and barricades within 4 tiles (`IsoGameCharacter.setTimeThumping`, bumped once per thump by
-    `ThumpState.execute`), weaker further away;
+  - glass breaking within 3 tiles (`IsoWindow.smashWindow`), weaker further away;
+  - zombies banging on doors, windows, barricades and fences within 4 tiles
+    (`IsoGameCharacter.setTimeThumping`, bumped once per thump by `ThumpState.execute`): only the
+    first 2 knocks, the surprise; a crowd banging on a fence the player sees and fights shook the
+    controller for no reason. Felt again after 15 s without a knock near that player;
   - jump scare: the "ZombieSurprisedPlayer" sting of `IsoPlayer.updateLOS` (caught in
     `CharacterSoundEmitter.playSoundImpl`), a hard kick, by the game's jump scare volume (0 = none).
   Each event has its own strength (`rumble.<event>`), plus `rumble.strength`; also in

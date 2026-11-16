@@ -15,7 +15,8 @@ require "PZAPI/ModOptions"
 
 local MOD_ID = "GamepadTweaks"
 
--- key: settings key (also the option id); requires: keys of tick boxes that must be on.
+-- key: settings key (also the option id); requires: keys of tick boxes that must be on;
+-- default: a tick box is on by default unless default = false.
 local SPEC = {
 	{ title = "steering" },
 	{ key = "steering.enabled", tick = true },
@@ -41,9 +42,14 @@ local SPEC = {
 	{ key = "throttle.analog", tick = true },
 	{ key = "throttle.deadZone", min = 0, max = 0.1, step = 0.005, default = 0.02, requires = { "throttle.analog" } },
 	{ key = "throttle.pedalCurve", min = 0.3, max = 3, step = 0.1, default = 0.7, requires = { "throttle.analog" } },
+	{ key = "throttle.stickCurve", min = 0.5, max = 4, step = 0.1, default = 2.0, requires = { "throttle.analog" } },
 	{ key = "throttle.dragExponent", min = 1, max = 4, step = 0.1, default = 2.0, requires = { "throttle.analog" } },
 	{ key = "throttle.engineBraking", min = 0, max = 3, step = 0.1, default = 1.0, requires = { "throttle.analog" } },
 	{ key = "throttle.brakeHold", tick = true },
+	{ key = "easyDriving.player1", tick = true, default = false },
+	{ key = "easyDriving.player2", tick = true, default = false },
+	{ key = "easyDriving.player3", tick = true, default = false },
+	{ key = "easyDriving.player4", tick = true, default = false },
 
 	{ title = "buttons" },
 	{ key = "triggers.noDeadZone", tick = true },
@@ -54,7 +60,7 @@ local SPEC = {
 	{ title = "map" },
 	{ key = "map.smooth", tick = true },
 	{ key = "map.panSpeed", min = 0.1, max = 5, step = 0.1, default = 1.0, requires = { "map.smooth" } },
-	{ key = "map.panExponent", min = 1, max = 3, step = 0.1, default = 2.0, requires = { "map.smooth" } },
+	{ key = "map.panExponent", min = 1, max = 3, step = 0.1, default = 1.0, requires = { "map.smooth" } },
 	{ key = "map.zoomSpeed", min = 0.5, max = 10, step = 0.5, default = 3.0, requires = { "map.smooth" } },
 
 	{ title = "steamInput" },
@@ -74,6 +80,7 @@ local SPEC = {
 	{ key = "rumble.player3", tick = true, requires = { "steamInput.enabled", "rumble.enabled" } },
 	{ key = "rumble.player4", tick = true, requires = { "steamInput.enabled", "rumble.enabled" } },
 	{ key = "rumble.passenger", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.aiming", min = 0, max = 1, step = 0.1, default = 0.3, requires = { "steamInput.enabled", "rumble.enabled" } },
 	{ key = "rumble.shot", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
 	{ key = "rumble.hit", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
 	{ key = "rumble.damage", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
@@ -105,7 +112,7 @@ local function fileValue(spec)
 	local raw = readSetting(spec.key)
 	if raw then raw = raw:match("^%s*(.-)%s*$") end
 	if spec.tick then
-		if raw == nil then return true end
+		if raw == nil then return spec.default ~= false end
 		return raw:lower() == "true"
 	elseif spec.combo then
 		for i, v in ipairs(spec.combo) do
@@ -165,7 +172,7 @@ for _, spec in ipairs(SPEC) do
 		local name = textKey(spec.key)
 		local tooltip = getTextOrNull(name .. "_tooltip") and name .. "_tooltip" or nil
 		if spec.tick then
-			spec.option = options:addTickBox(spec.key, name, true, tooltip)
+			spec.option = options:addTickBox(spec.key, name, spec.default ~= false, tooltip)
 			spec.option.onChange = function(_, value)
 				current[spec.key] = value
 				updateEnabled()

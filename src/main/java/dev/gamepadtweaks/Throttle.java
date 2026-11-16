@@ -14,6 +14,12 @@ import zombie.vehicles.VehicleEngineRPM;
 
 // Analog gas and brake pedals on the triggers.
 //
+// The Steam pedal actions (AnalogInput.pedals: a stick, swapped triggers) count as the
+// triggers: each pedal is the larger of the two. Pedals on a stick ("steerPedals", easy driving)
+// get their own curve (throttle.stickCurve): a stick's travel is short and springy, the trigger
+// curve (more push early) makes it twitchy at small deflections. With the analog pedals off they press the
+// vanilla on/off pedals past the vanilla 0.7. Easy driving (EasyDriving) comes the same way.
+//
 // Vanilla (CarController.updateControls) turns the triggers into on/off pedals: gas at
 // RT > 0.7, reverse / brake at LT > 0.7. control_ForwardNew / control_Reverse then push with
 // the full engine force and control_Braking brakes with the full vehicle braking force.
@@ -76,6 +82,8 @@ public final class Throttle {
     private static final long STALE_MS = 500;
     private static final float MAX_SHOWN_RPM = 7000.0f; // ParameterVehicleRPM clamps to it
     private static final float HOLD_SPEED = 1.0f; // km/h: a pedal pressed slower than this drives the other way at once
+    private static final float VANILLA_PRESSED = 0.7f; // JoypadManager.isRTPressed / isLTPressed
+    private static final float[] steam = new float[4];
 
     public static final class State {
         volatile float gas;      // shaped RT, 0..1
@@ -109,8 +117,27 @@ public final class Throttle {
             pedals(car, joypad);
         } else {
             states.remove(vehicle);
+            AnalogInput.pedals(joypad, steam);
+            car.clientControls.forward |= Math.max(steam[0], steam[2]) > VANILLA_PRESSED;
+            car.clientControls.backward |= Math.max(steam[1], steam[3]) > VANILLA_PRESSED;
         }
-        hold(car);
+        if (EasyDriving.active(joypad)) {
+            holds.remove(vehicle); // the stick pointing back means reverse
+        } else {
+            hold(car);
+        }
+    }
+
+    /** The driver can't control the vehicle (Patches.BlockedDriver): pedals up, no analog state, no hold. */
+    public static void release(BaseVehicle vehicle) {
+        CarController car = vehicle.getController();
+        if (car != null) {
+            car.clientControls.forward = false;
+            car.clientControls.backward = false;
+            car.clientControls.brake = false;
+        }
+        states.remove(vehicle);
+        holds.remove(vehicle);
     }
 
     private static boolean analog() {
@@ -120,10 +147,11 @@ public final class Throttle {
     private static void pedals(CarController car, int joypad) {
         BaseVehicle vehicle = car.vehicleObject;
         State s = states.computeIfAbsent(vehicle, v -> new State());
-        float rt = travel(JoypadManager.instance.getRTValue(joypad));
-        float lt = travel(JoypadManager.instance.getLTValue(joypad));
-        s.gas = shape(rt, Settings.throttleCurve);
-        s.brake = shape(lt, Settings.throttleBrakeCurve);
+        AnalogInput.pedals(joypad, steam);
+        float rt = Math.max(travel(JoypadManager.instance.getRTValue(joypad)), steam[0]);
+        float lt = Math.max(travel(JoypadManager.instance.getLTValue(joypad)), steam[1]);
+        s.gas = Math.max(shape(rt, Settings.throttleCurve), shape(steam[2], Settings.throttleStickCurve));
+        s.brake = Math.max(shape(lt, Settings.throttleBrakeCurve), shape(steam[3], Settings.throttleStickCurve));
         s.updated = System.currentTimeMillis();
         CarController.ClientControls controls = car.clientControls;
         controls.forward = s.gas > 0.0f;

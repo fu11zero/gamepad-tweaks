@@ -864,16 +864,27 @@ local function playerLayers(jd, onFootPassenger)
 	local playerObj = getSpecificPlayer(jd.player)
 	if not playerObj or playerObj:isDead() then return "" end
 	local layers = {}
-	local vehicle = playerObj:getVehicle()
-	if vehicle and (vehicle:isDriver(playerObj) or not onFootPassenger) then
-		table.insert(layers, "vehicle")
-	else
-		table.insert(layers, "onfoot")
-	end
-	if playerObj:isAiming() then
-		table.insert(layers, "aiming")
-	end
 	local focus = jd.focus
+	-- The map takes the sticks (MapControls pans with the gamepad stick): without the world
+	-- layers a stick bound there to an analog action (steer, move) falls back to the plain stick.
+	-- With the vehicle layer on, the map didn't pan. Nothing to do in the world with the map open
+	-- (movement is blocked, ISWorldMap.ShowWorldMap). Other windows keep the world layers: Steam
+	-- world actions (horn, light...) work with them open.
+	local onMap = type(focus) == "table" and MAP_UI[focus.Type]
+	if not onMap then
+		local vehicle = playerObj:getVehicle()
+		if vehicle and (vehicle:isDriver(playerObj) or not onFootPassenger) then
+			table.insert(layers, "vehicle")
+		else
+			table.insert(layers, "onfoot")
+		end
+		-- Vanilla "aiming" is any combat stance, melee and unarmed too. The layer (gyro aim) is for
+		-- firearms only: in melee there is no reticle, so the gyro offset (AnalogInput) silently
+		-- turned the player and the stick no longer matched the facing.
+		if playerObj:isAiming() and playerObj:isRangedWeaponEquipped() then
+			table.insert(layers, "aiming")
+		end
+	end
 	if focus ~= nil then
 		table.insert(layers, "ui")
 		if type(focus) == "table" and INVENTORY_UI[focus.Type] then

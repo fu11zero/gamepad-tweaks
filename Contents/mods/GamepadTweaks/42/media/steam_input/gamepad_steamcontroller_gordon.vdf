@@ -9,7 +9,7 @@
 	"export_type"		"unknown"
 	"controller_type"		"controller_steamcontroller_gordon"
 	"major_revision"		"2"
-	"minor_revision"		"14"
+	"minor_revision"		"16"
 	"Timestamp"		"0"
 	"actions"
 	{
@@ -139,6 +139,16 @@
 					"title"		"#analog_steer"
 					"input_mode"		"joystick_move"
 				}
+				"steerPedals"
+				{
+					"title"		"#analog_steerPedals"
+					"input_mode"		"joystick_move"
+				}
+			}
+			"AnalogTrigger"
+			{
+				"gasPedal"		"#analog_gasPedal"
+				"brakePedal"		"#analog_brakePedal"
 			}
 		}
 		"aiming"

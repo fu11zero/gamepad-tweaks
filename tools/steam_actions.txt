@@ -14,10 +14,12 @@
 #                            active; the rest of "EN | RU" is the layer's title in Steam.
 #                            Layers stack bottom to top: onfoot or vehicle, then aiming, ui
 #                            (any window focused), inventory or map on top of ui; menu alone.
+#                            The map drops onfoot / vehicle / aiming: its sticks are plain.
 #                            A binding in a lower layer still works while an upper one is active
 #                            unless the upper one binds the same input.
-#   Analog actions (aim, steer, move: for a gyro / trackpad / stick in Steam's "joystick" or
-#   "mouse" picker) go in a section like buttons. steer and move take the place of the game's
+#   Analog actions (aim, steer, move, steerPedals: for a gyro / trackpad / stick in
+#   Steam's "joystick" or "mouse" picker; gasPedal, brakePedal: analog triggers) go in a section
+#   like buttons. steer and move take the place of the game's
 #   stick (bind the stick to them, not to the xinput stick). Don't put a gyro on them: Steam
 #   stops feeding a gyro into "joystick" output after a layer change until the game window
 #   loses focus.
@@ -30,7 +32,7 @@
 #     is not (ids come from the Lua code).
 # Every action of the mod must be listed; the script names missing and unknown ones.
 
-revision 2.14
+revision 2.16
 
 [set]
 vanillaInteract         👆          Interact | Взаимодействие
@@ -110,7 +112,10 @@ rotateBuilding          ↪️          Rotate | Повернуть
 
 [vehicle] Vehicle | Машина
 steer                   🛞          Steer | Руль
-vanillaBrakes           🛑          Brake | Тормоз
+gasPedal                🟢          Gas | Газ
+brakePedal              🛑          Brake | Тормоз
+steerPedals             🛞🦶        Steer + pedals | Руль и педали
+vanillaBrakes           🅿️          Handbrake | Ручник
 vanillaCruiseControl    ⏱️          Cruise | Круиз
 cruiseFaster            🔼          Speed up | Прибавить
 cruiseSlower            🔽          Slow down | Убавить
@@ -121,6 +126,7 @@ horn                    📯          Horn | Гудок
 switchSeat              💺          Seat | Пересесть
 vehicleInfo             🔧          Vehicle | Машина
 
+# aiming: only with a firearm in hand (Bindings.lua playerLayers), not in melee / unarmed.
 [aiming] Aiming | Прицел
 aim                     🎯          Aim | Прицел
 

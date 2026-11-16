@@ -29,6 +29,14 @@ import zombie.iso.Vector2;
 // it stands (the offset starts at reticle - stick target) and from then on it counts as aimed
 // (gyroAiming, Patches.GyroAimNoSnap) until aiming ends.
 // Steer: added to the steering stick before the mod's shaping (Patches.SteeringInput).
+// Pedals: gas and brake off the triggers (Throttle): "gasPedal" / "brakePedal" (Steam analog
+// triggers, e.g. swapped for the left hand), "steerPedals" (x steers, stick up = gas, down =
+// brake / reverse: a whole car on one stick; Steam can't split one stick into several analog
+// actions, its directions are digital). Its y (Steam: up > 0) gets the game's stick dead zone
+// (controller options), rescaled: a stick resting slightly off center, or pushed sideways to
+// steer, must not hold a light pedal (the analog gas keeps a slow speed on any press). The
+// steering keeps none (the mod's own steering dead zone applies). Each pedal is the largest of
+// its trigger and these.
 // Move: added to the Movement axis binding (CharacterJoypadAxis2dBinding), which the walking
 // code reads; it counts as applied while non-zero. Length bindings on that stick (Run at full
 // deflection) see it too (Patches.MoveAxisDown).
@@ -69,7 +77,9 @@ public final class AnalogInput {
                 continue;
             }
             SteamInput.takeDelta(player.getJoypadBind(), SteamInput.Analog.AIM, tmp);
-            if (!player.isAiming()) {
+            // Firearms only (as the Steam "aiming" layer, Bindings.lua playerLayers): a melee or
+            // unarmed aim has no reticle, the offset would turn the player unseen.
+            if (!player.isAiming() || !player.isRangedWeaponEquipped()) {
                 off[0] = 0;
                 off[1] = 0;
                 gyroAim[i] = false;
@@ -137,10 +147,36 @@ public final class AnalogInput {
         return result;
     }
 
-    /** Steering stick plus the "steer" action, -1..1. */
+    /** Steering stick plus the "steer" and "steerPedals" actions, -1..1. */
     public static float steer(int controllerId, float stick) {
         SteamInput.value(controllerId, SteamInput.Analog.STEER, tmp);
-        return tmp[0] == 0 ? stick : Math.max(-1, Math.min(1, stick + tmp[0]));
+        float add = tmp[0];
+        SteamInput.value(controllerId, SteamInput.Analog.STEER_PEDALS, tmp);
+        add += tmp[0];
+        return add == 0 ? stick : Math.max(-1, Math.min(1, stick + add));
+    }
+
+    /**
+     * Pedals besides the controller's triggers, travel 0..1 each:
+     * {gas, brake} from triggers (the Steam "gasPedal" / "brakePedal"), then {gas, brake} from a
+     * stick ("steerPedals", easy driving): a stick has a short, springy travel, it gets its own
+     * curve (Throttle).
+     */
+    public static void pedals(int controllerId, float[] out) {
+        SteamInput.value(controllerId, SteamInput.Analog.GAS, tmp);
+        out[0] = Math.min(1, tmp[0]);
+        SteamInput.value(controllerId, SteamInput.Analog.BRAKE, tmp);
+        out[1] = Math.min(1, tmp[0]);
+        out[2] = 0;
+        out[3] = 0;
+        SteamInput.value(controllerId, SteamInput.Analog.STEER_PEDALS, tmp);
+        if (tmp[1] != 0) {
+            float dz = Math.min(0.9f, RawStick.movementDeadZone(controllerId));
+            float y = Math.min(1, Math.max(0, Math.abs(tmp[1]) - dz) / (1 - dz));
+            out[2] = tmp[1] > 0 ? y : 0;
+            out[3] = tmp[1] < 0 ? y : 0;
+        }
+        EasyDriving.pedals(controllerId, out);
     }
 
     /** Movement axis plus the "move" action, -1..1. */

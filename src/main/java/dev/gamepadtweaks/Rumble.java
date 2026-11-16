@@ -21,6 +21,16 @@ import se.krka.kahlua.integration.annotations.LuaMethod;
 public final class Rumble {
     private static final long RESEND_MS = 100;
     private static final float RESEND_DELTA = 0.02f;
+    // Changes closer than this are held back (the end of a pulse, a stop, is never held).
+    private static final long MIN_SEND_MS = 25;
+    // Below this the motors barely turn: a fading tail is cut there. A motor left on such a low
+    // speed (a lost stop, see STOP_REPEATS) stalls and spins up by itself, felt as growing.
+    private static final float MIN_SPEED = 0.04f;
+    // The stop is sent again STOP_REPEATS times STOP_GAP_MS apart: a stop sent right after a
+    // speed change was sometimes lost (the motors kept going after a shot or a short knock, until
+    // the next pulse ended).
+    private static final int STOP_REPEATS = 3;
+    private static final long STOP_GAP_MS = 80;
 
     private static final class Pulse {
         int controller;
@@ -33,6 +43,11 @@ public final class Rumble {
     // Steam controller handle -> {low, high, left trigger, right trigger} as last sent
     private static final Map<Long, float[]> sent = new HashMap<>();
     private static final Map<Long, Long> sentTime = new HashMap<>();
+    // Steam controller handle -> stops sent since the motors last ran
+    private static final Map<Long, Integer> stops = new HashMap<>();
+    // Ambient events (not caused by the player's body) damped while aiming a firearm: the
+    // shaking moves a gyro reticle. Hurt, falls and shots are never damped.
+    private static final java.util.Set<String> AMBIENT = java.util.Set.of("heartbeat", "thunder", "thump", "window", "tool");
 
     private Rumble() {}
 
@@ -56,6 +71,9 @@ public final class Rumble {
         }
         int player = playerOf((int) controller);
         float k = Settings.rumbleStrength * Settings.rumbleEvent(event) * Settings.rumblePlayer(player);
+        if (AMBIENT.contains(event) && aimingFirearm(player)) {
+            k *= Settings.rumbleAiming;
+        }
         if (k <= 0) {
             return;
         }
@@ -74,6 +92,12 @@ public final class Rumble {
             Log.info("rumble: " + event + " player " + player + " controller " + p.controller + " low=" + p.low + " high=" + p.high
                     + " triggers=" + p.leftTrigger + "/" + p.trigger + " " + Math.round(ms) + "ms");
         }
+    }
+
+    /** True if the local player (0..3) is aiming a firearm (as the Steam "aiming" layer). */
+    public static boolean aimingFirearm(int player) {
+        IsoPlayer p = player >= 0 && player < IsoPlayer.players.length ? IsoPlayer.players[player] : null;
+        return p != null && p.isAiming() && p.isRangedWeaponEquipped();
     }
 
     // The local player on a game controller (0..3), -1 if none.
@@ -188,8 +212,12 @@ public final class Rumble {
                 // no trigger motors: the trigger side goes to the grip of that side
                 m = new float[] {Math.max(m[0], m[2]), Math.max(m[1], m[3]), 0, 0};
             }
+            if (test == null) {
+                m = new float[] {cut(m[0]), cut(m[1]), cut(m[2]), cut(m[3])};
+            }
             float[] last = sent.get(handles[i]);
             boolean zero = m[0] == 0 && m[1] == 0 && m[2] == 0 && m[3] == 0;
+            Long time = sentTime.get(handles[i]);
             if (last == null) {
                 if (zero) {
                     continue; // never vibrated: nothing to stop
@@ -197,15 +225,24 @@ public final class Rumble {
             } else {
                 boolean lastZero = last[0] == 0 && last[1] == 0 && last[2] == 0 && last[3] == 0;
                 if (zero && lastZero) {
-                    continue;
-                }
-                // Steam keeps the motors at the last speed, so a fading pulse is re-sent when it
-                // changed enough, and refreshed now and then in case Steam times it out.
-                boolean changed = Math.abs(m[0] - last[0]) >= RESEND_DELTA || Math.abs(m[1] - last[1]) >= RESEND_DELTA
-                        || Math.abs(m[2] - last[2]) >= RESEND_DELTA || Math.abs(m[3] - last[3]) >= RESEND_DELTA;
-                Long time = sentTime.get(handles[i]);
-                if (!zero && !changed && time != null && now - time < RESEND_MS) {
-                    continue;
+                    // repeat the stop a few times in case one was lost
+                    int done = stops.getOrDefault(handles[i], STOP_REPEATS);
+                    if (done >= STOP_REPEATS || time != null && now - time < STOP_GAP_MS) {
+                        continue;
+                    }
+                    stops.put(handles[i], done + 1);
+                } else if (zero) {
+                    stops.put(handles[i], 0);
+                } else {
+                    // Steam keeps the motors at the last speed, so a fading pulse is re-sent when it
+                    // changed enough, and refreshed now and then in case Steam times it out.
+                    boolean changed = Math.abs(m[0] - last[0]) >= RESEND_DELTA || Math.abs(m[1] - last[1]) >= RESEND_DELTA
+                            || Math.abs(m[2] - last[2]) >= RESEND_DELTA || Math.abs(m[3] - last[3]) >= RESEND_DELTA;
+                    long age = time == null ? Long.MAX_VALUE : now - time;
+                    // a new pulse (from a stop) goes at once, a change waits MIN_SEND_MS
+                    if (!lastZero && (changed ? age < MIN_SEND_MS : age < RESEND_MS)) {
+                        continue;
+                    }
                 }
             }
             if (Settings.rumbleDebugLog && !zero && (last == null || (last[0] == 0 && last[1] == 0 && last[2] == 0 && last[3] == 0))) {
@@ -223,6 +260,11 @@ public final class Rumble {
     static void retain(java.util.Set<Long> handles) {
         sent.keySet().retainAll(handles);
         sentTime.keySet().retainAll(handles);
+        stops.keySet().retainAll(handles);
+    }
+
+    private static float cut(float v) {
+        return v < MIN_SPEED ? 0 : v;
     }
 
     private static float clamp(float v) {

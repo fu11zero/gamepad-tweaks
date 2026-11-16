@@ -215,6 +215,66 @@ public final class VehicleRumble {
         corner(vehicle, "thump", window ? 0.5f : 0.4f, at[0], at[1], 0.15f, true, 160);
     }
 
+    // --- Objects: cones, signs, bushes, small trees ------------------------------------------
+
+    // Light objects don't stop the vehicle, so no crash() comes: a cone in front of a wall
+    // (asleep at the wheel) or a bush scraping the side went unfelt, while zombies were.
+    // - applyImpulseFromHitObject: IsoObject.Collision for objects with CarSlowFactor or
+    //   HitByCar (cones, signs, mailboxes...) below their break speed, every frame of contact;
+    // - IsoObject.HitByVehicle: such an object hit faster than its MinimumCarSpeedDmg (breaks);
+    // - applyImpulseFromHitPlant: bushes and small trees (BaseVehicle.checkCollisionWithPlant),
+    //   mul 0.025 brushing past, 0.1 head-on above 10 km/h.
+    // Collision isn't run on an MP client (GameClient), so there only plants are felt.
+    @Patch(className = "zombie.vehicles.BaseVehicle", methodName = "applyImpulseFromHitObject")
+    public static class HitObject {
+        @Patch.OnEnter
+        public static void enter(@Patch.This BaseVehicle vehicle, @Patch.Argument(0) IsoObject obj) {
+            VehicleRumble.hitObject(vehicle, obj, 0.45f);
+        }
+    }
+
+    @Patch(className = "zombie.iso.IsoObject", methodName = "HitByVehicle")
+    public static class ObjectHitByVehicle {
+        @Patch.OnEnter
+        public static void enter(@Patch.This IsoObject obj, @Patch.Argument(0) BaseVehicle vehicle) {
+            VehicleRumble.hitObject(vehicle, obj, 0.6f);
+        }
+    }
+
+    @Patch(className = "zombie.vehicles.BaseVehicle", methodName = "applyImpulseFromHitPlant")
+    public static class HitPlant {
+        @Patch.OnEnter
+        public static void enter(@Patch.This BaseVehicle vehicle, @Patch.Argument(0) IsoObject obj,
+                                 @Patch.Argument(1) float mul) {
+            VehicleRumble.hitObject(vehicle, obj, mul >= 0.1f ? 0.35f : 0.18f);
+        }
+    }
+
+    // object -> last frame it touched a vehicle: one knock per contact, not one per frame
+    private static final Map<IsoObject, Long> objectContact = new java.util.IdentityHashMap<>();
+
+    public static void hitObject(BaseVehicle vehicle, IsoObject obj, float base) {
+        if (obj == null || !feels(vehicle)) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Long last = objectContact.put(obj, now);
+        if (last != null && now - last < 700) {
+            return;
+        }
+        if (objectContact.size() > 64) {
+            objectContact.values().removeIf(t -> now - t > 2000);
+        }
+        float speed = vehicle.getCurrentAbsoluteSpeedKmHour();
+        float k = clamp(base + speed / 80);
+        float[] at = where(vehicle, obj.getX() + 0.5f, obj.getY() + 0.5f, vehicle.getZ());
+        corner(vehicle, "vehicle", k, at[0], at[1], 0.3f, true, 140 + 120 * k);
+        if (Settings.rumbleDebugLog) {
+            String name = obj.getSprite() == null ? "?" : obj.getSprite().getName();
+            Log.info("rumble: vehicle hit object " + name + " speed=" + Math.round(speed) + " k=" + k);
+        }
+    }
+
     // --- Bodies under the wheels ------------------------------------------------------------
 
     private static final Field SQUISHED = field(BaseVehicle.class, "impulsesFromSquishedBodies");
@@ -278,24 +338,28 @@ public final class VehicleRumble {
     // --- Wheels: suspension and surface -------------------------------------------------------
 
     // How each surface feels. Random ones: a grain every minMs..maxMs (at 40 km/h, denser faster) of amp (x 0.5..1, sometimes a
-    // rut of x rutGain), each lasting ms. Rhythmic ones (spacing > 0): a thump every spacing tiles
+    // rut of x 2.5), each lasting ms. Rhythmic ones (spacing > 0): a thump every spacing tiles
     // driven, so the beat follows the speed (furrows, sleepers). Each wheel on its own surface.
+    // The surfaces must differ in strength and in gaps, not only in rhythm: with dense grains of
+    // close strengths the motors make one even buzz, and a dirt road felt like grass or furrows.
+    // A gravel road is a road: long stretches, so nearly smooth, a faint crunch. A dirt road
+    // (brown rutted track) is rougher than gravel, softer than grass. Rails are the hardest.
     private enum Surface {
         ROAD(0, 0, 0, 0, 0, 0, 0),
-        // asphalt edge: grass, soft swells
-        GRASS(1, 0.10f, 90, 160, 130, 0.05f, 0),
-        // dirt road: uneven, now and then a rut
-        DIRT(3, 0.15f, 60, 120, 100, 0.08f, 0),
-        // gravel: fine fast crunch
-        GRAVEL(4, 0.16f, 30, 55, 45, 0.02f, 0),
+        // off the road: grass, soft swells
+        GRASS(1, 0.12f, 90, 160, 130, 0.05f, 0),
+        // dirt road (ruts): uneven, now and then a rut
+        DIRT(3, 0.07f, 160, 320, 110, 0.12f, 0),
+        // gravel road: a faint, sparse crunch
+        GRAVEL(4, 0.03f, 120, 260, 60, 0.02f, 0),
         // sand: soft drag, long smooth waves
-        SAND(2, 0.09f, 160, 260, 260, 0, 0),
+        SAND(2, 0.07f, 180, 300, 260, 0, 0),
         // snow: barely there
-        SNOW(0, 0.06f, 140, 240, 220, 0, 0),
+        SNOW(0, 0.05f, 160, 280, 220, 0, 0),
         // plowed land, furrows across the way
-        PLOWED(5, 0.30f, 0, 0, 140, 0, 0.7f),
-        // railway: a clack per sleeper
-        RAIL(6, 0.32f, 0, 0, 70, 0, 0.65f);
+        PLOWED(5, 0.38f, 0, 0, 140, 0, 0.7f),
+        // railway: a hard clack per sleeper
+        RAIL(6, 0.6f, 0, 0, 80, 0, 0.65f);
 
         final int priority;
         final float amp;
@@ -414,8 +478,16 @@ public final class VehicleRumble {
                     boolean on = s == Surface.ROAD && w.surface != Surface.ROAD;
                     if ((off && st.offroadSeconds < 1.5f) || on) {
                         float k = clamp(speed / 60);
-                        wheel(vehicle, "road", (off ? 0.35f : 0.25f) + 0.35f * k, sw, true, 180);
+                        // onto / off a dirt or gravel road: an edge, not a kerb
+                        Surface other = off ? s : w.surface;
+                        float m = other == Surface.DIRT || other == Surface.GRAVEL || other == Surface.SNOW ? 0.5f : 1;
+                        wheel(vehicle, "road", m * ((off ? 0.35f : 0.25f) + 0.35f * k), sw, true, 180);
                     }
+                }
+                if (Settings.rumbleDebugLog && i == 0 && s != w.surface) {
+                    IsoObject floor = sq == null ? null : sq.getFloor();
+                    Log.info("rumble: wheel 0 on " + s + " (floor "
+                            + (floor == null || floor.getSprite() == null ? "?" : floor.getSprite().getName()) + ")");
                 }
                 w.surface = s;
             }
@@ -473,7 +545,8 @@ public final class VehicleRumble {
                 return;
             }
             side.distance %= surface.spacing;
-            a = surface.amp * habit * (0.5f + 0.5f * sp) * (0.85f + 0.15f * random.nextFloat());
+            // no getting used to furrows and sleepers: they are short and must stand out
+            a = surface.amp * (0.5f + 0.5f * sp) * (0.85f + 0.15f * random.nextFloat());
         } else {
             if (now < side.nextGrain) {
                 return;
@@ -488,7 +561,8 @@ public final class VehicleRumble {
             }
         }
         float ms = surface.spacing > 0 ? surface.ms : surface.ms * Math.max(0.6f, Math.min(1.5f, REF_KMH / Math.max(1, speed)));
-        wheel(vehicle, "road", a * 2, sw, false, ms); // texture: grips only
+        // texture: grips only, except a sleeper's clack (also a trigger accent at the front)
+        wheel(vehicle, "road", a * 2, sw, surface == Surface.RAIL, ms);
     }
 
     // A quick change of the compression (share of the travel) in one frame: smaller ones are

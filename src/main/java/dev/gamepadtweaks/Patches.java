@@ -31,8 +31,13 @@ public final class Patches {
             int joypad = car.vehicleObject.getJoypad();
             HeldActions.brake(car, joypad);
             Settings.refresh();
+            boolean easy = EasyDriving.update(car, joypad);
             Throttle.controls(car, joypad);
             if (joypad == -1) {
+                return;
+            }
+            if (easy) {
+                car.clientControls.steering = EasyDriving.steering(joypad);
                 return;
             }
             if (!Settings.steeringEnabled) {
@@ -50,6 +55,22 @@ public final class Patches {
             }
             stick = AnalogInput.steer(joypad, stick);
             car.clientControls.steering = Steering.shape(car, raw, stick, joypad);
+        }
+    }
+
+    // A blocked driver (IsoPlayer.isBlockMovement: the world map open, ISWorldMap.ShowWorldMap)
+    // gets no CarController.updateControls (BaseVehicle.updateControls skips it), so the pedals
+    // kept their state from the moment the map opened. Vanilla: RT held past 0.7 drove on with
+    // the map open. With the analog gas any press counts as a pressed pedal, and once the analog
+    // state went stale (Throttle.STALE_MS) control_ForwardNew ran vanilla full gas: the revs
+    // went to the limit while rolling slowly. Release the pedals like a driver who let go.
+    @Patch(className = "zombie.vehicles.BaseVehicle", methodName = "updateControls")
+    public static class BlockedDriver {
+        @Patch.OnExit
+        public static void exit(@Patch.This zombie.vehicles.BaseVehicle vehicle) {
+            if (!GameServer.server && vehicle.getDriver() instanceof IsoPlayer p && p.isBlockMovement()) {
+                Throttle.release(vehicle);
+            }
         }
     }
 

@@ -109,6 +109,9 @@ public final class Settings {
             throttle.engineBraking=1.0
             # Brake pedal (LT going forward, RT rolling back) = travel ^ brakeCurve.
             throttle.brakeCurve=1.0
+            # Gas and brake from a stick (easy driving, the Steam "Steer + pedals" action) =
+            # deflection ^ stickCurve: a stick's travel is short, more = finer at small deflections.
+            throttle.stickCurve=2.0
             # Experimental: LT that brakes the car going forward holds it at the stop until
             # released; pressed again it reverses (vanilla: reverses at once). RT while backing
             # up stays vanilla. Works with the vanilla on/off pedals too.
@@ -119,6 +122,14 @@ public final class Settings {
             throttle.soundRate=4.0
             # Log pedals, forces and RPM once a second.
             throttle.debugLog=false
+            # Easy driving per splitscreen player (player 1 = the first to join): the left
+            # stick points where to go on the screen, its deflection is the gas; pointing
+            # behind the car reverses. For players new to driving. Servers can forbid it
+            # (sandbox option "Easy driving"). steering.debugLog logs it.
+            easyDriving.player1=false
+            easyDriving.player2=false
+            easyDriving.player3=false
+            easyDriving.player4=false
 
             # --- Triggers ---------------------------------------------------------
             # The game's dead zone is not applied to the triggers (they rest at zero
@@ -146,7 +157,7 @@ public final class Settings {
             # Pan speed at full deflection, map heights per second.
             map.panSpeed=1.0
             # Pan speed = deflection ^ exponent (1 = linear, 2 = finer at small deflections).
-            map.panExponent=2.0
+            map.panExponent=1.0
             # D-pad = this stick deflection.
             map.dpadDeflection=0.5
             # Zoom speed with a trigger fully pressed, zoom levels per second
@@ -177,17 +188,21 @@ public final class Settings {
             rumble.strength=1.0
             # Strength per event, 0 = off:
             # shot - firing a gun (by the gun); hit - melee hit on a target (by damage);
-            # damage - getting hurt (by health lost), hit reactions, burns; bump - pushed,
-            # running into a wall; fall - knocked down, falling, landing, vaulting;
-            # vehicle - crash (by impact and side), running someone over (by speed);
+            # damage - getting hurt: a zombie's scratch, laceration or bite (a sharp kick,
+            # a fading sting, then a heartbeat), health lost, hit reactions, burns; bump -
+            # pushed, running into a wall; fall - tripping, knocked down, falling, hands on
+            # a fence or window frame and the landing after it (with the animation);
+            # vehicle - crash (by impact and side), running someone over (by speed),
+            # hitting cones, signs, bushes and small trees;
             # suspension - bumps under each wheel, bodies, bottoming out; road - leaving
             # the asphalt and the feel of each surface (fades on long off-road drives);
             # window - smashing glass nearby, a window opening; tool - axe on doors and
             # trees, prying boards, forcing doors with a crowbar; thump - zombies banging
-            # on doors, windows and your vehicle nearby; thunder - by distance, with the
+            # on doors, windows and fences nearby (the first knocks only, again after 15 s
+            # of quiet) and on your vehicle; thunder - by distance, with the
             # sound; scare - the jump scare sting
             # (a zombie suddenly right next to you, follows the game's jump scare volume);
-            # heartbeat - while panicked.
+            # heartbeat - while panicked, and for a while after a wound.
             rumble.shot=1.0
             rumble.hit=1.0
             rumble.damage=1.0
@@ -202,6 +217,10 @@ public final class Settings {
             rumble.thunder=1.0
             rumble.scare=1.0
             rumble.heartbeat=1.0
+            # While aiming a firearm, ambient vibration (heartbeat, thunder, zombies
+            # banging, glass, tools) is scaled by this: the shaking moves a gyro reticle.
+            # Wounds, falls and shots stay at full strength.
+            rumble.aiming=0.3
             # Trigger motors (Xbox One / Series): in a vehicle a short accent on knocks at
             # the front (front wheels, impacts ahead), never the surface texture; the grips
             # carry the vehicle by side. false = grips only.
@@ -332,6 +351,7 @@ public final class Settings {
     public static volatile float throttleDragExponent = 2.0f;
     public static volatile float throttleEngineBraking = 1.0f;
     public static volatile float throttleBrakeCurve = 1.0f;
+    public static volatile float throttleStickCurve = 2.0f;
     public static volatile boolean throttleBrakeHold = false;
     public static volatile float throttleSoundRate = 4.0f;
     public static volatile boolean throttleDebugLog = false;
@@ -342,7 +362,7 @@ public final class Settings {
     public static volatile boolean vehicleOnlyByPrompt = true;
     public static volatile boolean mapSmooth = true;
     public static volatile float mapPanSpeed = 1.0f;
-    public static volatile float mapPanExponent = 2.0f;
+    public static volatile float mapPanExponent = 1.0f;
     public static volatile float mapDpadDeflection = 0.5f;
     public static volatile float mapZoomSpeed = 3.0f;
     public static volatile float mapZoomExponent = 1.5f;
@@ -355,6 +375,7 @@ public final class Settings {
     public static volatile boolean rumbleTriggers = true;
     public static volatile float rumbleTriggerGain = 0.6f;
     public static volatile float rumblePassenger = 1.0f;
+    public static volatile float rumbleAiming = 0.3f;
 
     // All values as read, for the Lua side (button actions).
     private static volatile Properties raw = new Properties();
@@ -538,6 +559,7 @@ public final class Settings {
         throttleDragExponent = num(p, "throttle.dragExponent", 2.0f, 0.5f, 5f);
         throttleEngineBraking = num(p, "throttle.engineBraking", 1.0f, 0f, 10f);
         throttleBrakeCurve = num(p, "throttle.brakeCurve", 1.0f, 0.2f, 5f);
+        throttleStickCurve = num(p, "throttle.stickCurve", 2.0f, 0.2f, 5f);
         throttleBrakeHold = bool(p, "throttle.brakeHold", false);
         throttleSoundRate = num(p, "throttle.soundRate", 4.0f, 0.1f, 100f);
         throttleDebugLog = bool(p, "throttle.debugLog", false);
@@ -548,7 +570,7 @@ public final class Settings {
         vehicleOnlyByPrompt = bool(p, "actions.vehicleOnlyByPrompt", true);
         mapSmooth = bool(p, "map.smooth", true);
         mapPanSpeed = num(p, "map.panSpeed", 1.0f, 0.01f, 20f);
-        mapPanExponent = num(p, "map.panExponent", 2.0f, 0.1f, 5f);
+        mapPanExponent = num(p, "map.panExponent", 1.0f, 0.1f, 5f);
         mapDpadDeflection = num(p, "map.dpadDeflection", 0.5f, 0.01f, 1f);
         mapZoomSpeed = num(p, "map.zoomSpeed", 3.0f, 0.01f, 20f);
         mapZoomExponent = num(p, "map.zoomExponent", 1.5f, 0.1f, 5f);
@@ -561,6 +583,7 @@ public final class Settings {
         rumbleTriggers = bool(p, "rumble.triggers", true);
         rumbleTriggerGain = num(p, "rumble.triggerGain", 0.6f, 0f, 2f);
         rumblePassenger = num(p, "rumble.passenger", 1.0f, 0f, 2f);
+        rumbleAiming = num(p, "rumble.aiming", 0.3f, 0f, 1f);
         raw = p;
         version++;
         Log.info("settings loaded: steering=" + steeringEnabled + " rawStick=" + rawStick
@@ -576,7 +599,7 @@ public final class Settings {
                 + "ms disarm=" + disarmDistance
                 + " throttle: analog=" + throttleAnalog + " deadZone=" + throttleDeadZone + ".." + throttleFullAt
                 + " curve=" + throttleCurve + " drag^" + throttleDragExponent + " engineBraking=" + throttleEngineBraking
-                + " brakeCurve=" + throttleBrakeCurve + " brakeHold=" + throttleBrakeHold
+                + " brakeCurve=" + throttleBrakeCurve + " stickCurve=" + throttleStickCurve + " brakeHold=" + throttleBrakeHold
                 + " soundRate=" + throttleSoundRate + " debugLog=" + throttleDebugLog
                 + " triggers.noDeadZone=" + triggersNoDeadZone + " triggers.debugLog=" + triggersDebugLog
                 + " actions: crouchOnPress=" + crouchOnPress + " sprintOnPress=" + sprintOnPress
@@ -589,6 +612,11 @@ public final class Settings {
     /** rumble.&lt;event&gt; strength multiplier, 0..2 (1 if missing). */
     public static float rumbleEvent(String event) {
         return event == null ? 1f : num(raw, "rumble." + event, 1.0f, 0f, 2f);
+    }
+
+    /** Easy driving (EasyDriving) for splitscreen player n (0..3, IsoPlayer index). */
+    public static boolean easyDriving(int n) {
+        return n >= 0 && bool(raw, "easyDriving.player" + (n + 1), false);
     }
 
     /** 1 if vibration is on for splitscreen player n (0..3, IsoPlayer index), 0 if rumble.player&lt;n+1&gt;=false. */

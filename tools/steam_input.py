@@ -70,7 +70,10 @@ CONTROLLERS = {
 # them for buttons. "steer" and "move" ("joystick_move") are meant for a stick: Steam drops
 # gyro-to-joystick output after any action set layer change until the game window loses and
 # regains focus.
-ANALOG_MODES = {"aim": "absolute_mouse", "steer": "joystick_move", "move": "joystick_move"}
+# "trigger": an AnalogTrigger action (0..1, for a trigger), no input mode.
+ANALOG_MODES = {"aim": "absolute_mouse", "steer": "joystick_move", "move": "joystick_move",
+                "steerPedals": "joystick_move",
+                "gasPedal": "trigger", "brakePedal": "trigger"}
 
 LANGS = {"english": "EN", "russian": "RU"}
 
@@ -250,9 +253,12 @@ def declared(actions, section):
     if buttons:
         groups.append(("Button", buttons))
     analog = [(a[0], [("title", "#analog_" + a[0]), ("input_mode", ANALOG_MODES[a[0]])])
-              for a in actions if a[1] == section and a[0] in ANALOG_MODES]
+              for a in actions if a[1] == section and ANALOG_MODES.get(a[0], "trigger") != "trigger"]
     if analog:
         groups.append(("StickPadGyro", analog))
+    triggers = [(a[0], "#analog_" + a[0]) for a in actions if a[1] == section and ANALOG_MODES.get(a[0]) == "trigger"]
+    if triggers:
+        groups.append(("AnalogTrigger", triggers))
     return groups
 
 

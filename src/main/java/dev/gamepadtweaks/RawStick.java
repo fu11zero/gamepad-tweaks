@@ -12,6 +12,8 @@ import zombie.input.JoypadManager;
 public final class RawStick {
     private static final Field MOVEMENT_AXIS_X = field("movementAxisX");
     private static final Field MOVEMENT_AXIS_X_FLIPPED = field("movementAxisXFlipped");
+    private static final Field MOVEMENT_AXIS_Y = field("movementAxisY");
+    private static final float DEFAULT_DEAD_ZONE = 0.2f; // Controller.deadZone default
 
     private RawStick() {}
 
@@ -23,6 +25,21 @@ public final class RawStick {
         } catch (ReflectiveOperationException e) {
             Log.error("Joypad." + name + " not found", e);
             return null;
+        }
+    }
+
+    /** The movement stick dead zone set in the game's controller options (Y axis), for a controller id. */
+    public static float movementDeadZone(int controllerId) {
+        JoypadManager.Joypad joypad = JoypadManager.instance.getFromControllerID(controllerId);
+        Controller controller = GameWindow.GameInput.getController(controllerId);
+        if (MOVEMENT_AXIS_Y == null || joypad == null || controller == null) {
+            return DEFAULT_DEAD_ZONE;
+        }
+        try {
+            int axis = MOVEMENT_AXIS_Y.getInt(joypad);
+            return axis < 0 || axis >= controller.getAxisCount() ? DEFAULT_DEAD_ZONE : controller.getDeadZone(axis);
+        } catch (IllegalAccessException e) {
+            return DEFAULT_DEAD_ZONE;
         }
     }
 

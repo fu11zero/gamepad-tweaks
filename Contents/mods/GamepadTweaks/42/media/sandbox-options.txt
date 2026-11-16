@@ -1,0 +1,5 @@
+VERSION = 1,
+
+option GamepadTweaks.EasyDriving = {
+	type = boolean, default = true, page = GamepadTweaks, translation = GamepadTweaks_EasyDriving,
+}

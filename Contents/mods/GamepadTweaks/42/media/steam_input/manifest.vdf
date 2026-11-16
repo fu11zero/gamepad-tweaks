@@ -125,7 +125,7 @@
 		}
 	}
 	"major_revision"		"2"
-	"minor_revision"		"14"
+	"minor_revision"		"16"
 	"actions"
 	{
 		"game"
@@ -253,6 +253,16 @@
 					"title"		"#analog_steer"
 					"input_mode"		"joystick_move"
 				}
+				"steerPedals"
+				{
+					"title"		"#analog_steerPedals"
+					"input_mode"		"joystick_move"
+				}
+			}
+			"AnalogTrigger"
+			{
+				"gasPedal"		"#analog_gasPedal"
+				"brakePedal"		"#analog_brakePedal"
 			}
 		}
 		"aiming"
@@ -409,7 +419,10 @@
 			"act_moveFurniture"		"🪑 Furniture"
 			"act_rotateBuilding"		"↪️ Rotate"
 			"analog_steer"		"🛞 Steer"
-			"act_vanillaBrakes"		"🛑 Brake"
+			"analog_gasPedal"		"🟢 Gas"
+			"analog_brakePedal"		"🛑 Brake"
+			"analog_steerPedals"		"🛞🦶 Steer + pedals"
+			"act_vanillaBrakes"		"🅿️ Handbrake"
 			"act_vanillaCruiseControl"		"⏱️ Cruise"
 			"act_cruiseFaster"		"🔼 Speed up"
 			"act_cruiseSlower"		"🔽 Slow down"
@@ -523,7 +536,10 @@
 			"act_moveFurniture"		"🪑 Мебель"
 			"act_rotateBuilding"		"↪️ Повернуть"
 			"analog_steer"		"🛞 Руль"
-			"act_vanillaBrakes"		"🛑 Тормоз"
+			"analog_gasPedal"		"🟢 Газ"
+			"analog_brakePedal"		"🛑 Тормоз"
+			"analog_steerPedals"		"🛞🦶 Руль и педали"
+			"act_vanillaBrakes"		"🅿️ Ручник"
 			"act_vanillaCruiseControl"		"⏱️ Круиз"
 			"act_cruiseFaster"		"🔼 Прибавить"
 			"act_cruiseSlower"		"🔽 Убавить"

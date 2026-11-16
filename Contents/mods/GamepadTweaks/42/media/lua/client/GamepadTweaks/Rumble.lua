@@ -60,14 +60,30 @@ local function onWeaponHitCharacter(attacker, target, weapon, damage)
 	pulse(attacker, "hit", 0.2 + 0.5 * k, 0.5 + 0.4 * k, 0, 70 + 80 * k)
 end
 
--- Health and panic, per local player: health lost in one tick (zombie bite or scratch, fall,
--- car crash, fire...; bleeding and hunger take far less than the threshold per tick), and a
--- heartbeat while panicked.
+-- Health and panic, per local player: health lost in one tick (fall, car crash, a hit in MP
+-- where the wound comes from the server...; bleeding and hunger take far less than the threshold
+-- per tick; zombie wounds have their own kick, RumbleEvents.wound), and a heartbeat while
+-- panicked or wounded.
 local DAMAGE_MIN = 0.5
 local state = {} -- [playerNum] = { player, health, nextBeat }
 
+-- A wound (RumbleEvents.wound: scratch, laceration, bite) keeps the heart racing for a while
+-- even without panic, so the sting of the wound turns into a heartbeat: level 3 for 8 s after a
+-- scratch or cut, 4 for 20 s after a bite, starting once the sting has faded a bit.
+local function woundLevel(player)
+	if not GamepadTweaks_rumbleSinceWound then return 0 end
+	local since = GamepadTweaks_rumbleSinceWound(player:getPlayerNum())
+	if since == 0 then return 0 end
+	local bite = since < 0
+	since = math.abs(since)
+	if since < 400 then return 0 end
+	if bite and since < 20000 then return 4 end
+	if not bite and since < 8000 then return 3 end
+	return 0
+end
+
 local function heartbeat(player, s, now)
-	local level = player:getMoodles():getMoodleLevel(MoodleType.PANIC)
+	local level = math.max(player:getMoodles():getMoodleLevel(MoodleType.PANIC), woundLevel(player))
 	if level < 2 then
 		s.nextBeat = nil
 		return
