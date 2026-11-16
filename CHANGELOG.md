@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+## Update: 16 Nov @ 11:39pm
+
 - Fixed: A no longer opens a door or window behind the character (vanilla preferred a window behind over the sofa in front, and opened it when nothing was in front). Behind, A only closes an open door: when nothing is in front, or first thing for 3 s after walking through it (A to open, A to close behind you).
 - Changed: facing diagonally, A uses the side the character faces more, not a door or window on the other side.
 - Fixed: A on a cursor (place or pick up furniture, chop, disassemble, build) no longer also sits on the sofa or opens the window next to the character.
