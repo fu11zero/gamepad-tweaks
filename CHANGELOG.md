@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+## Update: 16 Nov @ 6:08pm
+
 - Added: easy driving, per splitscreen player (off by default, Options -> Mods): the left stick points where to go on the screen, its deflection is the gas; pointing behind the car reverses. For players new to driving. Servers can forbid it with a sandbox option.
 - Added: a separate gas curve for pedals on a stick (easy driving, Steam "Steer + pedals"), default 2: finer at small deflections than the trigger curve.
 - Added: analog gas and brake as Steam Input actions in the vehicle layer: "Gas" and "Brake" (analog triggers, e.g. swapped for the left hand) and "Steer + pedals" (a whole car on one stick: up = gas, down = brake / reverse, with the game's stick dead zone on the pedals). The triggers keep working. The B brake is now "Handbrake" in Steam. Pick the "Gamepad Tweaks" layout in Steam again to see them.
