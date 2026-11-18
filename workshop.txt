@@ -1,39 +1,48 @@
 version=1
 id=3825951874
-title=Gamepad Tweaks
-description=Java mod (ZombieBuddy) that fixes gamepad / controller handling in Build 42: Xbox, PlayStation (DualShock, DualSense), Steam Deck, Steam Input and other joysticks.
+title=Gamepad Tweaks & Fixes (Controller / Steam Input / Steam Deck)
+description=Fixes and improves gamepad / controller handling in Build 42: Xbox, PlayStation (DualShock, DualSense), Steam Deck, Steam Input and other joysticks. Fixes broken actions — A (X) not confirming chop tree / build / place item (42.22), fliers throwing a Lua error, B closing a menu crouching your character — plus steering, analog pedals, vibration and Steam Input / Steam Deck features. Java mod, needs ZombieBuddy.
 description=
-description=[h2]Features[/h2]
+description=[url=https://steamcommunity.com/sharedfiles/filedetails/?id=3825951396][img]https://images.steamusercontent.com/ugc/17977502003835757141/6496BC53FEB244F8073A3668D8789EAA60308441/[/img][/url]
+description=
+description=[h2]Couch co-op? Splitscreen Fixes[/h2]
+description=2-4 players on gamepads on one PC: fixes stuck item transfers, cars, aiming, the world map, crafting, moodles and more.
+description=[url=https://steamcommunity.com/sharedfiles/filedetails/?id=3825951396][b]Subscribe to Splitscreen Fixes[/b][/url]
+description=
+description=[h2]Fixes[/h2]
 description=[list]
-description=[*][b]Steering without dead zones.[/b] Driving a vehicle with a controller uses the raw left stick X: no stick dead zone (deadzone), no diagonal stretch, no 0.1 wheel dead zone.
+description=[*][b]A (X) confirms chop tree, build and place item cursors[/b] (broken in 42.22).
+description=[*][b]A picks what you face.[/b] No window behind instead of the sofa in front (A-A still closes the door you ran through); a lamp by the door doesn't toggle with it; A on a furniture / build / chop cursor doesn't also sit down or open a window; the loot window opens on the container in front; half RT no longer turns the character.
+description=[*][b]Fliers and brochures work with a controller.[/b] Vanilla threw a Lua error. Fliers and stash maps on the world map now open with A under the cross (vanilla needed the mouse).
+description=[*][b]X menu sees fences and walls south and east[/b]: disassemble chain-link and metal fences from any side.
+description=[*][b]UI presses don't leak to the character.[/b] Closing a menu with B no longer makes your character crouch on release.
+description=[*][b]Cruise control and reload follow your bindings.[/b] Vanilla shows the prompts on the bound buttons but still toggles cruise control on X and opens the reload radial on RB. Now rebinding them in Options -> Controller works.
+description=[*][b]Controller presets save in any language.[/b] On Linux and Steam Deck a new preset in a non-English game failed to save.
+description=[/list]
+description=
+description=[h2]Improvements[/h2]
+description=[list]
+description=[*][b]Steering without dead zones.[/b] Driving uses the raw left stick X: no stick dead zone, no diagonal stretch, no 0.1 wheel dead zone.
 description=[*][b]No more driving in arcs (stick drift fix).[/b] The mod learns where a released stick rests, so the car goes straight. No dead zone needed.
 description=[*][b]Speed-sensitive steering.[/b] Soft center at high speed, full stick = max wheel angle for the speed. No more oversteering on the highway.
 description=[*][b]Wheel without lag.[/b] The wheel follows the stick at a constant rate (vanilla lags up to ~3 s at top speed). Keyboard steering stays vanilla.
-description=[*][b]Analog gas and brake.[/b] Vanilla LT/RT (L2/R2) are on/off at 70%. Now a light press rolls the car slowly and holds that speed, easing off brakes with the engine, full pedal = vanilla. No trigger dead zone. Optional: LT brakes to a stop without backing up, press again to reverse.
-description=[*][b]Easy driving (splitscreen).[/b] Per player: stick = where to go on screen, triggers = pedals (or the stick is the gas too). For a partner new to driving. Servers can forbid it.
-description=[*][b]Smooth map controls.[/b] World and paper maps pan smoothly by stick deflection, triggers zoom by how far you press, not one step per click.
-description=[*][b]Fliers and brochures work with a controller.[/b] Vanilla threw a Lua error. Fliers and stash maps on the world map now open with A under the cross (vanilla needed the mouse).
-description=[*][b]A confirms chop tree, build and place item cursors[/b] (broken in 42.22).
-description=[*][b]X menu sees fences and walls south and east[/b]: disassemble chain-link and metal fences from any side.
-description=[*][b]Controller presets save in any language.[/b] On Linux and Steam Deck a new preset in a non-English game failed to save.
-description=[*][b]UI presses don't leak to the character.[/b] Closing a menu with B no longer makes your character crouch on release.
-description=[*][b]Rebindable hardcoded buttons.[/b] The D-pad wheels (vehicle, emotes, weapon/light, zones/guide), the Back command wheel, Start pause, cruise control speed (X + D-pad), the L3 crouch/sit radial and RB-hold UI navigation are hardcoded in vanilla. Each is now an action: move it to another button or turn it off to free the button. Defaults stay vanilla.
-description=[*][b]Keyboard-only actions on the controller.[/b] Flashlight toggle, drop held items or bag, grab corpse, sharpen weapon, firearm menu, sit on ground, search mode, shout, let go of rope, engine, headlights, heater, horn, switch seat, vehicle info; extra: map, crafting, building, skills, health, protection, info, survival guide, hotbar slots 1-8, game speed, move furniture, hide UI, screenshot, PvP, push-to-talk, music; camera pan while aiming ("look far", RB by default, follows the gyro), animal radial menu; what the keyboard does with Shift: get in the driver's seat, open/close curtains, change fire mode; use the tool in hand on the square ahead (chop, dig, water...). Unbound by default. Per splitscreen player.
-description=[*][b]All of it in Options -> Controller.[/b] Mod actions sit next to the regular bindings: add them to any button with "< Add New >". Saved per controller preset.
-description=[*][b]Steam Input game actions.[/b] All mod actions (horn, headlights, light source, drop items, wheels, hotbar, map, game speed...) appear in the Steam controller configurator as game actions: put them on back paddles / extra buttons, long press, double press or button chords. Context layers (on foot, vehicle, aiming, inventory, map, menus): one paddle can be the flashlight on foot and the horn in a car. Per player in splitscreen.
-description=[*][b]Gyro aiming.[/b] Bind gyro (or a trackpad) to the "Aim" analog action in Steam: it moves the aiming reticle on top of the stick, with a firearm in hand (melee stays on the stick). Works with half trigger (precise aim) alone, no stick needed. A held "Aim" action aims without the stick, like the keyboard key.
-description=[*][b]Sticks for walking and driving, gas on any trigger.[/b] "Move", "Steer", "Steer + pedals" (a car on one stick) analog actions in Steam: bind a stick or trackpad, it goes straight past the game's stick handling. "Gas" and "Brake" for any trigger (left hand).
-description=[*][b]Inventory actions for the controller.[/b] One click like the mouse: Transfer All / Loot All, transfer or take same type, same type to nearby containers, move everything to the floor, drop the selected item, transfer the whole stack or one item, use (double click: equip, wear, eat), unpack. Unbound by default: assign them in Options -> Controller or Steam (own layer).
-description=[*][b]Vanilla bindings in Steam too.[/b] Crouch, Interact, Sprint, Aim, Attack, Melee (shove), Run, Cancel, Reload, Inventory, Close panel, Brakes, Cruise control... are Steam game actions as well. A back paddle can crouch even with Crouch unbound in the game. Brakes follow their binding, not B.
-description=[*][b]Cruise control and reload follow your bindings.[/b] Vanilla shows the prompts on the bound buttons but still toggles cruise control on X and opens the reload radial on RB. Now rebinding them in Options -> Controller works.
-description=[*][b]Controller vibration (rumble).[/b] Vanilla has none. Kicks on shots, hits, scratches and bites, crashes, cones and bushes, suspension, off-road surfaces, vaulting and landing in step with the animation, trips and falls, axe and crowbar, burns, glass, zombies at the door, jump scares, thunder, a heartbeat in panic and after wounds. Quieter while aiming a gun (gyro). Per-event and per-player settings. Via Steam Input.
+description=[*][b]Analog gas and brake.[/b] Vanilla LT/RT (L2/R2) are on/off at 70%. Now a light press rolls the car slowly and holds that speed, full pedal = vanilla, no trigger dead zone. Optional: LT brakes to a stop without backing up.
+description=[*][b]Easy driving (splitscreen).[/b] Per player: stick = where to go on screen, triggers = pedals. For a partner new to driving. Servers can forbid it.
+description=[*][b]Smooth map controls.[/b] World and paper maps pan smoothly by stick deflection, triggers zoom by how far you press.
+description=[*][b]Rebindable hardcoded buttons.[/b] The D-pad wheels (vehicle, emotes, weapon/light, zones), the Back wheel, Start, cruise control (X + D-pad), L3 radial and RB-hold UI navigation are hardcoded in vanilla. Each is now an action: rebind or turn it off. Defaults stay vanilla.
+description=[*][b]Keyboard-only actions on the controller.[/b] Flashlight, drop items or bag, grab corpse, sharpen, firearm menu, sit, search mode, shout, let go of rope, engine, headlights, heater, horn, switch seat, vehicle info, map, crafting, building, skills, health, hotbar slots 1-8, game speed, move furniture, hide UI, screenshot, PvP, push-to-talk, music, camera pan, animal radial, Shift actions (driver's seat, curtains, fire mode), use tool ahead (chop, dig, water). Unbound by default. Per splitscreen player.
+description=[*][b]Steam Input game actions.[/b] All mod actions appear in the Steam controller configurator: back paddles, long/double press, chords, context layers (one paddle = flashlight on foot, horn in a car). Per player in splitscreen.
+description=[*][b]Gyro aiming.[/b] Bind gyro (or a trackpad) to the Aim analog action in Steam: it moves the reticle with a firearm in hand. Works with half trigger alone. Per player.
+description=[*][b]Sticks for walking and driving, gas on any trigger.[/b] Move / Steer / Steer + pedals analog actions in Steam: a stick or trackpad drives straight past the game's stick handling. Gas and Brake for any trigger.
+description=[*][b]Inventory actions for the controller.[/b] One click like the mouse: Transfer All / Loot All, take same type, move to floor, drop, transfer stack or one item, use (equip, wear, eat), unpack. Unbound by default.
+description=[*][b]Vanilla bindings in Steam too.[/b] Crouch, Interact, Sprint, Aim, Attack, Melee, Run, Cancel, Reload, Inventory, Brakes, Cruise control are Steam actions as well: back paddles can crouch, brakes follow their binding.
+description=[*][b]Controller vibration (rumble).[/b] Vanilla has none. Kicks on shots, hits, bites, crashes, suspension, off-road, vaulting, falls, axe and crowbar, burns, glass, zombies at the door, jump scares, thunder, heartbeat in panic. Per-event and per-player settings. Via Steam Input.
 description=[*][b]Actions on press, not on release.[/b] Crouch (sneak) toggle and toggle-to-sprint (run) react on button press, no input lag; entering a vehicle only via the A prompt.
-description=[*][b]A picks what you face.[/b] No window behind instead of the sofa in front (A-A still closes the door you ran through); a lamp by the door doesn't toggle with it; A on a furniture / build / chop cursor doesn't also sit down or open a window; the loot window opens on the container in front; half RT no longer turns the character.
 description=[/list]
 description=
 description=[h2]Settings[/h2]
 description=[b]Options -> Mods -> Gamepad Tweaks[/b]: turn off any feature you don't want (steering without dead zone, stick center learning, wheel without lag, analog gas, triggers without dead zone, crouch/sprint on press, smooth map, Steam Input, vibration) and tune it for your controller: steering dead zone, steering curve, wheel speed, map pan and zoom speed. Changes apply at once, in game too. Bug fixes always stay on.
-description=Advanced: ~/Zomboid/GamepadTweaks.properties (same settings and more, re-read while the game runs). Button actions: Options -> Controller.
+description=Advanced: ~/Zomboid/GamepadTweaks.properties (same settings and more, re-read while the game runs). Mod actions sit next to the regular bindings in Options -> Controller: add them to any button with "< Add New >". Saved per controller preset.
 description=
 description=[h2]Requirements[/h2]
 description=[list]
@@ -44,7 +53,25 @@ description=
 description=[h2]Source code and bug reports[/h2]
 description=[url=https://github.com/fu11zero/gamepad-tweaks]github.com/fu11zero/gamepad-tweaks[/url]
 description=
-description=[h2]Keywords[/h2]
-description=vibration, rumble, force feedback, haptics, heartbeat, recoil, analog steering, analog throttle, analog gas pedal, left-handed, one stick driving, easy driving, casual, analog movement, Steam Deck back buttons, L4, R4, L5, R5, M1, M2, Xbox Elite paddles, DualSense Edge, configurable, steering sensitivity, joypad, Steam Input API, action layers, gyroscope, motion controls, trackpad aiming, flick, attack button, run button, pan camera, driver seat, select fire, chop tree, build cursor, interact target, wrong container, loot window, disassemble fence, chain-link fence, place item, farming, water plants, push to talk, voice chat, animal menu, flyer, remap, keybind, dpad, firearm radial, eject magazine, unload, quick slots, take all, move to floor, drop all, crouch button, foraging, couch co-op
+description=[h2]Other languages / Другие языки[/h2]
+description=
+description=[h3]Русский[/h3]
+description=Исправления и улучшения геймпада/контроллера в Build 42: A (X) не подтверждает рубку дерева, строительство, установку (42.22); руление, аналоговые педали, вибрация, Steam Input, Steam Deck.
+description=
+description=[h3]Deutsch[/h3]
+description=Fixes und Verbesserungen für Controller in Build 42: A (X) bestätigt Baumfällen, Bauen, Platzieren nicht (42.22); Lenkung, analoges Gas/Bremse, Vibration, Steam Input, Steam Deck.
+description=
+description=[h3]Français[/h3]
+description=Correctifs et améliorations manette Build 42 : A (X) ne confirme pas couper, construire, placer (42.22) ; direction, gaz/frein analogiques, vibrations, Steam Input, Steam Deck.
+description=
+description=[h3]Español[/h3]
+description=Correcciones y mejoras de mando Build 42: A (X) no confirma talar, construir, colocar (42.22); dirección, pedales analógicos, vibración, Steam Input, Steam Deck.
+description=
+description=[h3]Português (Brasil)[/h3]
+description=Correções e melhorias de controle Build 42: A (X) não confirma cortar, construir, colocar (42.22); direção, pedais analógicos, vibração, Steam Input, Steam Deck.
+description=
+description=[h3]简体中文[/h3]
+description=Build 42 手柄修复与改进：A（X）键无法确认砍树、建造、放置（42.22）；转向、模拟踏板、震动、Steam Input、Steam Deck。
+description=
 tags=Build 42;Interface;Vehicles;QoL
 visibility=public
