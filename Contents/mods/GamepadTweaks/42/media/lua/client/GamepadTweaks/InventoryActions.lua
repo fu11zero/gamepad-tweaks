@@ -132,9 +132,9 @@ end
 -- Transfer All (inventory) / Loot All (loot).
 local function transferAll(page)
 	if page.onCharacter then
-		page:transferAll()
+		page.inventoryPane:transferAll()
 	else
-		page:lootAll()
+		page.inventoryPane:lootAll()
 	end
 end
 
