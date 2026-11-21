@@ -6,6 +6,7 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 ## Unreleased
 
 - Fixed: closing a context menu with A or B no longer sends that button into the inventory again on Steam's delayed press (hold / double-click bindings on the same button).
+- Fixed: Transfer All / Loot All works with a controller again.
 
 ## Update: 16 Nov @ 11:58pm
 
