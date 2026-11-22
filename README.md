@@ -169,9 +169,10 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     on the screen (the wall cabinet "above" the player). On Y (`ISButtonPrompt.cmdShowLoot`) and
     whenever the player turns or changes square, the container whose square is closest to the
     facing is selected (own square ranks between front and side); LB/RB still cycle.
-- **Half RT doesn't turn the character** (`AimSnap`, `aim.snapFix`). Without the Aim stick the
-  reticle snaps one tile ahead of the animated facing (`AimingMode.snapAimInFrontOfPlayer`) at
-  height 0.57 (melee, unarmed) / 0.468 (firearm), but the facing is read back from it
+- **Aiming without the stick doesn't turn the character** (`AimSnap`, `aim.snapFix`). With half RT
+  or the Steam Aim action and no Aim stick, the reticle snaps one tile ahead of the animated facing
+  (`AimingMode.snapAimInFrontOfPlayer`) at height 0.57 (melee, unarmed) / 0.468 (firearm), but the
+  facing is read back from it
   (`IsoPlayer.calculateAimVector`) at the chest, `getAimOriginPosZ` = z + 0.495. A point drawn
   higher than it's read lands further up the screen: each frame the facing gets a bias towards
   screen-up (down for 0.468) and the character turns until it faces straight up. The snapped
@@ -408,14 +409,15 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - held: Sprint, Manual Floor Attack, Brakes, the Java half of Interact, Aim, Attack, Melee and
     Run set a held state per controller that the game's query also returns (`isSprintButtonDown`,
     `isManualFloorAtkButtonDown`, `isInteractButtonDownInternal`: doors, windows, grapple via
-    `IsoPlayer.updateUseKey` -> `doContext`; `isAimKeyDownInternal` and
-    `isPrecisionAimKeyDownInternal`, `isAttackButtonDown`, `isMeleeButtonDownInternal`,
+    `IsoPlayer.updateUseKey` -> `doContext`; `isPrecisionAimKeyDownInternal` on foot and
+    `isAimKeyDownInternal` in a vehicle, `isAttackButtonDown`, `isMeleeButtonDownInternal`,
     `isRunButtonDown`; the brake in `CarController.updateControls`), so toggle-to-sprint and the
     rest of vanilla still apply. On a gamepad vanilla takes Aim from the right stick (turn, the
     reticle at a fixed distance), Precision Aim from a half-pressed RT (the free firearm reticle),
     Attack from RT past 0.93, Melee from LT, Run from the movement stick past 0.975. The Aim action
-    is the keyboard Aim key: both aims, no stick needed (gyro aiming), so Precision Aim has no
-    action. Attack needs aiming, as with the mouse;
+    is Precision Aim on foot: with the stick released the reticle snaps in front of the player, and
+    the gyro can take it from there; in a vehicle it is the keyboard Aim key for looking. Precision
+    Aim has no separate action. Attack needs aiming, as with the mouse;
   - button prompts: `ISButtonPrompt:setButtonBindingPrompt` is wrapped to keep each binding's
     handler by name (vanilla keeps one per button, the last evaluated); Interact, Cancel, Climb
     Through, Smash Window run it. Interact Options and Inventory are evaluated by vanilla only for
@@ -429,7 +431,7 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - Cruise Control: on / off on the press (`ISVehicleRegulator.onJoypadReleaseX` toggles on the
     release, because the held button + D-pad sets the speed; the action has the separate
     cruise faster / slower actions). With no speed set yet it takes the current one.
-  Left out: Walk To (needs a cursor), Loot (unused), Precision Aim (in Aim). Not in the in-game
+  Left out: Walk To (needs a cursor), Loot (unused), Precision Aim (the Aim action on foot). Not in the in-game
   editor, which already has them (`steamOnly`).
 
 - **Gyro / trackpad aiming** (`AnalogInput.java`, `SteamInput.Analog`, Steam analog action `aim`,
@@ -443,13 +445,14 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   the stick) doesn't lag the gyro. Steam is read right before `AimingReticle.update` (`Mouse.update`,
   `SteamInput.updateAnalog`), after `SteamAPI_RunCallbacks` ran Steam's frame. `aim` is declared
   in the `aiming` layer (only there it means anything), so the gyro is bound there. With the held
-  Aim action, the stick isn't needed at all.
+  Aim action, the stick isn't needed at all: on foot it is Precision Aim, so the reticle starts in
+  front of the player and the gyro moves it from there.
   Firearms only (`isRangedWeaponEquipped`; the `aiming` layer too): vanilla's "aiming" is also the
   melee / unarmed combat stance, where there's no reticle, so the offset turned the player unseen
   (a shift of the body and the character faced away, the stick no longer matching the facing).
   Melee and unarmed aim with the stick alone; the offset is dropped as when aiming ends.
-  Aiming without the Aim binding (half RT, PrecisionAim, stick released) snaps the reticle in front of
-  the player (`AimingMode.shouldSnapAimInFrontOfPlayer`: no stick, nothing to aim with). The first gyro
+  Aiming without the Aim binding (half RT or the held Aim action, stick released) snaps the reticle in
+  front of the player (`AimingMode.shouldSnapAimInFrontOfPlayer`: no stick, nothing to aim with). The first gyro
   delta then takes the reticle from where it stands (offset = reticle - stick target) and the player
   counts as aimed until aiming ends (`AnalogInput.gyroAiming`, `Patches.GyroAimNoSnap`); modes that
   always snap (melee, unarmed: `fixedAtMinDistance`, `minDistanceAmount == -1`) still do.

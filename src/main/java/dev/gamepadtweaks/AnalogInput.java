@@ -24,8 +24,8 @@ import zombie.iso.Vector2;
 // In precise aim lerpAiming eases the reticle towards the target (6-9% of the way per frame),
 // smoothing meant for the stick; the reticle itself (aimingPositions) is moved by the same
 // delta too, so the gyro part comes at once and only the stick part is eased.
-// Aiming without the Aim binding (half RT alone) snaps the reticle in front of the player
-// (AimingMode.shouldSnapAimInFrontOfPlayer). The first delta then takes the reticle from where
+// Aiming without the Aim binding (half RT or the held Steam Aim action) snaps the reticle in front
+// of the player (AimingMode.shouldSnapAimInFrontOfPlayer). The first delta then takes it from where
 // it stands (the offset starts at reticle - stick target) and from then on it counts as aimed
 // (gyroAiming, Patches.GyroAimNoSnap) until aiming ends.
 // Steer: added to the steering stick before the mod's shaping (Patches.SteeringInput).

@@ -229,15 +229,20 @@ public final class Patches {
         }
     }
 
-    // Aim without the stick: vanilla aims only while the Aim binding (right stick by default)
-    // is down AND the aiming stick is out of its dead zone, and aims a firearm precisely only
-    // with PrecisionAim (right trigger half pressed). The held action is the keyboard Aim key:
-    // both at once, stick released or not; the reticle starts at the player (see AnalogInput).
+    // On foot the held Aim action (Steam "Aim") is PrecisionAim, i.e. the same as a half-pressed
+    // right trigger: with the aim stick released the reticle snaps in front of the player
+    // (AimSnap), instead of starting at the player and turning him towards it. With the stick
+    // out, vanilla's own Aim binding sets isAimKeyDown anyway. In a vehicle
+    // isAimControlActive() reads only isAimKeyDown, so the action still means keyboard Aim there.
     @Patch(className = "zombie.characters.component.CharacterInputComponent", methodName = "isAimKeyDownInternal")
     public static class AimHeld {
         @Patch.OnExit
         public static void exit(@Patch.This CharacterInputComponent input,
                                 @Patch.Return(readOnly = false) boolean down) {
+            IsoPlayer player = input.tryGetECSOwnerEntityAs(IsoPlayer.class);
+            if (player == null || player.getVehicle() == null) {
+                return;
+            }
             down = down || HeldActions.characterHeld(input, HeldActions.AIM)
                     && !input.isJoypadIgnoreAim() && !input.isJoypadIgnoreAimUntilCentered();
         }

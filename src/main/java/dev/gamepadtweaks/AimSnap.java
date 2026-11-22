@@ -5,8 +5,9 @@ import zombie.iso.IsoCamera;
 import zombie.iso.PlayerCamera;
 import zombie.iso.Vector2;
 
-// Half RT alone (PrecisionAim without the Aim stick) slowly turns the character towards the
-// top of the screen with a melee weapon or unarmed (towards the bottom with a firearm).
+// Aiming with PrecisionAim alone (half RT or the Steam Aim action, without the Aim stick) slowly
+// turns the character towards the top of the screen with a melee weapon or unarmed (towards the
+// bottom with a firearm).
 //
 // Vanilla: without the Aim stick the reticle snaps in front of the player
 // (AimingMode.snapAimInFrontOfPlayer): the point one tile ahead along the animated facing, at the

@@ -10,10 +10,11 @@
 -- the binding is on a button, shares it with others, or has none.
 -- Held ones (sprint, floor attack, brake, the Java half of interact, aim, attack, melee, run) set a held state that the game's own query sees
 -- (HeldActions.java). Steam only (steamOnly): the in-game editor already has the bindings.
--- "Walk To" (needs a cursor) and "Loot" (no code uses it) are left out. Aim is held and works
--- as the keyboard Aim key (aim + precision aim, no stick needed): for gyro aiming (Steam "aim"
--- analog action), so Precision Aim has no action of its own. Attack, Melee and Run, vanilla
--- trigger / stick thresholds, are held actions too (attack needs aiming, as with the mouse).
+-- "Walk To" (needs a cursor) and "Loot" (no code uses it) are left out. Aim is held and acts
+-- on foot as Precision Aim (half RT): with the stick released the reticle snaps in front of the
+-- player, and the Steam "aim" analog action (gyro, trackpad) can move it from there; in a vehicle
+-- it is the keyboard Aim key for looking. Precision Aim has no action of its own. Attack, Melee and
+-- Run, vanilla trigger / stick thresholds, are held actions too (attack needs aiming, as with the mouse).
 
 require "GamepadTweaks/Bindings"
 require "ISUI/ISButtonPrompt"

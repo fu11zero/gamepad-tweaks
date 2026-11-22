@@ -9,7 +9,8 @@ import zombie.core.physics.CarController;
 
 // Game actions that last while held: sprint, floor attack (stomp), vehicle brake, the
 // Java half of Interact (doors, windows: IsoPlayer.updateUseKey acts on press + release),
-// aim (as the keyboard Aim key: aim and precision aim), attack, melee (shove), run, camera
+// aim (on foot the precision aim of half RT, so the reticle snaps in front; in a vehicle the
+// keyboard Aim key for looking), attack, melee (shove), run, camera
 // pan while aiming (CameraPan), voice push-to-talk.
 //
 // The game has no call for these: each frame it asks whether the action is held
