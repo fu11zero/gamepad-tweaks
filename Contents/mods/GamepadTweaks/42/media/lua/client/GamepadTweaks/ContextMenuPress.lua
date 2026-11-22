@@ -10,9 +10,13 @@
 -- directly), so only the plain press needs handling. Its delay is about one double-click window
 -- (190 ms by default), counted from the release of the button that closed the menu.
 --
--- Here: arm a short suppression when that button is released, drop the next press of the same
--- button before it reaches any UI (JoypadControllerData:onPressButton is the common point of all
--- gamepad presses). One shot: a later deliberate press works normally.
+-- Here: only a press that actually closed a context menu arms the suppression. The joypad
+-- handler also opens submenus with A (displaySubMenu() even hides the parent menu), so arming on
+-- every A/B press in it drops half the presses while navigating a multi-level menu. The close
+-- itself is the signal: remember the A/B press while it is being dispatched and arm the
+-- suppression in ISContextMenu:closeAll(). On release, drop the next press of the same button
+-- before it reaches any UI (JoypadControllerData:onPressButton is the common point of all gamepad
+-- presses). One shot: a later deliberate press works normally.
 
 require "ISUI/ISContextMenu"
 require "ISUI/Gamepad/JoyPadSetup"
@@ -24,16 +28,28 @@ local STALE_MS = 2000
 local pending = {}
 -- [controller id][button] = ms until which the next press is dropped.
 local suppressed = {}
+-- The A/B press currently being dispatched to a context menu, if any.
+local closingPress = nil
 
 local vanillaContextDown = ISContextMenu.onJoypadDown
-ISContextMenu.onJoypadDown = function(self, button)
-	if self.player and (button == Joypad.AButton or button == Joypad.BButton) then
-		local jd = JoypadState.players[self.player + 1]
-		if jd and jd.id then
-			pending[jd.id] = { button = button, time = getTimestampMs() }
-		end
+ISContextMenu.onJoypadDown = function(self, button, ...)
+	local jd = self.player and JoypadState.players[self.player + 1]
+	if not jd or not jd.id or (button ~= Joypad.AButton and button ~= Joypad.BButton) then
+		return vanillaContextDown(self, button, ...)
 	end
-	return vanillaContextDown(self, button)
+	local previous = closingPress
+	closingPress = { id = jd.id, button = button, time = getTimestampMs() }
+	local result = vanillaContextDown(self, button, ...)
+	closingPress = previous
+	return result
+end
+
+local vanillaCloseAll = ISContextMenu.closeAll
+ISContextMenu.closeAll = function(self, ...)
+	if closingPress then
+		pending[closingPress.id] = { button = closingPress.button, time = closingPress.time }
+	end
+	return vanillaCloseAll(self, ...)
 end
 
 local vanillaRelease = JoypadControllerData.onReleaseButton

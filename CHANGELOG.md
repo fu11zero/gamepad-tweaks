@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Fixed: A and B no longer get swallowed when navigating submenus — the delayed-press suppression is now armed only when a context menu actually closes.
+
 ## Update: 21 Nov @ 9:25am
 
 - Fixed: closing a context menu with A or B no longer sends that button into the inventory again on Steam's delayed press (hold / double-click bindings on the same button).

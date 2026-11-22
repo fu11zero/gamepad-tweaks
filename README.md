@@ -125,8 +125,9 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   plain press by the double-click timeout when hold / double activators share the button, so the
   game closed the menu on the first press and the delayed copy arrived in the window underneath
   (opened another menu, closed the inventory). The next press of that button within 250 ms after
-  its release is dropped. Hold / double actions themselves are Steam game actions, not gamepad
-  presses, so they aren't affected.
+  its release is dropped. Only a press that actually closes the menu arms this: navigating into
+  a submenu with A or B leaves both presses working. Hold / double actions themselves are Steam
+  game actions, not gamepad presses, so they aren't affected.
 
 - **Actions on press, not click** (`PressActions`). Vanilla toggles some gamepad actions on
   a "click" (release within 400 ms), so they lag and don't work with long-press binds:
