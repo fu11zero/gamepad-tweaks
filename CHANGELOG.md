@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+## Update: 23 Nov @ 1:58am
+
 - Fixed: A and B no longer get swallowed when navigating submenus — the delayed-press suppression is now armed only when a context menu actually closes.
 - Fixed: the Steam Aim action now puts the reticle in front of the character with the stick released, like a light RT press, instead of at the character's center and turning him towards it.
 
