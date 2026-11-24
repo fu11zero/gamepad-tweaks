@@ -239,15 +239,11 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
 
   The vanilla binding list is a Java enum (`CharacterJoypadButtonBinding`, fixed at class load and
   saved by name in `InputBindings/*.xml`), so it isn't extended; the actions live in the mod:
-  `preset.<preset>.bind.<action>=<button>`, `none` frees the button for the regular bindings.
-  Per vanilla preset (`getCore():getOptionGamepadBindingPreset()`), as the regular bindings are: the built-in
-  Default and Original (Lua only, no `loadedSet`) always have the defaults, and the first change in them
-  makes a new preset (vanilla `GameOptionControllerTab:onJoypadButtonBindingEdited`); a new preset copies
-  the mod bindings of the one it's made from. The old global `bind.<action>` lines move to every saved preset. Actions are in layers
-  (one button = one action per layer): `world` press (`vehicleWheel`, `emoteWheel`, `equipWheel`,
-  `extraWheel`, `commandWheel`, `pause`), `cruise` press while driving with the CruiseControl
-  button held, checked first (`cruiseFaster`, `cruiseSlower`, repeat while held), `hold`
-  (`stickRadial`), `uiHold` (`uiNavigation`), `navigation` release (`uiNavigateParent`).
+  `preset.<preset>.<layer>.bind.<action>=<button>`. Set a binding to `none` to remove it from
+  that layer. Each saved preset has its own layers. Editing Default or Original creates a new
+  preset, and copying a preset copies all its layers. Older `preset.<preset>.bind.<action>`
+  and global `bind.<action>` entries migrate to the action's original context. Hold actions
+  (stick radial, panel navigation) and release actions (parent panel) have their own slots.
   Default = vanilla button, so nothing changes until rebound; an action set to a button takes it
   from the action that has it by default. A regular binding that acts in the world (not the UI-only
   ClosePanel/Cycle*/TransferItem) put on the button of a default world action takes it too: vanilla
@@ -322,16 +318,17 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - `animalRadial`: `AnimalContextMenu.showRadialMenu` (ANIMAL_RADIAL_MENU key, player 0 only in
     `ISUIHandler`); again closes it.
 
-- **Mod actions in Options -> Controller** (`media/lua/client/GamepadTweaks/ControllerEditor.lua`).
-  The vanilla editor rows (`CharacterJoypadBindingUIRow`) list and offer only the Java enum
-  `CharacterJoypadButtonBinding`; the rows and their lists are Lua, so the vanilla functions run first
-  and the mod adds its actions: in each button row the actions on that button (mod colour, with the
-  context: cruise held, hold, ...), in the edit row a list per action (another action instead, or
-  `< Remove >`), and in `< Add New >` the actions not on the button yet ("[Category] Name", by
-  category). `Bindings.set` writes `preset.<preset>.bind.<id>` at once through `GamepadTweaks_setSetting` (Java:
-  replaces the line or adds it after its `#` example, keeps the rest of the file); an action of the
-  same layer on that button is set to `none`.
-  Names: vanilla key binding names, mod strings in `media/lua/shared/Translate/{EN,RU}/UI.json`.
+- **In-game layers in Options -> Controller** (`ControllerEditor.lua`, `Bindings.lua`).
+  Use the tabs above the controller diagram to assign mod actions by context. Select a button and
+  choose an action from `< Add New >`. For example, set D-pad Left to Flashlight under On foot
+  and to Horn under Vehicle. The game chooses the active layers for each splitscreen player.
+  - In the world, the order is Cruise (driver holding the Cruise Control button), Aiming
+    (aiming or looking out of a vehicle), On foot or Vehicle, then General. Vehicle includes
+    passengers. Each button uses the first assignment it finds.
+  - When a panel has controller focus, Inventory (inventory or loot window) takes priority over
+    Panels. An empty button uses the normal panel controls.
+  - Standard button and axis bindings are edited on General and apply across contexts.
+    Layers work with the game's controller input and require the mod's jar.
 
 - **Mod actions as Steam Input game actions** (`SteamInput.java`, `Bindings.lua` Steam Input
   section, `media/steam_input/`). Vanilla doesn't use the Steam Input API: Steam only emulates a

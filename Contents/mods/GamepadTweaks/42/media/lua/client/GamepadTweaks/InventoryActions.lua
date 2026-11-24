@@ -236,31 +236,3 @@ for _, action in ipairs(ACTIONS) do
 	action.group = "main"
 	Bindings.add(action)
 end
-
--- Dispatch ----------------------------------------------------------------------------------
--- Vanilla gives the focused window its presses as onJoypadDown(button) and the D-pad as
--- onJoypadDir*; a button with an inventory action runs it instead.
-
-local function wrapPress(name)
-	local vanillaFn = ISInventoryPage[name]
-	ISInventoryPage[name] = function(self, button, jd, ...)
-		jd = type(jd) == "table" and jd or JoypadState.players[self.player + 1]
-		if jd and Bindings.press(jd, button, "inventory") then return end
-		return vanillaFn(self, button, jd, ...)
-	end
-end
-
-wrapPress("onJoypadDown")
-
-local function wrapDir(name, button)
-	local vanillaFn = ISInventoryPage[name]
-	ISInventoryPage[name] = function(self, jd, ...)
-		if type(jd) == "table" and Bindings.press(jd, button, "inventory") then return end
-		return vanillaFn(self, jd, ...)
-	end
-end
-
-wrapDir("onJoypadDirUp", Joypad.DPadUp)
-wrapDir("onJoypadDirDown", Joypad.DPadDown)
-wrapDir("onJoypadDirLeft", Joypad.DPadLeft)
-wrapDir("onJoypadDirRight", Joypad.DPadRight)

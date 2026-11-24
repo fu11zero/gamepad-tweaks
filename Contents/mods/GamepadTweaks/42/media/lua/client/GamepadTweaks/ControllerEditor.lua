@@ -1,21 +1,8 @@
--- The mod's button actions in Options -> Controller (the vanilla bindings editor).
---
--- Each button row (CharacterJoypadBindingUIRow) lists the regular bindings on that button,
--- and its "< Add New >" list offers them; both come from the Java enum
--- CharacterJoypadButtonBinding, which can't get new values. The row and its lists are Lua,
--- so here the vanilla functions run first and the mod's actions (Bindings.lua, KeyActions.lua,
--- InventoryActions.lua)
--- are added after them:
--- - populateWithReadOnlyLabels: the actions on the button, in the mod colour;
--- - populateWithEditableElements: a list per action (another action instead, or "< Remove >");
--- - createJoypadButtonBindingCBox ("< Add New >"): the actions not on the button yet,
---   "[Category] Name", sorted by category.
--- Changes are written to ~/Zomboid/GamepadTweaks.properties at once (Bindings.set), for the
--- current preset. A built-in preset (Default, Original) can't be edited: as with a regular
--- binding, the first change makes a new preset from it, and a new preset gets the mod bindings
--- of the one it is made from. If the vanilla editor changes, the wrappers only log.
+-- Context tabs and the mod's button actions in Options -> Controller.
+-- The shared tab also uses vanilla's CharacterJoypadButtonBinding and axis editors.
 
 require "ISUI/Gamepad/CharacterJoypadBindingUIRow"
+require "ISUI/Gamepad/GameOptionControllerTab"
 require "GamepadTweaks/Bindings"
 require "GamepadTweaks/KeyActions"
 require "GamepadTweaks/InventoryActions"
@@ -41,11 +28,19 @@ local function isButtonRow(row)
 	return instanceof(row.bindingKey, "JoypadButton")
 end
 
+local function editorPanel(row)
+	return row.uiBinding.characterJoypadBindingUI.controllerBindingsEditorPanel
+end
+
+local function selectedLayer(row)
+	return editorPanel(row).gtLayer or "world"
+end
+
 -- All actions by category, then registration order.
-local function sortedActions()
+local function sortedActions(layer)
 	local list = {}
 	for i, action in ipairs(Bindings.actions) do
-		if not action.steamOnly then
+		if Bindings.canBindIn(action, layer) then
 			table.insert(list, { action = action, index = i })
 		end
 	end
@@ -64,8 +59,7 @@ end
 
 -- Repopulates every row: an action moved here may have been on another button.
 local function refreshAll(row)
-	local ui = row.uiBinding and row.uiBinding.characterJoypadBindingUI
-	local panel = ui and ui.controllerBindingsEditorPanel
+	local panel = editorPanel(row)
 	if panel and panel.populateAllBindingBoxes then
 		panel:populateAllBindingBoxes()
 	else
@@ -85,7 +79,7 @@ end
 -- Read-only row ----------------------------------------------------------------------
 
 local function addReadOnly(row)
-	local actions = Bindings.getActionsOn(row.bindingKey)
+	local actions = Bindings.getActionsOn(selectedLayer(row), row.bindingKey)
 	if #actions == 0 then return end
 	local style = row:getStyle()
 	local font = style:getFont("Small")
@@ -112,14 +106,38 @@ local function addReadOnly(row)
 	row:setHeight(y - spacing + border)
 end
 
+-- On a context tab the physical controls keep their positions and only mod bindings
+-- for that context appear. Vanilla button and axis bindings are edited on the shared tab.
+local function populateLayerRow(row)
+	row:clearChildren()
+	local style = row:getStyle()
+	local font = style:getFont("Small")
+	local height = style:getFontHeight("Small") * 0.8
+	local border = style.borderSpacing
+	local label = ISLabel:new(border, 0, height, getText(row.bindingKey:getNameTranslationKey()),
+		1, 1, 1, 1, font, true)
+	label:initialise()
+	row:addChild(label)
+	row.bindingLabel = label
+	row.entries = {}
+	row.borderSpacing = border
+	row.indentWidth = height / 2
+	row:setWidth(label:getRight() + border)
+	row:setHeight(label:getBottom() + border)
+end
+
 local vanillaReadOnly = CharacterJoypadBindingUIRow.populateWithReadOnlyLabels
 function CharacterJoypadBindingUIRow:populateWithReadOnlyLabels(...)
-	local result = vanillaReadOnly(self, ...)
+	if selectedLayer(self) == "world" then
+		vanillaReadOnly(self, ...)
+	else
+		populateLayerRow(self)
+		if isButtonRow(self) then self:addChild(self.selectButton) end
+	end
 	if isButtonRow(self) then
 		local ok, err = pcall(addReadOnly, self)
 		if not ok then log("ERROR: controller editor (read-only row): " .. tostring(err)) end
 	end
-	return result
 end
 
 -- Vanilla makes a new preset from a built-in one on the first change
@@ -136,10 +154,10 @@ end
 -- Editable row ---------------------------------------------------------------------
 
 -- Options: the action itself, the actions not on this button, "< Remove >".
-local function fillActionBox(box, button, current, style)
+local function fillActionBox(box, layer, button, current, style)
 	box:clear()
-	for _, action in ipairs(sortedActions()) do
-		if action == current or action.bound ~= button then
+	for _, action in ipairs(sortedActions(layer)) do
+		if action == current or Bindings.canReplace(layer, current, action, button) then
 			box:addOptionWithData(Bindings.getLabel(action, true), PREFIX .. action.id)
 		end
 	end
@@ -150,18 +168,13 @@ end
 
 function CharacterJoypadBindingUIRow:onGamepadTweaksActionChanged(box, currentId)
 	local data = box:getSelectedData()
-	if (data == REMOVE or type(data) == "string" and data:sub(1, #PREFIX) == PREFIX)
-			and not editablePreset(self) then
-		refreshAll(self)
-		return
-	end
-	if data == REMOVE then
-		Bindings.set(currentId, false)
+	local layer = selectedLayer(self)
+	if data == REMOVE and editablePreset(self) then
+		Bindings.set(layer, currentId, false)
 	elseif type(data) == "string" and data:sub(1, #PREFIX) == PREFIX then
 		local id = data:sub(#PREFIX + 1)
-		if id ~= currentId then
-			Bindings.set(id, self.bindingKey)
-			Bindings.set(currentId, false)
+		if id ~= currentId and editablePreset(self) then
+			Bindings.set(layer, id, self.bindingKey)
 		end
 	end
 	refreshAll(self)
@@ -175,7 +188,7 @@ local function addEditable(row)
 		end
 	end
 	if not addNew then return end
-	local actions = Bindings.getActionsOn(row.bindingKey)
+	local actions = Bindings.getActionsOn(selectedLayer(row), row.bindingKey)
 	if #actions == 0 then return end
 	local style = row:getStyle()
 	local spacing = style:getFontHeight("Small") * 0.6 / 15
@@ -192,7 +205,7 @@ local function addEditable(row)
 		box:initialise()
 		row:addChild(box)
 		if Bindings.canEdit() then
-			fillActionBox(box, row.bindingKey, action, style)
+			fillActionBox(box, selectedLayer(row), row.bindingKey, action, style)
 			box:setOnChange(row, row.onGamepadTweaksActionChanged, action.id)
 		else
 			box:addOptionWithData(Bindings.getLabel(action, true), PREFIX .. action.id)
@@ -215,41 +228,60 @@ end
 
 local vanillaEditable = CharacterJoypadBindingUIRow.populateWithEditableElements
 function CharacterJoypadBindingUIRow:populateWithEditableElements(...)
-	local result = vanillaEditable(self, ...)
+	if selectedLayer(self) == "world" then
+		vanillaEditable(self, ...)
+	else
+		populateLayerRow(self)
+		if not isButtonRow(self) then return end
+		local label = self.bindingLabel
+		local style = self:getStyle()
+		local spacing = style:getFontHeight("Small") * 0.6 / 15
+		local height = label:getHeight() * 1.1
+		local box = self:createJoypadButtonBindingCBox(self.bindingKey, ADD_NEW, {},
+			label:getLeft() + self.indentWidth, label:getBottom() + spacing * 3, height, height)
+		self:addChild(box)
+		box:populate()
+		box:setOnChange(self, self.onAddNewJoypadBindingChanged, self.bindingKey)
+		self:setWidth(math.max(self:getWidth(), box:getRight() + style.borderSpacing))
+		self:setHeight(box:getBottom() + style.borderSpacing * 2)
+	end
 	if isButtonRow(self) then
 		local ok, err = pcall(addEditable, self)
 		if not ok then log("ERROR: controller editor (edit row): " .. tostring(err)) end
 	end
-	return result
 end
 
 -- "< Add New >" ----------------------------------------------------------------------
 
-local function appendToAddNew(box, button)
-	if not Bindings.canEdit() then return end
-	local addEntry = table.remove(box.options) -- vanilla's "< Add New >", put back last
-	for _, action in ipairs(sortedActions()) do
-		if action.bound ~= button then
-			box:addOptionWithData(Bindings.getLabel(action, true), PREFIX .. action.id)
+local function appendToAddNew(box, layer, button)
+	local addEntry = table.remove(box.options)
+	if Bindings.canEdit() then
+		for _, action in ipairs(sortedActions(layer)) do
+			if Bindings.getActionButton(action, layer) ~= button then
+				box:addOptionWithData(Bindings.getLabel(action, true), PREFIX .. action.id)
+			end
 		end
 	end
-	if addEntry then
-		table.insert(box.options, addEntry)
-	end
-	box:setWidth(math.max(box:getWidth(), comboWidth(box, box:getStyle())))
+	table.insert(box.options, addEntry)
+	box:setWidth(comboWidth(box, box:getStyle()))
 	box:setSelectedData(ADD_NEW)
+	if #box.options == 1 then box:setEnabled(false) end
 end
 
 local vanillaCreateBox = CharacterJoypadBindingUIRow.createJoypadButtonBindingCBox
 function CharacterJoypadBindingUIRow:createJoypadButtonBindingCBox(bindingKey, selected, ...)
 	local box = vanillaCreateBox(self, bindingKey, selected, ...)
-	if selected == ADD_NEW and instanceof(bindingKey, "JoypadButton") and box and box.populate then
+	if selected == ADD_NEW and instanceof(bindingKey, "JoypadButton") then
+		local layer = selectedLayer(self)
 		local vanillaPopulate = box.populate
-		function box:populate(...)
-			local result = vanillaPopulate(self, ...)
-			local ok, err = pcall(appendToAddNew, self, bindingKey)
-			if not ok then log("ERROR: controller editor (add list): " .. tostring(err)) end
-			return result
+		function box:populate()
+			if layer == "world" then
+				vanillaPopulate(self)
+			else
+				self:clear()
+				self:addOptionWithData("< Add New >", ADD_NEW, "Add new entry")
+			end
+			appendToAddNew(self, layer, bindingKey)
 		end
 	end
 	return box
@@ -260,12 +292,73 @@ function CharacterJoypadBindingUIRow:onAddNewJoypadBindingChanged(senderBox, bin
 	local data = senderBox:getSelectedData()
 	if type(data) == "string" and data:sub(1, #PREFIX) == PREFIX then
 		if editablePreset(self) then
-			Bindings.set(data:sub(#PREFIX + 1), bindingKey)
+			Bindings.set(selectedLayer(self), data:sub(#PREFIX + 1), bindingKey)
 		end
 		refreshAll(self)
 		return
 	end
 	return vanillaAddNewChanged(self, senderBox, bindingKey, ...)
+end
+
+-- Layer tabs sit in the vanilla preset header, above the scrollable controller diagram.
+local function selectLayer(panel, button)
+	if panel.gtLayer == button.gtLayer then return end
+	panel.gtLayer = button.gtLayer
+	for _, tab in ipairs(panel.gtLayerTabs) do
+		if tab == button then
+			tab:setBackgroundRGBA(0.18, 0.32, 0.46, 1)
+		else
+			tab:setBackgroundRGBA(0, 0, 0, 1)
+		end
+	end
+	panel:setYScroll(0)
+	if panel.editedUIBinding then
+		panel:setActiveEditingBindingUI(nil)
+	else
+		panel:populateAllBindingBoxes()
+	end
+end
+
+local vanillaCustomization = GameOptionControllerTab.initControllerCustomizationPanel
+function GameOptionControllerTab:initControllerCustomizationPanel(...)
+	local container = vanillaCustomization(self, ...)
+	local top = container.topPanel
+	local panel = container.controllerBindingsEditorPanel
+	local style = self:getStyle()
+	local spacing = style.borderSpacing
+	local height = style.buttonHeight
+	local firstY = top:getHeight()
+	panel.gtLayerTabs = {}
+	local font = style:getFont("Small")
+	for _, layer in ipairs(Bindings.layers) do
+		local title = getText("UI_GamepadTweaks_tab_" .. layer)
+		local width = getTextManager():MeasureStringX(font, title) + spacing * 4
+		local button = ISButton:new(0, firstY, width, height, title, panel, selectLayer)
+		button.gtLayer = layer
+		button:setFont(font)
+		button:setTooltip(getText("UI_GamepadTweaks_tab_help_" .. layer))
+		button:initialise()
+		top:addChild(button)
+		table.insert(panel.gtLayerTabs, button)
+	end
+	local vanillaLayout = container.onDoLayout
+	function container:onDoLayout()
+		local x, y = spacing * 2, firstY
+		top:setWidth(self:getWidth())
+		for _, tab in ipairs(panel.gtLayerTabs) do
+			if x > spacing * 2 and x + tab:getWidth() > top:getWidth() - spacing then
+				x, y = spacing * 2, y + height + spacing
+			end
+			tab:setX(x)
+			tab:setY(y)
+			x = tab:getRight() + spacing
+		end
+		top:setHeight(y + height + spacing)
+		vanillaLayout(self)
+	end
+	panel.gtLayer = "world"
+	panel.gtLayerTabs[1]:setBackgroundRGBA(0.18, 0.32, 0.46, 1)
+	return container
 end
 
 -- New presets ------------------------------------------------------------------------
