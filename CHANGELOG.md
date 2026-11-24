@@ -5,6 +5,11 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Added: two knocks on the active controller when the loading screen is ready and asks you to press A.
+- Added: hitting curbs and parking stops kicks the controller per wheel, with longer and stronger kicks at higher speeds.
+- Added: shivering from hypothermia, from occasional reminders to a gentle sustained tremor at the highest level.
+- Added: distinct vibration synced to cough and sneeze sounds, softer when muffled, with shivering continuing between symptoms.
+- Added: a deep, fading rumble with the blast when the power grid shuts down.
 - Fixed: heartbeat vibration follows the game's live heartbeat audio, including its rhythm and volume.
 - Changed: the lingering throb after a scratch, cut or bite follows the damage vibration setting.
 

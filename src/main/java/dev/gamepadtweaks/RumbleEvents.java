@@ -6,7 +6,9 @@ import java.util.Map;
 import java.util.Set;
 
 import me.zed_0xff.zombie_buddy.Patch;
+import zombie.GameSounds;
 import zombie.characters.BaseCharacterSoundEmitter;
+import zombie.characters.CharacterSoundEmitter;
 import zombie.characters.IsoGameCharacter;
 import zombie.characters.IsoPlayer;
 import zombie.characters.IsoZombie;
@@ -60,9 +62,11 @@ public final class RumbleEvents {
         for (int i = 0; i < IsoPlayer.players.length; i++) {
             IsoPlayer player = IsoPlayer.players[i];
             if (player == null || !player.isLocalPlayer() || player.getJoypadBind() < 0 || player.isDead()) {
+                pendingVoice[i] = null;
                 lastStates.remove(i);
                 continue;
             }
+            updateRespiratorySound(i, player);
             Set<String> now = states(player.getActionContext());
             Set<String> before = lastStates.put(i, now);
             if (before == null) {
@@ -320,13 +324,78 @@ public final class RumbleEvents {
     // pulsations that follow (Rumble.lua, GamepadTweaks_rumbleSinceWound) are not a heartbeat:
     // they keep the wound felt after the sting, with no vanilla sound to follow.
     @Patch(className = "zombie.characters.IsoPlayer", methodName = "playerVoiceSound")
-    public static class Wound {
+    public static class PlayerVoice {
         @Patch.OnEnter
         public static void enter(@Patch.This IsoPlayer player, @Patch.Argument(0) String sound) {
             if (sound != null && sound.startsWith("PainFrom") && !GameServer.server && Settings.rumble) {
                 RumbleEvents.wound(player, sound);
             }
         }
+
+        @Patch.OnExit
+        public static void exit(@Patch.This IsoPlayer player, @Patch.Argument(0) String sound,
+                                @Patch.Return long instance) {
+            if (instance != 0 && !GameServer.server && Settings.rumble) {
+                RumbleEvents.queueRespiratorySound(player, sound, instance);
+            }
+        }
+    }
+
+    private record PendingVoice(IsoPlayer player, long instance, Kick kick, String sound, long queuedAt) {}
+
+    private static final PendingVoice[] pendingVoice = new PendingVoice[IsoPlayer.players.length];
+    // The bank starts the four vocal events with 0.29–0.40 s of silence, depending on the voice.
+    private static final float VOICE_ONSET_PEAK = 0.001f;
+    private static FmodEventMeter voiceMeter;
+    private static boolean voiceMeterFailed;
+
+    public static void queueRespiratorySound(IsoPlayer player, String sound, long instance) {
+        if (sound == null || voiceMeterFailed || !player.isLocalPlayer() || player.getJoypadBind() < 0) {
+            return;
+        }
+        Kick kick = switch (sound) {
+            case "SneezeHeavy" -> new Kick("cough", 0.30f, 0.60f, 150);
+            case "SneezeLight" -> new Kick("cough", 0.14f, 0.32f, 110);
+            case "Cough" -> new Kick("cough", 0.52f, 0.30f, 220);
+            case "MuffledCough" -> new Kick("cough", 0.27f, 0.15f, 150);
+            default -> null;
+        };
+        if (kick != null && player.getEmitter() instanceof CharacterSoundEmitter) {
+            int slot = Rumble.playerOf(player.getJoypadBind());
+            if (slot >= 0) {
+                pendingVoice[slot] = new PendingVoice(player, instance, kick, sound, System.currentTimeMillis());
+            }
+        }
+    }
+
+    private static void updateRespiratorySound(int slot, IsoPlayer player) {
+        PendingVoice voice = pendingVoice[slot];
+        if (voice == null) {
+            return;
+        }
+        if (voiceMeterFailed || voice.player() != player || !player.getEmitter().isPlaying(voice.instance())) {
+            pendingVoice[slot] = null;
+            return;
+        }
+        if (GameSounds.soundIsPaused) {
+            return;
+        }
+        try {
+            if (voiceMeter == null) voiceMeter = new FmodEventMeter(pendingVoice.length);
+            if (voiceMeter.peak(voice.instance(), slot) < VOICE_ONSET_PEAK) {
+                return;
+            }
+        } catch (Throwable e) {
+            pendingVoice[slot] = null;
+            voiceMeterFailed = true;
+            Log.error("rumble: cough and sneeze meter unavailable", e);
+            return;
+        }
+        pendingVoice[slot] = null;
+        if (Settings.rumbleDebugLog) {
+            Log.info("rumble: " + voice.sound() + " onset after " + (System.currentTimeMillis() - voice.queuedAt()) + "ms");
+        }
+        kick(player, voice.kick());
     }
 
     // player index -> time and kind of the last wound (1 scratch / cut, 2 bite)

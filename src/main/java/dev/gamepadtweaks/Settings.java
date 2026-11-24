@@ -211,7 +211,7 @@ public final class Settings {
             # a fence or window frame and the landing after it (with the animation);
             # vehicle - crash (by impact and side), running someone over (by speed),
             # hitting cones, signs, bushes and small trees;
-            # suspension - bumps under each wheel, bodies, bottoming out; road - leaving
+            # suspension - bumps under each wheel, curbs, parking stops, bodies, bottoming out; road - leaving
             # the asphalt and the feel of each surface (fades on long off-road drives);
             # window - smashing glass nearby, a window opening; tool - axe on doors and
             # trees, prying boards, forcing doors with a crowbar; thump - zombies banging
@@ -219,7 +219,10 @@ public final class Settings {
             # of quiet) and on your vehicle; thunder - by distance, with the
             # sound; scare - the jump scare sting
             # (a zombie suddenly right next to you, follows the game's jump scare volume);
-            # heartbeat - follows the live audio level of the game's HeartBeat event.
+            # heartbeat - follows the live audio level of the game's HeartBeat event;
+            # ready - double knock at Press A to start; cold - shivering from hypothermia;
+            # cough - coughs and sneezes, softer when muffled;
+            # blackout - the blast and rumble when the power grid shuts down.
             rumble.shot=1.0
             rumble.hit=1.0
             rumble.damage=1.0
@@ -234,8 +237,12 @@ public final class Settings {
             rumble.thunder=1.0
             rumble.scare=1.0
             rumble.heartbeat=1.0
+            rumble.ready=1.0
+            rumble.cold=1.0
+            rumble.cough=1.0
+            rumble.blackout=1.0
             # While aiming a firearm, ambient vibration (heartbeat, thunder, zombies
-            # banging, glass, tools) is scaled by this: the shaking moves a gyro reticle.
+            # banging, glass, tools, blackout) is scaled by this: the shaking moves a gyro reticle.
             # Wounds, falls and shots stay at full strength.
             rumble.aiming=0.3
             # Trigger motors (Xbox One / Series): in a vehicle a short accent on knocks at

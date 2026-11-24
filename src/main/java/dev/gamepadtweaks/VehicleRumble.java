@@ -13,6 +13,7 @@ import org.joml.Vector3f;
 import zombie.characters.IsoGameCharacter;
 import zombie.characters.IsoPlayer;
 import zombie.characters.IsoZombie;
+import zombie.iso.IsoCell;
 import zombie.iso.IsoGridSquare;
 import zombie.iso.IsoObject;
 import zombie.iso.IsoWorld;
@@ -387,6 +388,11 @@ public final class VehicleRumble {
         long lastBump;
         IsoGridSquare square;
         Surface surface = Surface.ROAD;
+        float x = Float.NaN, y;
+        int floorZ;
+        IsoGridSquare obstacleSquare;
+        int obstacleShapes, obstacle;
+        long lastObstacleHit;
     }
 
     private static final class State {
@@ -466,10 +472,25 @@ public final class VehicleRumble {
                 w.compression = c;
             }
 
-            // surface
+            // Road geometry: the wheel can cross a narrow obstacle between two updates.
             vehicle.getWorldPos(sw.offset.x, sw.offset.y, sw.offset.z, tmp);
-            IsoGridSquare sq = IsoWorld.instance.getCell().getGridSquare((int) Math.floor(tmp.x),
-                    (int) Math.floor(tmp.y), (int) Math.floor(vehicle.getZ()));
+            IsoCell cell = IsoWorld.instance.getCell();
+            int z = (int) Math.floor(vehicle.getZ());
+            int hit = obstacleCrossing(cell, w, tmp.x, tmp.y, z);
+            if (hit != 0 && speed >= 1 && now - w.lastObstacleHit >= 160) {
+                w.lastObstacleHit = now;
+                float fast = clamp((speed - 1) / 41);
+                float strength = hit == RoadObstacle.PARKING_STOP ? 0.52f + 0.48f * fast : 0.4f + 0.58f * fast;
+                corner(vehicle, "suspension", strength, sw.offset.z > 0 ? 1 : 0, sw.offset.x > 0 ? 1 : 0,
+                        0.27f, true, 130 + 195 * fast);
+                if (Settings.rumbleDebugLog) {
+                    Log.info("rumble: " + (hit == RoadObstacle.PARKING_STOP ? "parking stop" : "curb")
+                            + " wheel " + i + " at " + Math.round(speed) + " km/h");
+                }
+            }
+
+            // surface
+            IsoGridSquare sq = cell.getGridSquare((int) Math.floor(tmp.x), (int) Math.floor(tmp.y), z);
             if (sq != w.square) {
                 w.square = sq;
                 Surface s = surface(sq);
@@ -528,6 +549,42 @@ public final class VehicleRumble {
             }
             Log.info(sb.toString());
         }
+    }
+
+    private static int obstacleCrossing(IsoCell cell, WheelState wheel, float x, float y, int z) {
+        float dx = x - wheel.x, dy = y - wheel.y;
+        float distance = (float) Math.hypot(dx, dy);
+        // Seed contact on spawn, a floor change or a teleport. Retain contact across joined pieces.
+        int hit = 0;
+        if (wheel.floorZ != z || !Float.isFinite(distance) || distance > 3) {
+            wheel.obstacle = obstacleAt(cell, wheel, x, y, z);
+        } else if (distance >= 0.001f) {
+            int steps = (int) Math.ceil(distance / 0.13f);
+            for (int i = 1; i <= steps; i++) {
+                float t = (float) i / steps;
+                int contact = obstacleAt(cell, wheel, wheel.x + t * dx, wheel.y + t * dy, z);
+                if (contact != wheel.obstacle) {
+                    hit = Math.max(hit, contact);
+                    wheel.obstacle = contact;
+                }
+            }
+        } else {
+            return 0;
+        }
+        wheel.x = x;
+        wheel.y = y;
+        wheel.floorZ = z;
+        return hit;
+    }
+
+    private static int obstacleAt(IsoCell cell, WheelState wheel, float x, float y, int z) {
+        int tileX = (int) Math.floor(x), tileY = (int) Math.floor(y);
+        IsoGridSquare square = cell.getGridSquare(tileX, tileY, z);
+        if (square != wheel.obstacleSquare) {
+            wheel.obstacleSquare = square;
+            wheel.obstacleShapes = RoadObstacle.shapes(square);
+        }
+        return RoadObstacle.contact(wheel.obstacleShapes, x - tileX, y - tileY);
     }
 
     private static final float REF_KMH = 40;

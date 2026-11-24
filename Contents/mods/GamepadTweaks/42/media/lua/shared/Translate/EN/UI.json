@@ -140,12 +140,16 @@
     "UI_GamepadTweaks_opt_rumble_bump": "Bumps, running into a wall",
     "UI_GamepadTweaks_opt_rumble_fall": "Falls, tripping, vaulting, landings",
     "UI_GamepadTweaks_opt_rumble_vehicle": "Vehicle crashes, running over, cones, bushes",
-    "UI_GamepadTweaks_opt_rumble_suspension": "Suspension: bumps, bodies under wheels",
+    "UI_GamepadTweaks_opt_rumble_suspension": "Suspension: bumps, curbs, parking stops, bodies under wheels",
     "UI_GamepadTweaks_opt_rumble_road": "Road surface, leaving the asphalt",
     "UI_GamepadTweaks_opt_rumble_tool": "Axe, crowbar, prying boards",
     "UI_GamepadTweaks_opt_rumble_window": "Windows: smash, open",
     "UI_GamepadTweaks_opt_rumble_thump": "Zombies banging: first knocks, on the vehicle",
     "UI_GamepadTweaks_opt_rumble_thunder": "Thunder",
     "UI_GamepadTweaks_opt_rumble_scare": "Jump scare",
-    "UI_GamepadTweaks_opt_rumble_heartbeat": "Heartbeat: with the game's sound"
+    "UI_GamepadTweaks_opt_rumble_heartbeat": "Heartbeat: with the game's sound",
+    "UI_GamepadTweaks_opt_rumble_ready": "Press A to start: double knock",
+    "UI_GamepadTweaks_opt_rumble_cold": "Shivering from hypothermia",
+    "UI_GamepadTweaks_opt_rumble_cough": "Coughs and sneezes",
+    "UI_GamepadTweaks_opt_rumble_blackout": "Power grid shutdown"
 }

@@ -22,6 +22,7 @@ import se.krka.kahlua.integration.annotations.LuaMethod;
 import zombie.GameWindow;
 import zombie.core.znet.SteamUtils;
 import zombie.gameStates.ChooseGameInfo;
+import zombie.gameStates.GameLoadingState;
 import org.lwjglx.input.Controller;
 
 // Mod actions as Steam Input game actions.
@@ -169,11 +170,22 @@ public final class SteamInput {
      */
     @LuaMethod(name = "GamepadTweaks_steamInputPoll", global = true)
     public static String poll() {
+        return GameWindow.states.current instanceof GameLoadingState ? null : poll(true);
+    }
+
+    public static void pollLoading() {
+        if (GameWindow.states.current instanceof GameLoadingState) {
+            Settings.refresh();
+            poll(false);
+        }
+    }
+
+    private static String poll(boolean actions) {
         if (!init()) {
             return null;
         }
         try {
-            return pollEvents();
+            return pollEvents(actions);
         } catch (Throwable t) {
             Log.error("steam input poll failed", t);
             ready = false;
@@ -186,7 +198,7 @@ public final class SteamInput {
     // the mouse delta (absolute_mouse) collected by the first one.
     private static int lastCount = -1;
 
-    private static String pollEvents() throws Throwable {
+    private static String pollEvents(boolean actions) throws Throwable {
         if (!resolveHandles()) {
             return null;
         }
@@ -207,7 +219,6 @@ public final class SteamInput {
         int[] ids = new int[n];
         for (int i = 0; i < n; i++) {
             long controller = handleBuffer.getAtIndex(ValueLayout.JAVA_LONG, i);
-            activateActionSet.invokeExact(input, controller, actionSet);
             boolean[] prev = held.computeIfAbsent(controller, k -> new boolean[actionNames.size()]);
             seen.put(controller, prev);
             Integer mapped = mapping.get(controller);
@@ -216,9 +227,13 @@ public final class SteamInput {
                 mapping.put(controller, mapped);
             }
             int id = mapped;
-            applyLayers(controller, id);
             handles[i] = controller;
             ids[i] = id;
+            if (!actions) {
+                continue;
+            }
+            activateActionSet.invokeExact(input, controller, actionSet);
+            applyLayers(controller, id);
             for (int a = 0; a < actionHandles.length; a++) {
                 if (actionHandles[a] == 0) {
                     continue;

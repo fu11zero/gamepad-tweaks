@@ -140,12 +140,16 @@
     "UI_GamepadTweaks_opt_rumble_bump": "Толчки, удар о стену на бегу",
     "UI_GamepadTweaks_opt_rumble_fall": "Падения, спотыкание, перелезание, приземления",
     "UI_GamepadTweaks_opt_rumble_vehicle": "ДТП, наезд, конусы, кусты",
-    "UI_GamepadTweaks_opt_rumble_suspension": "Подвеска: кочки, тела под колёсами",
+    "UI_GamepadTweaks_opt_rumble_suspension": "Подвеска: кочки, бордюры, парковочные упоры, тела под колёсами",
     "UI_GamepadTweaks_opt_rumble_road": "Покрытие, съезд с асфальта",
     "UI_GamepadTweaks_opt_rumble_tool": "Топор, монтировка, отрывание досок",
     "UI_GamepadTweaks_opt_rumble_window": "Окна: разбить, открыть",
     "UI_GamepadTweaks_opt_rumble_thump": "Зомби ломятся: первые удары, в машину",
     "UI_GamepadTweaks_opt_rumble_thunder": "Гром",
     "UI_GamepadTweaks_opt_rumble_scare": "Испуг (скример)",
-    "UI_GamepadTweaks_opt_rumble_heartbeat": "Сердцебиение: синхронно со звуком"
+    "UI_GamepadTweaks_opt_rumble_heartbeat": "Сердцебиение: синхронно со звуком",
+    "UI_GamepadTweaks_opt_rumble_ready": "Двойной стук на экране «Нажмите A для начала»",
+    "UI_GamepadTweaks_opt_rumble_cold": "Дрожь при переохлаждении",
+    "UI_GamepadTweaks_opt_rumble_cough": "Кашель и чихание",
+    "UI_GamepadTweaks_opt_rumble_blackout": "Отключение электросети"
 }

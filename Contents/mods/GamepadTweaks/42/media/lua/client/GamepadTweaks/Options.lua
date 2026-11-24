@@ -101,6 +101,10 @@ local SPEC = {
 	{ key = "rumble.thunder", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
 	{ key = "rumble.scare", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
 	{ key = "rumble.heartbeat", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.ready", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.cold", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.cough", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
+	{ key = "rumble.blackout", min = 0, max = 2, step = 0.1, default = 1.0, requires = { "steamInput.enabled", "rumble.enabled" } },
 }
 
 local function textKey(key)

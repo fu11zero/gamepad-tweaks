@@ -492,7 +492,9 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   growing buzz), and the stop is sent 3 more times 80 ms apart: a stop right after a speed change
   was sometimes lost and the motors kept going after a shot or a short knock until the next
   pulse ended. While aiming a firearm, `rumble.aiming` (0.3 by default) scales heartbeat,
-  thunder, thumps, glass and tool vibration to reduce gyro reticle shake. The events:
+  thunder, thumps, glass, tools and the power outage blast to reduce gyro reticle shake. The events:
+  - ready (`rumble.ready`): two short knocks, once when the loading screen is ready and displays
+    "Press A to start", on the controller that can dismiss it;
   - shot: `OnWeaponSwingHitPoint` with a ranged weapon that isn't dry firing
     (`isRangedWeaponEmpty`), stronger and longer with the gun's sound radius (pistol < rifle < shotgun);
   - melee hit: `OnWeaponHitCharacter`, by damage;
@@ -509,9 +511,21 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     while the audio continues playing. The low motor follows the peaks, including each thump's
     strength and changes to the game's HeartBeat and sound effects volumes. `rumble.heartbeat`
     adjusts the motor gain;
+  - cold (`rumble.cold`): a shiver builds and fades when hypothermia reaches level 2. The
+    1.4-second reminders have 30-second gaps at level 2 and 10-second gaps at level 3. At level 4
+    the shiver rises into a sustained, gentle tremor with slow swells. It's strongest when sitting,
+    weaker when standing and much softer when walking. Running, combat, aiming, busy actions
+    and other vibrations interrupt it, with 1.8 seconds of quiet before it can return.
+    A cough or sneeze briefly covers the shiver for its own jolt, and the shiver resumes in phase;
+  - coughs and sneezes (`rumble.cough`): a short jolt at the onset of the local player's voice
+    signal from FMOD. The cough leans on the large motor and the sneeze on the small one. Muffled
+    sounds feel softer;
   - thunder: `OnThunderEvent` comes with the flash, the pulse follows with the sound
     (`dist / 300` s, as `ThunderStorm.enqueueThunderEvent`), a crack for a strike, a long roll for
     rumble, by distance, half indoors;
+  - blackout (`rumble.blackout`): follows the audio onset of the vanilla
+    `WorldEventElectricityShutdown` blast, with a push on the low motor that fades over
+    four seconds. A short timer covers FMOD events whose signal can't be read;
   - body (`RumbleEvents.update`): the player's action states (`media/actiongroups/player`) are
     watched every frame: `collide` (sprinting into a wall), `bumped`, the start of `knockeddown`
     and `falldown`, landing from a height (leaving `falling`), `hitreaction*` (also hits stopped
@@ -553,7 +567,8 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - suspension: per wheel `wheelInfo.suspensionLength` against the script's rest length and
     travel; a quick compression or drop is a knock on that wheel's side, reaching the end of
     the travel a hard hit; a body under a wheel (`testCollisionWithProneCharacter` per-wheel
-    impulse) a knock on its side;
+    impulse) a knock on its side. Decorative curb and parking stop sprites are checked along
+    each wheel's path, with a stronger and longer kick at higher speeds;
   - road surface per wheel (floor sprite, as `ParameterVehicleRoadMaterial`, plus plowed land
     `vegetation_farming_*`): a knock on the wheel that leaves or gets back on the asphalt, and
     each wheel's side gets the texture of its own surface (grips only); speed makes it stronger and denser

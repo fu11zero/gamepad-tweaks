@@ -6,7 +6,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import zombie.GameTime;
+import zombie.GameWindow;
 import zombie.characters.IsoPlayer;
+import zombie.gameStates.GameLoadingState;
+import zombie.gameStates.IngameState;
+import zombie.ui.UIManager;
 import se.krka.kahlua.integration.annotations.LuaMethod;
 
 // Controller vibration.
@@ -38,6 +43,26 @@ public final class Rumble {
         float low, high, leftTrigger, trigger;
         long start;
         float ms;
+        boolean cough;
+    }
+
+    private static final class Mix {
+        final float[] motors = new float[4];
+        boolean cough;
+        boolean otherRumble;
+
+        void add(Pulse pulse, float fade) {
+            float low = pulse.low * fade, high = pulse.high * fade;
+            float left = pulse.leftTrigger * fade, right = pulse.trigger * fade;
+            motors[0] = Math.max(motors[0], low);
+            motors[1] = Math.max(motors[1], high);
+            motors[2] = Math.max(motors[2], left);
+            motors[3] = Math.max(motors[3], right);
+            if (low >= MIN_SPEED || high >= MIN_SPEED || left >= MIN_SPEED || right >= MIN_SPEED) {
+                cough |= pulse.cough;
+                otherRumble |= !pulse.cough;
+            }
+        }
     }
 
     private static final List<Pulse> pulses = new ArrayList<>();
@@ -48,7 +73,7 @@ public final class Rumble {
     private static final Map<Long, Integer> stops = new HashMap<>();
     // Ambient events (not caused by the player's body) damped while aiming a firearm: the
     // shaking moves a gyro reticle. Hurt, falls and shots are never damped.
-    private static final java.util.Set<String> AMBIENT = java.util.Set.of("heartbeat", "thunder", "thump", "window", "tool");
+    private static final java.util.Set<String> AMBIENT = java.util.Set.of("heartbeat", "thunder", "thump", "window", "tool", "blackout");
 
     private Rumble() {}
 
@@ -77,6 +102,7 @@ public final class Rumble {
         }
         Pulse p = new Pulse();
         p.controller = (int) controller;
+        p.cough = "cough".equals(event);
         p.low = clamp((float) low * k);
         p.high = clamp((float) high * k);
         p.leftTrigger = clamp((float) leftTrigger * k);
@@ -178,7 +204,8 @@ public final class Rumble {
      * pulses, so that player felt the others' events.
      */
     static void update(long[] handles, int[] ids) {
-        if (Settings.rumble) {
+        boolean loading = GameWindow.states.current instanceof GameLoadingState;
+        if (Settings.rumble && !loading) {
             try {
                 RumbleEvents.update();
             } catch (RuntimeException e) {
@@ -187,7 +214,7 @@ public final class Rumble {
         }
         long now = System.currentTimeMillis();
         int only = handles.length == 1 && ids[0] < 0 ? onlyJoypad() : -1;
-        Map<Integer, float[]> mix = new HashMap<>();
+        Map<Integer, Mix> mix = new HashMap<>();
         synchronized (pulses) {
             for (Iterator<Pulse> it = pulses.iterator(); it.hasNext(); ) {
                 Pulse p = it.next();
@@ -197,28 +224,50 @@ public final class Rumble {
                     continue;
                 }
                 float fade = 1 - Math.max(0, t);
-                if (only >= 0 && p.controller != only) {
+                if (loading || only >= 0 && p.controller != only) {
                     continue;
                 }
-                float[] m = mix.computeIfAbsent(only >= 0 ? -1 : p.controller, k -> new float[4]);
-                m[0] = Math.max(m[0], p.low * fade);
-                m[1] = Math.max(m[1], p.high * fade);
-                m[2] = Math.max(m[2], p.leftTrigger * fade);
-                m[3] = Math.max(m[3], p.trigger * fade);
+                mix.computeIfAbsent(only >= 0 ? -1 : p.controller, k -> new Mix()).add(p, fade);
             }
         }
         float[] test = testValues(now);
+        boolean playing = Settings.rumble && GameWindow.states.current instanceof IngameState;
+        boolean paused = playing && (GameTime.isGamePaused()
+                || UIManager.getSpeedControls() != null && UIManager.getSpeedControls().getCurrentGameSpeed() > 1);
+        boolean loadingKnocks = LoadingRumble.update(handles, ids, now, test == null && Settings.rumble);
+        float blast = playing ? BlackoutRumble.strength(now) : 0;
+        if (!playing || test != null) {
+            ColdRumble.reset();
+        }
+        if (!playing) {
+            BlackoutRumble.reset();
+        }
         for (int i = 0; i < handles.length; i++) {
-            float[] m = test != null ? test : mix.getOrDefault(ids[i], new float[4]);
-            if (test == null && Settings.rumble) {
+            Mix combined = mix.get(ids[i]);
+            float[] m = test != null ? test : combined == null ? new float[4] : combined.motors;
+            if (test == null && Settings.rumble && !loading) {
                 int controller = ids[i] >= 0 ? ids[i] : only;
                 int player = controller >= 0 ? playerOf(controller) : -1;
                 if (player >= 0) {
                     float heartbeatGain = gain("heartbeat", player);
-                    if (heartbeatGain > 0) {
-                        m[0] = Math.max(m[0], Heartbeat.strength(player, heartbeatGain));
+                    float heartbeat = heartbeatGain > 0 ? Heartbeat.strength(player, heartbeatGain) : 0;
+                    m[0] = Math.max(m[0], heartbeat);
+                    if (playing) {
+                        float blackout = blast > 0 && !IsoPlayer.players[player].isDead()
+                                ? clamp(blast * gain("blackout", player)) : 0;
+                        m[0] = Math.max(m[0], blackout);
+                        boolean busy = heartbeat >= MIN_SPEED || blackout >= MIN_SPEED
+                                || (combined != null && combined.otherRumble);
+                        float cold = ColdRumble.strength(player, controller, now, gain("cold", player), busy, paused);
+                        // Give the cough or sneeze its own short hit while the shiver keeps its phase.
+                        if (combined == null || !combined.cough) {
+                            m[1] = Math.max(m[1], cold);
+                        }
                     }
                 }
+            }
+            if (loadingKnocks) {
+                LoadingRumble.mix(handles[i], now, m);
             }
             if (test == null && (m[2] > 0 || m[3] > 0)
                     && (!Settings.rumbleTriggers || !SteamInput.hasTriggerMotors(handles[i]))) {
