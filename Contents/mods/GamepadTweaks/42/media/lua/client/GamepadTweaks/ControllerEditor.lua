@@ -3,6 +3,7 @@
 
 require "ISUI/Gamepad/CharacterJoypadBindingUIRow"
 require "ISUI/Gamepad/GameOptionControllerTab"
+require "ISUI/ISComboBox"
 require "GamepadTweaks/Bindings"
 require "GamepadTweaks/KeyActions"
 require "GamepadTweaks/InventoryActions"
@@ -13,6 +14,8 @@ local MOD_COLOR = { r = 0.45, g = 0.72, b = 0.95, a = 1 }
 local REMOVE = "!RemoveEntry!"
 local ADD_NEW = "!AddNewEntry!"
 local PREFIX = "gt:"
+local ICON_PATH = "media/textures/GamepadTweaks/actions/"
+local actionIcons = {}
 
 local CATEGORY_ORDER = { "wheels", "controls", "vehicle", "hands", "character", "inventory", "windows", "hotbar", "time", "misc" }
 local categoryRank = {}
@@ -67,13 +70,66 @@ local function refreshAll(row)
 	end
 end
 
+local function actionIcon(id)
+	if actionIcons[id] == nil then
+		actionIcons[id] = getTexture(ICON_PATH .. id .. ".png") or false
+	end
+	return actionIcons[id]
+end
+
+local function iconWidth(texture, height)
+	return math.floor(height * texture:getWidthOrig() / texture:getHeightOrig())
+end
+
+local function iconGap(height)
+	return math.max(3, math.floor(height / 4))
+end
+
+local function drawOptionIcon(ui, option, x, y, font)
+	if type(option) ~= "table" or not option.gtIcon then return x end
+	local height = getTextManager():getFontHeight(font)
+	local width = iconWidth(option.gtIcon, height)
+	ui:drawTextureScaled(option.gtIcon, x, y, width, height, 1, 1, 1, 1)
+	return x + width + iconGap(height)
+end
+
+-- Use vanilla's text draw call so icons share its clipping and scroll position.
+-- The popup is shared by all combos. Only options with our texture get an icon.
+local popupDrawItem = ISComboBoxPopup.doDrawItem
+function ISComboBoxPopup:doDrawItem(y, item, ...)
+	self.gtDrawingItem = item
+	local bottom = popupDrawItem(self, y, item, ...)
+	self.gtDrawingItem = nil
+	return bottom
+end
+
+local popupDrawText = ISComboBoxPopup.drawText
+function ISComboBoxPopup:drawText(str, x, y, r, g, b, a, font)
+	local item = self.gtDrawingItem or self.tooWide
+	if item then
+		x = drawOptionIcon(self, self.parentCombo.options[item.index], x, y, font)
+	end
+	popupDrawText(self, str, x, y, r, g, b, a, font)
+end
+
+local function addActionOption(box, action)
+	box:addOptionWithData(Bindings.getLabel(action, true), PREFIX .. action.id)
+	box.options[#box.options].gtIcon = actionIcon(action.id)
+end
+
 local function comboWidth(box, style)
 	local font = style:getFont("Medium")
+	local iconHeight = getTextManager():getFontHeight(box.font)
 	local width = 0
 	for _, option in ipairs(box.options) do
-		width = math.max(width, getTextManager():MeasureStringX(font, option.text))
+		local textWidth = getTextManager():MeasureStringX(font, option.text)
+		if option.gtIcon then
+			textWidth = textWidth + iconWidth(option.gtIcon, iconHeight) + iconGap(iconHeight)
+		end
+		width = math.max(width, textWidth)
 	end
-	return width + style.borderSpacing * 2 + style.buttonHeight
+	-- The popup has its own left padding and may have a vertical scrollbar.
+	return width + math.max(10 + 13 + 8, style.borderSpacing * 2 + style.buttonHeight)
 end
 
 -- Read-only row ----------------------------------------------------------------------
@@ -95,6 +151,18 @@ local function addReadOnly(row)
 	row:removeChild(row.selectButton)
 	for _, action in ipairs(actions) do
 		local label = ISLabel:new(x, y, fontHgt, Bindings.getLabel(action), MOD_COLOR.r, MOD_COLOR.g, MOD_COLOR.b, 1, font, true)
+		local texture = actionIcon(action.id)
+		if texture then
+			local height = math.floor(fontHgt)
+			local iconW = iconWidth(texture, height)
+			local inset = iconW + iconGap(height)
+			local labelDrawText = label.drawText
+			function label:drawText(str, textX, textY, r, g, b, a, textFont)
+				self:drawTextureScaled(texture, textX, (self:getHeight() - height) / 2, iconW, height, 1, 1, 1, 1)
+				labelDrawText(self, str, textX + inset, textY, r, g, b, a, textFont)
+			end
+			label:setWidth(label:getWidth() + inset)
+		end
 		label:initialise()
 		row:addChild(label)
 		table.insert(row.entries, label)
@@ -158,7 +226,7 @@ local function fillActionBox(box, layer, button, current, style)
 	box:clear()
 	for _, action in ipairs(sortedActions(layer)) do
 		if action == current or Bindings.canReplace(layer, current, action, button) then
-			box:addOptionWithData(Bindings.getLabel(action, true), PREFIX .. action.id)
+			addActionOption(box, action)
 		end
 	end
 	box:addOptionWithData("< Remove >", REMOVE, "Remove this entry")
@@ -202,13 +270,18 @@ local function addEditable(row)
 		local box = ISComboBox:new(x, y, height, height)
 		box.choicesColor = { r = 1, g = 1, b = 1, a = 1 }
 		box.textColor = MOD_COLOR
+		local comboDrawText = box.drawText
+		function box:drawText(str, textX, textY, r, g, b, a, font)
+			textX = drawOptionIcon(self, self.options[self.selected], textX, textY, font)
+			comboDrawText(self, str, textX, textY, r, g, b, a, font)
+		end
 		box:initialise()
 		row:addChild(box)
 		if Bindings.canEdit() then
 			fillActionBox(box, selectedLayer(row), row.bindingKey, action, style)
 			box:setOnChange(row, row.onGamepadTweaksActionChanged, action.id)
 		else
-			box:addOptionWithData(Bindings.getLabel(action, true), PREFIX .. action.id)
+			addActionOption(box, action)
 			box:setWidth(comboWidth(box, style))
 			box:setEnabled(false)
 		end
@@ -258,7 +331,7 @@ local function appendToAddNew(box, layer, button)
 	if Bindings.canEdit() then
 		for _, action in ipairs(sortedActions(layer)) do
 			if Bindings.getActionButton(action, layer) ~= button then
-				box:addOptionWithData(Bindings.getLabel(action, true), PREFIX .. action.id)
+				addActionOption(box, action)
 			end
 		end
 	end

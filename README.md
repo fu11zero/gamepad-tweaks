@@ -322,6 +322,9 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   Use the tabs above the controller diagram to assign mod actions by context. Select a button and
   choose an action from `< Add New >`. For example, set D-pad Left to Flashlight under On foot
   and to Horn under Vehicle. The game chooses the active layers for each splitscreen player.
+  - Mod actions show icons on the diagram and in the action lists. After changing their Steam
+    symbols, regenerate the bundled PNGs with `python3 tools/controller_icons.py /path/to/NotoColorEmoji.ttf`
+    (requires Pillow).
   - In the world, the order is Cruise (driver holding the Cruise Control button), Aiming
     (aiming or looking out of a vehicle), On foot or Vehicle, then General. Vehicle includes
     passengers. Each button uses the first assignment it finds.

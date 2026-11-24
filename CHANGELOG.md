@@ -5,6 +5,7 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Added: action icons on controller binding rows and in action lists, matching their Steam Input symbols.
 - Added: context layers in Options -> Controller, so a button can use different mod actions on foot, in a vehicle, while aiming or in a panel.
 
 - Added: two knocks on the active controller when the loading screen is ready and asks you to press A.
