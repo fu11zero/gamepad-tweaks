@@ -249,10 +249,10 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   ClosePanel/Cycle*/TransferItem) put on the button of a default world action takes it too: vanilla
   has none on the D-pad, Back or Start, so the player put it there (Melee on D-pad left no longer
   also opens the weapon wheel). Regular bindings are re-checked every 500 ms. Details:
-  - the D-pad hooks are the `onDisplay*` calls made from `onPressUp/...` (so vanilla checks still
-    apply: UI focus, drag); `ISVehicleRegulator.onJoypadPressUp/Down` return false there, the
-    cruise layer is dispatched with the wheels. A world action fires once per press (vanilla D-pad
-    repeats while held);
+  - the D-pad hooks are the `onDisplay*` calls made from `onPressUp/...` (with the game's
+    focus and drag checks). The stock cruise shortcut still works. To move it, assign
+    Cruise Faster and Cruise Slower in Vehicle with a modifier. Cruise speed repeats
+    while held; most other actions fire once per press;
   - other buttons in the world: an action bound to them replaces vanilla (button prompts);
     a freed Back/Start does nothing;
   - wheels close on their vanilla button release (`hideWhenButtonReleased`), the mod switches it
@@ -319,8 +319,8 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     `ISUIHandler`); again closes it.
 
 - **In-game layers in Options -> Controller** (`ControllerEditor.lua`, `Bindings.lua`).
-  Use the tabs above the controller diagram to assign mod actions by context. Select a button and
-  choose an action from `< Add New >`. For example, set D-pad Left to Flashlight under On foot
+  Use the tabs above the controller diagram to assign game and mod actions by context. Select
+  a button and choose an event and action from the add row. For example, set D-pad Left to Flashlight under On foot
   and to Horn under Vehicle. The game chooses the active layers for each splitscreen player.
   - Each tab offers actions suited to its context. Shared actions can be assigned on General
     or overridden on foot or in a vehicle. Existing assignments remain editable even if the
@@ -328,13 +328,12 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - Mod actions show icons on the diagram and in the action lists. After changing their Steam
     symbols, regenerate the bundled PNGs with `python3 tools/controller_icons.py /path/to/NotoColorEmoji.ttf`
     (requires Pillow).
-  - In the world, the order is Cruise (driver holding the Cruise Control button), Aiming
-    (aiming or looking out of a vehicle), On foot or Vehicle, then General. Vehicle includes
-    passengers. Each button uses the first assignment it finds.
+  - In the world, Aiming (aiming or looking out of a vehicle) has priority, then On foot or
+    Vehicle, then General. Vehicle includes passengers.
   - When a panel has controller focus, Inventory (inventory or loot window) takes priority over
     Panels. An empty button uses the normal panel controls.
-  - Standard button and axis bindings are edited on General and apply across contexts.
-    Layers work with the game's controller input and require the mod's jar.
+  - General contains the base button and axis bindings. Layer assignments override those
+    controls when active. Layers work with the game's controller input and require the mod's jar.
 
 - **Mod actions as Steam Input game actions** (`SteamInput.java`, `Bindings.lua` Steam Input
   section, `media/steam_input/`). Vanilla doesn't use the Steam Input API: Steam only emulates a
@@ -618,18 +617,23 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   the CruiseControl button right after clears it (RB: `getBestRBButtonAction`, no firearm); the mod
   sets it again after every `ISButtonPrompt:getBestButtonBindingAction`. Here all of it uses the
   bound button; on the vanilla buttons nothing changes.
-  The cruise layer is dispatched before vanilla `onPressUp/...`, so mods wrapping `onDisplayUp`
-  (Smart Radial Menu opens its menu when the vehicle radial stays empty) don't see those presses.
 
-- **Button events for mod actions** in **Options → Controller**. Use **Add mod action** to put
-  a press, double press, hold or chord on a button, trigger or stick in the selected layer.
+- **Controller layers and button events** in **Options → Controller**. Use **Add action** to
+  put a game or mod action on a button, trigger or stick in the selected layer, with a press,
+  double press, hold or chord. A contextual assignment takes precedence over General. The
+  base preset remains under General, and its event selector can add an override to a supported
+  game action. Removing the override restores the base assignment. Native controls that require
+  a continuous stick direction, such as movement, still use the stock axis editor.
   Double press defaults to 190 ms from the first press, with a release in between. Hold defaults
   to 300 ms. Timing and axis thresholds are editable per assignment. Stick thresholds use the
   amount of deflection, and each threshold has its own press and release. An ordinary press runs
   immediately unless a competing event needs time to resolve. A modifier's short press runs on
   release when the modifier was unused. Its own hold can still run alongside the chord. Add both
   chord directions to trigger the same action with either button order.
-  Existing presets and the game's own bindings retain their original settings.
+  Native actions keep their own game logic. Interact still uses the scene's current handler,
+  actions such as Attack and Brakes stay down while the gesture is held, and click-driven
+  actions receive a short press and release. Native prompt icons use the game's existing
+  A/B/X/Y/LB/RB slots. [Test scenarios and commands](tools/controller-scenarios/README.md).
 
 Settings live in `~/Zomboid/GamepadTweaks.properties` (created with defaults on first
 launch, re-read while the game runs).

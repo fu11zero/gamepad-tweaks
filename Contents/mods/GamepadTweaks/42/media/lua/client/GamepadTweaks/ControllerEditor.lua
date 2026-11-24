@@ -1,4 +1,4 @@
--- Context tabs and the mod's button actions in Options -> Controller.
+-- Context tabs and button events in Options -> Controller.
 -- The shared tab also uses vanilla's CharacterJoypadButtonBinding and axis editors.
 
 require "ISUI/Gamepad/CharacterJoypadBindingUIRow"
@@ -199,8 +199,8 @@ local function addReadOnly(row)
 	row:setHeight(y - spacing + border)
 end
 
--- On a context tab the physical controls keep their positions and only mod bindings
--- for that context appear. Vanilla button and axis bindings are edited on the shared tab.
+-- Context tabs show the explicit assignments for that context. The General tab also
+-- shows the stock preset, including the continuous movement and aiming axes.
 local function populateLayerRow(row)
 	row:clearChildren()
 	local style = row:getStyle()
@@ -494,6 +494,37 @@ local function addEditable(row)
 	end
 	row:setWidth(right + border)
 	row:setHeight(y + border)
+end
+
+-- Keep the XML assignment available as the base. Selecting an event here adds an
+-- override for this action without changing the preset's original threshold.
+local vanillaBindingCombo = CharacterJoypadBindingUIRow.createJoypadButtonBindingCBox
+if vanillaBindingCombo then
+	function CharacterJoypadBindingUIRow:createJoypadButtonBindingCBox(input, charBinding, excluded, x, y, width, height)
+		local action = Bindings.getActionById("native_" .. tostring(charBinding))
+		if action and Bindings.canEdit() and Bindings.canBindIn(action, "world") and BindingEvents.hasInput(input) then
+			local hasOverride = false
+			for _, binding in ipairs(Bindings.getAssignments(action, "world")) do
+				if binding.event ~= "modifier" then hasOverride = true end
+			end
+			local choices = { native = true }
+			if not hasOverride then
+				local _, threshold = GamepadTweaks.NativeBindings.rawInput(action)
+				for _, event in ipairs(BindingEvents.order) do
+					local options = optionsFor(input, { event = event, threshold = threshold }, "press")
+					if Bindings.canUseEvent("world", action, options) then choices[event] = options end
+				end
+			end
+			local combo = eventBox(self, x, y, height, "native", true, choices)
+			combo:setEnabled(not hasOverride)
+			combo:setOnChange(self, function(_, sender)
+				local event = sender:getSelectedData()
+				if event ~= "native" then saveAssignment(self, nil, choices[event], action) end
+			end)
+			x = combo:getRight() + self:getStyle().borderSpacing
+		end
+		return vanillaBindingCombo(self, input, charBinding, excluded, x, y, width, height)
+	end
 end
 
 local vanillaEditable = CharacterJoypadBindingUIRow.populateWithEditableElements

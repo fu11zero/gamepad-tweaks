@@ -615,8 +615,8 @@ end)
 Events.OnPlayerUpdate.Add(function(playerObj)
 	local n = playerObj:getPlayerNum()
 	if not toolPressSeen[n] then return end
-	local interact = CharacterJoypadButtonBinding.Interact:getJoypadButton()
-	if not interact or not interact:isDown(playerObj:getJoypadBind()) then
+	local joypad = playerObj:getJoypadBind()
+	if joypad < 0 or not CharacterJoypadButtonBinding.Interact:isDown(joypad) then
 		toolPressSeen[n] = nil
 	end
 end)

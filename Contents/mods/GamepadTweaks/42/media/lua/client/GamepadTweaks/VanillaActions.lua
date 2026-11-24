@@ -21,47 +21,12 @@ require "ISUI/ISButtonPrompt"
 require "ISUI/ISFirearmRadialMenu"
 
 local Bindings = GamepadTweaks.Bindings
+local Native = GamepadTweaks.NativeBindings
 
 local function player(jd)
 	local playerObj = jd.player and getSpecificPlayer(jd.player)
 	if not playerObj or playerObj:isDead() or isGamePaused() then return nil end
 	return playerObj
-end
-
--- Button prompts ----------------------------------------------------------------------------
--- In the world (no UI focus) JoyPadSetup updateJoypadFocus clears the prompts every frame
--- (clearButtonBindings) and evaluates every binding (getBestButtonBindingAction); the handler of
--- a binding goes to its button's slot, the last one evaluated wins. Here each binding's handler
--- is also kept by binding name, so its action can run it.
-
-local vanillaSetBindingPrompt = ISButtonPrompt.setButtonBindingPrompt
-function ISButtonPrompt:setButtonBindingPrompt(binding, str, func, p1, p2, p3, p4)
-	self.gtByBinding = self.gtByBinding or {}
-	self.gtByBinding[tostring(binding)] = func and { func = func, p1, p2, p3, p4 } or nil
-	return vanillaSetBindingPrompt(self, binding, str, func, p1, p2, p3, p4)
-end
-
-local vanillaClearButtonBindings = ISButtonPrompt.clearButtonBindings
-function ISButtonPrompt:clearButtonBindings()
-	if self.gtByBinding then table.wipe(self.gtByBinding) end
-	return vanillaClearButtonBindings(self)
-end
-
-local SLOTS = { "a", "b", "x", "y", "lb", "rb" }
-
--- Vanilla evaluates some bindings only for the button they are on (getBestXButtonAction:
--- InteractOptions; getBestYButtonAction: Inventory), so with the binding elsewhere or nowhere
--- they are not there; evaluate it now, keeping the button slots as they were.
-local function evaluate(buts, method, playerObj)
-	local saved = {}
-	for _, s in ipairs(SLOTS) do
-		saved[s] = { buts[s .. "Prompt"], buts[s .. "Func"], buts[s .. "Params"] }
-	end
-	local ok, err = pcall(buts[method], buts, playerObj:getDir())
-	for _, s in ipairs(SLOTS) do
-		buts[s .. "Prompt"], buts[s .. "Func"], buts[s .. "Params"] = saved[s][1], saved[s][2], saved[s][3]
-	end
-	if not ok then print("[GamepadTweaks] ERROR: " .. method .. ": " .. tostring(err)) end
 end
 
 -- Runs the binding's prompt handler, as its button would (ISButtonPrompt:onAPress...).
@@ -70,10 +35,10 @@ local function runPrompt(jd, name, method)
 	if not playerObj or jd.focus ~= nil then return end
 	local buts = getButtonPrompts(jd.player)
 	if not buts then return end
-	if method then evaluate(buts, method, playerObj) end
+	if method then Native.evaluatePrompt(buts, buts[method], playerObj:getDir()) end
 	local entry = buts.gtByBinding and buts.gtByBinding[name]
-	if entry then
-		entry.func(buts, entry[1], entry[2], entry[3], entry[4])
+	if entry and entry.run then
+		entry.run(buts, unpack(entry.args, 1, 4))
 	end
 end
 

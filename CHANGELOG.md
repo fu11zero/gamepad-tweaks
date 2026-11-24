@@ -5,6 +5,10 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Added: context layers and button events for native gamepad actions, with existing controller presets as the fallback.
+- Fixed: a held Aim binding stays active across aiming-layer changes. The same press cannot start camera pan or the reload radial.
+- Changed: cruise speed actions are available under Vehicle and can use regular modifiers. The separate Cruise tab was removed.
+
 - Added: press, double press, hold and chord assignments for mod actions in the controller editor, with editable timing, trigger or stick thresholds, and multiple chords per action.
 - Fixed: controller action lists offer new bindings by context and use plain action names beside their icons.
 - Added: action icons on controller binding rows and in action lists, matching their Steam Input symbols.

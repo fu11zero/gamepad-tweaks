@@ -39,6 +39,8 @@ require "GamepadTweaks/BindingEvents"
 
 GamepadTweaks = GamepadTweaks or {}
 local BindingEvents = GamepadTweaks.BindingEvents
+require "GamepadTweaks/NativeBindings"
+local Native = GamepadTweaks.NativeBindings
 local Bindings = {}
 GamepadTweaks.Bindings = Bindings
 
@@ -142,8 +144,8 @@ Bindings.actions = {
 		run = function(c, jd) vanilla.onPressButtonNoFocus(c, Joypad.Back) end },
 	{ id = "pause", category = "wheels", button = Joypad.Start, layer = "world",
 		run = function(c, jd) vanilla.onPressButtonNoFocus(c, Joypad.Start) end },
-	{ id = "cruiseFaster", category = "vehicle", button = Joypad.DPadUp, layer = "cruise", repeats = true, run = cruiseFaster },
-	{ id = "cruiseSlower", category = "vehicle", button = Joypad.DPadDown, layer = "cruise", repeats = true, run = cruiseSlower },
+	{ id = "cruiseFaster", category = "vehicle", layer = "vehicle", repeats = true, run = cruiseFaster },
+	{ id = "cruiseSlower", category = "vehicle", layer = "vehicle", repeats = true, run = cruiseSlower },
 	{ id = "stickRadial", category = "controls", button = Joypad.LStickButton, layer = "hold" },
 	{ id = "uiNavigation", category = "controls", button = Joypad.RBumper, layer = "uiHold" },
 	{ id = "uiNavigateParent", category = "controls", button = Joypad.LBumper, layer = "navigation" },
@@ -162,6 +164,8 @@ function Bindings.add(action)
 	actionById[action.id] = action
 	loadedVersion = nil -- rebuild on the next lookup
 end
+
+Native.register(Bindings.add)
 
 -- Settings ---------------------------------------------------------------------
 
@@ -196,7 +200,7 @@ function Bindings.isPresetEditable(name)
 	return preset ~= nil and preset.loadedSet ~= nil
 end
 
-Bindings.layers = { "world", "onfoot", "vehicle", "aiming", "ui", "inventory", "cruise" }
+Bindings.layers = { "world", "onfoot", "vehicle", "aiming", "ui", "inventory" }
 
 local EDITOR_LAYER = { hold = "world", uiHold = "ui", navigation = "ui" }
 
@@ -207,9 +211,10 @@ end
 -- Preserve bindings and preset copies made before the editor filtered new assignments.
 local function canStoreIn(action, layer)
 	if action.steamOnly then return false end
+	if action.native then return action.layers[layer] == true end
 	if action.layer ~= "world" then return layer == defaultLayer(action) end
 	return layer == "world" or layer == "onfoot" or layer == "vehicle" or layer == "aiming"
-		or layer == "ui" or layer == "inventory" or layer == "cruise"
+		or layer == "ui" or layer == "inventory"
 end
 
 -- Shared world actions are available in General and can be overridden on foot or in a
@@ -228,6 +233,7 @@ local AIMING = { fireMode = true, lightSource = true }
 
 function Bindings.canBindIn(action, layer)
 	if action.steamOnly then return false end
+	if action.native then return action.layers[layer] == true end
 	if action.layer ~= "world" then return layer == defaultLayer(action) end
 	local id = action.id
 	if layer == "aiming" then return AIMING[id] == true end
@@ -303,6 +309,11 @@ local function regularSignature()
 	local parts = { Bindings.currentPreset() }
 	for _, binding in ipairs(CharacterJoypadButtonBinding.allBindings()) do
 		table.insert(parts, tostring(binding:getJoypadButton()))
+		if binding.getJoypadAxis1d then
+			table.insert(parts, tostring(binding:getJoypadAxis1d() or binding:getJoypadAxis2d()))
+			table.insert(parts, tostring(binding:getAxisMinThreshold()))
+			table.insert(parts, tostring(binding:getAxisMaxThreshold()))
+		end
 	end
 	return table.concat(parts, ",")
 end
@@ -328,10 +339,10 @@ function Bindings.reload()
 
 	local function assign(action, layer, binding, explicit)
 		if binding then
-			binding.action = action
+			binding.action, binding.layer = action, layer
 			local input = binding.input
 			local legacyLayer = binding.event == "native" and action.layer or layer
-			if binding.event == "press" and layer == "world" and regular[input] then
+			if not action.native and binding.event == "press" and layer == "world" and regular[input] then
 				if not explicit then
 					table.insert(changed, action.id .. "=none (" .. tostring(input) .. " used by " .. regular[input] .. ")")
 					return
@@ -348,14 +359,14 @@ function Bindings.reload()
 			end
 			layerBindings[layer][key] = binding
 			table.insert(action.bindings[layer], binding)
-			if not binding.threshold and (binding.event == "press" or binding.event == "native") then
+			if not action.native and not binding.threshold and (binding.event == "press" or binding.event == "native") then
 				actionByButton[legacyLayer] = actionByButton[legacyLayer] or {}
 				actionByButton[legacyLayer][input] = action
 			end
 			if binding.threshold then
 				observedInputs[BindingEvents.inputKey(input, binding.threshold)] = { input = input, threshold = binding.threshold }
 			end
-			if binding.threshold or binding.event ~= Bindings.defaultEvent(action) then hasGestures = true end
+			if action.native or binding.threshold or binding.event ~= Bindings.defaultEvent(action) then hasGestures = true end
 			local modifier = binding.modifier
 			if modifier then
 				local modifierKey = BindingEvents.inputKey(modifier, binding.modifierThreshold)
@@ -694,18 +705,11 @@ local function dispatchAction(jd, button, action)
 	return true
 end
 
-local function isCruiseHeld(jd)
-	local cruise = bindingButton(CharacterJoypadButtonBinding.CruiseControl)
-	return cruise ~= nil and cruise:isDown(jd.id) and not isPaused() and drivenVehicle(jd) ~= nil
-end
-
 -- Camera pan also works while looking out of a vehicle.
 local function worldAction(jd, button)
 	refresh()
 	local playerObj = getSpecificPlayer(jd.player)
 	if not playerObj then return nil end
-	local cruise = isCruiseHeld(jd) and actionOn("cruise", button)
-	if cruise then return cruise end
 	if playerObj:isAiming() or playerObj:isLookingWhileInVehicle() then
 		local aiming = actionOn("aiming", button)
 		if aiming then return aiming end
@@ -736,7 +740,6 @@ local function gestureContext(jd, focused)
 		table.insert(layers, "ui")
 	else
 		local player = getSpecificPlayer(jd.player)
-		if isCruiseHeld(jd) then table.insert(layers, "cruise") end
 		if player:isAiming() or player:isLookingWhileInVehicle() then table.insert(layers, "aiming") end
 		table.insert(layers, player:getVehicle() and "vehicle" or "onfoot")
 		table.insert(layers, "world")
@@ -746,43 +749,104 @@ local function gestureContext(jd, focused)
 	local key = table.concat(layers, "|") .. (paused and "|paused" or "") .. (navigating and "|nav" or "")
 	if contextCache[key] then return contextCache[key] end
 
-	local context = { groups = {}, buttons = {}, axes = {}, modifiers = {} }
-	local seen = {}
+	local context = {
+		groups = {}, buttons = {}, axes = {}, modifiers = {},
+		nativeActions = {}, rawUI = {}, promptButtons = {}, promptChords = {}, catalog = {}, nativeCandidates = {},
+	}
+	local seen, overridden = {}, {}
+	local function groupFor(input, threshold)
+		local inputKey = BindingEvents.inputKey(input, threshold)
+		local group = context.groups[inputKey]
+		if not group then
+			group = { input = input, threshold = threshold, chords = {} }
+			context.groups[inputKey] = group
+			if threshold then
+				table.insert(context.axes, inputKey)
+			else
+				context.buttons[input] = inputKey
+			end
+		end
+		return group
+	end
+
 	for _, layer in ipairs(layers) do
 		for _, action in ipairs(Bindings.actions) do
 			for _, binding in ipairs(action.bindings[layer] or {}) do
 				if binding.event ~= "native" and (navigating == (action.id == "uiNavigateParent"))
 						and (not paused or action.whilePaused or binding.input == Joypad.Back or binding.input == Joypad.Start) then
 					local eventSlot = slot(binding)
-					if not seen[eventSlot] then
-						seen[eventSlot] = true
-						local input = binding.input
-						local inputKey = BindingEvents.inputKey(input, binding.threshold)
-						local group = context.groups[inputKey]
-						if not group then
-							group = { input = input, threshold = binding.threshold, chords = {} }
-							context.groups[inputKey] = group
-							if binding.threshold then
-								table.insert(context.axes, inputKey)
-							else
-								context.buttons[input] = inputKey
+					local name = action.name
+					if not action.native or binding.modifier or not overridden[name] then
+						if action.native then
+							-- A higher layer can take the next press without interrupting
+							-- an action already held by a lower layer that's still active.
+							context.nativeCandidates[binding] = true
+							if not binding.modifier then
+								overridden[name] = true
+								context.nativeActions[name] = action
+								if action.prompt then
+									context.hasPrompts = true
+									if not binding.threshold and not seen[eventSlot] then
+										context.promptButtons[binding.input] = true
+									end
+								end
 							end
 						end
-						if binding.modifier then
-							table.insert(group.chords, binding)
-							context.modifiers[binding.modifier] = true
-						else
-							group[binding.event] = binding
+						if not seen[eventSlot] then
+							seen[eventSlot] = true
+							local group = groupFor(binding.input, binding.threshold)
+							if binding.modifier then
+								table.insert(group.chords, binding)
+								if action.prompt then
+									context.promptChords[name], context.hasPrompts = true, true
+								end
+								context.modifiers[binding.modifier] = true
+							else
+								group[binding.event] = binding
+							end
 						end
 					end
 				end
 			end
 		end
 	end
+
+	-- An inherited vanilla button remains a normal press when the player adds a
+	-- competing gesture or uses that button as a modifier.
+	for _, action in ipairs(Bindings.actions) do
+		if action.native and not paused and not navigating
+				and (focused == (action.uiButton ~= nil)) and (not focused or action.layers[layers[1]]) then
+			table.insert(context.catalog, action)
+			local raw, threshold = Native.rawInput(action, focused and layers[1])
+			local rawKey = raw and BindingEvents.inputKey(raw, threshold)
+			local group = rawKey and context.groups[rawKey]
+			local replace = context.nativeActions[action.name] ~= nil
+			local modifier = raw and context.modifiers[raw]
+			local competing = group and (group.hold or group.double or #group.chords > 0)
+			local occupied = group and group.press and (group.press.action.native
+				or group.press.layer ~= "world")
+			if replace or modifier or competing or occupied then
+				context.nativeActions[action.name] = action
+				if raw and action.prompt then
+					context.hasPrompts = true
+					if not threshold then context.promptButtons[raw] = true end
+				end
+				if raw and action.uiButton and replace then context.rawUI[raw] = true end
+				if not replace and not occupied then
+					group = group or groupFor(raw, threshold)
+					if threshold then observedInputs[rawKey] = { input = raw, threshold = threshold } end
+					group.fallback = group.fallback or {}
+					table.insert(group.fallback, { input = raw, threshold = threshold, event = "press", action = action, inherited = true })
+				end
+			end
+		end
+	end
 	for _, group in pairs(context.groups) do
 		group.isModifier = context.modifiers[group.input] == true
+		if not group.press and group.fallback then group.press = group.fallback[1] end
 		group.managed = group.threshold or group.hold or group.double or #group.chords > 0
-			or group.isModifier or (group.press and Bindings.defaultEvent(group.press.action) == "native")
+			or group.isModifier or (group.press and (group.press.action.native
+				or Bindings.defaultEvent(group.press.action) == "native"))
 	end
 	contextCache[key] = context
 	return context
@@ -792,20 +856,76 @@ local joypadGestures = {}
 local function gestures(jd)
 	local state = joypadGestures[jd]
 	if not state then
-		state = { cycles = {}, down = {}, modifierUsed = {}, buttons = {}, pulses = {} }
+		state = { cycles = {}, down = {}, modifierUsed = {}, buttons = {}, pulses = {}, native = {} }
 		joypadGestures[jd] = state
 	end
 	return state
 end
 
-local function finishRelease(release)
-	local ok, err = pcall(release)
+local function nativeSignalActive(jd, context, signal)
+	if not signal or not context or signal.focus ~= jd.focus then return false end
+	local binding = signal.binding
+	if context.nativeCandidates[binding] then return true end
+	if not binding.inherited then return false end
+	local key = BindingEvents.inputKey(binding.input, binding.threshold)
+	return context.groups[key] == signal.key
+end
+
+local function publishNative(jd, state, context)
+	if not GamepadTweaks_publishNativeBindings then return end
+	local entries = {}
+	if context then
+		for name, action in pairs(context.nativeActions) do
+			if not action.uiButton then
+				local active = nativeSignalActive(jd, context, state.native[name])
+				table.insert(entries, name .. (active and "=1" or "=0"))
+			end
+		end
+		-- A chord can add an action without replacing its stock input.
+		for name, signal in pairs(state.native) do
+			if not context.nativeActions[name] and nativeSignalActive(jd, context, signal) then
+				table.insert(entries, name .. "=1")
+			end
+		end
+	end
+	table.sort(entries)
+	local spec = table.concat(entries, ",")
+	if spec ~= state.nativeSpec then
+		GamepadTweaks_publishNativeBindings(jd.id, spec)
+		state.nativeSpec = spec
+	end
+end
+
+local vanillaUpdateJoypadFocus = updateJoypadFocus
+local function updateNativePrompts(jd, context)
+	if not context.hasPrompts then
+		jd.gtNativePrompts, jd.gtNativePromptContext = nil, nil
+		return vanillaUpdateJoypadFocus(jd)
+	end
+	return Native.collect(jd, context, vanillaUpdateJoypadFocus)
+end
+
+if vanillaUpdateJoypadFocus then
+	function updateJoypadFocus(jd)
+		if jd and jd.focus == nil and isInWorld(jd) and not JoypadState.disableControllerPrompt then
+			refresh()
+			if hasGestures then return updateNativePrompts(jd, gestureContext(jd, false)) end
+		end
+		if jd then jd.gtNativePrompts, jd.gtNativePromptContext = nil, nil end
+		return vanillaUpdateJoypadFocus(jd)
+	end
+end
+
+local function finishRelease(release, cancel)
+	local ok, err = pcall(release, cancel)
 	if not ok then log("ERROR: controller release: " .. tostring(err)) end
 end
 
 local function stopGesture(jd, cycle, disconnected)
 	if cycle.release then finishRelease(cycle.release) end
 	cycle.release = nil
+	for _, release in ipairs(cycle.nativeRelease or {}) do finishRelease(release, disconnected) end
+	cycle.nativeRelease = nil
 	local focus = cycle.radial
 	cycle.radial = nil
 	if focus and jd.focus == focus and focus.hideWhenButtonReleased == cycle.group.input then
@@ -822,6 +942,31 @@ end
 local function emitGesture(jd, state, cycle, binding, now, physicallyDown)
 	local action, input = binding.action, binding.input
 	local oldFocus = jd.focus
+	if action.native then
+		if action.uiButton then
+			Native.runUI(action, jd)
+		else
+			local context = gestureContext(jd, oldFocus ~= nil)
+			local signal = { binding = binding, key = cycle.group, focus = oldFocus, started = now }
+			if Native.isPulse(action) or not physicallyDown then signal.deadline = now + 50 end
+			state.native[action.name] = signal
+			publishNative(jd, state, context)
+			if action.prompt and not JoypadState.disableControllerPrompt then
+				local ok, release = pcall(function()
+					if jd.gtNativePromptContext ~= context and vanillaUpdateJoypadFocus then updateNativePrompts(jd, context) end
+					return Native.runPrompt(binding, jd, physicallyDown, vanilla.firearmReleased)
+				end)
+				if not ok then
+					log("ERROR: " .. action.id .. ": " .. tostring(release))
+				elseif release then
+					cycle.nativeRelease = cycle.nativeRelease or {}
+					table.insert(cycle.nativeRelease, release)
+				end
+			end
+		end
+		cycle.fired = binding
+		return
+	end
 	for i = #state.pulses, 1, -1 do
 		local pulse = state.pulses[i]
 		if pulse.action == action then
@@ -877,10 +1022,21 @@ local function emitGesture(jd, state, cycle, binding, now, physicallyDown)
 	cycle.fired = binding
 end
 
+local function emitResolved(jd, state, cycle, binding, now, down)
+	emitGesture(jd, state, cycle, binding, now, down)
+	if binding == cycle.group.press and cycle.group.fallback then
+		for _, fallback in ipairs(cycle.group.fallback) do
+			if fallback ~= binding and jd.focus == cycle.focus then
+				emitGesture(jd, state, cycle, fallback, now, down)
+			end
+		end
+	end
+end
+
 local function pressGesture(jd, state, key, group, now)
 	local cycle = state.cycles[key]
 	local function emit(binding)
-		emitGesture(jd, state, cycle, binding, now, cycle.down)
+		emitResolved(jd, state, cycle, binding, now, cycle.down)
 	end
 	if cycle and cycle.group == group and cycle.focus == jd.focus then
 		BindingEvents.Gesture.advance(cycle, group, now, emit)
@@ -914,12 +1070,17 @@ end
 local function releaseGesture(jd, state, key, cycle, current, now)
 	if cycle.group == current and cycle.focus == jd.focus then
 		BindingEvents.Gesture.release(cycle, current, now, function(binding)
-			emitGesture(jd, state, cycle, binding, now, false)
+			emitResolved(jd, state, cycle, binding, now, false)
 		end)
 	else
 		cycle.down, cycle.firstAt = false, nil
 	end
 	stopGesture(jd, cycle)
+	for _, signal in pairs(state.native) do
+		if signal.key == cycle.group and not signal.deadline then
+			signal.deadline = math.max(signal.started + 30, now)
+		end
+	end
 	if not cycle.firstAt then state.cycles[key] = nil end
 end
 
@@ -929,9 +1090,17 @@ local function gestureButtonPressed(jd, button, focused)
 	local key = context.buttons[button]
 	local group = key and context.groups[key]
 	local state = gestures(jd)
+	if not focused and context.promptButtons[button] and jd.gtNativePromptContext ~= context
+			and vanillaUpdateJoypadFocus then
+		updateNativePrompts(jd, context)
+	end
 	local repeated = DPAD[button] and state.buttons[button]
 	state.buttons[button] = true
-	if not group or not group.managed then return false end
+	if not group or not group.managed then
+		publishNative(jd, state, context)
+		return focused and context.rawUI[button] == true
+	end
+	publishNative(jd, state, context)
 	local now = getTimestampMs()
 	if not repeated then
 		pressGesture(jd, state, key, group, now)
@@ -957,11 +1126,11 @@ end
 
 local function tickGestures()
 	local now = getTimestampMs()
-	local connected = {}
+	local connected, ids = {}, {}
 	for i = 1, getMaxActivePlayers() do
 		local jd = JoypadState.players[i]
 		if jd and jd.id and jd.isActive and jd:isConnected() then
-			connected[jd] = true
+			connected[jd], ids[jd.id] = true, true
 			if hasGestures or joypadGestures[jd] then
 				local state = gestures(jd)
 				local context = isInWorld(jd) and gestureContext(jd, jd.focus ~= nil)
@@ -983,7 +1152,7 @@ local function tickGestures()
 						releaseGesture(jd, state, key, cycle, current, now)
 					elseif current == group and cycle.focus == jd.focus then
 						BindingEvents.Gesture.advance(cycle, group, now, function(binding)
-							emitGesture(jd, state, cycle, binding, now, cycle.down)
+							emitResolved(jd, state, cycle, binding, now, cycle.down)
 						end)
 						if not cycle.down and not cycle.firstAt then state.cycles[key] = nil end
 					elseif cycle.down then
@@ -1005,6 +1174,12 @@ local function tickGestures()
 					end
 				end
 				state.down = sampled
+				for name, signal in pairs(state.native) do
+					if not nativeSignalActive(jd, context, signal) or (signal.deadline and now >= signal.deadline) then
+						state.native[name] = nil
+					end
+				end
+				publishNative(jd, state, context)
 				local radial = state.confirmRadial
 				state.confirmRadial = nil
 				if radial and jd.focus == radial and radial.hideWhenButtonReleased == nil then
@@ -1024,6 +1199,7 @@ local function tickGestures()
 		if not connected[jd] then
 			for _, cycle in pairs(state.cycles) do stopGesture(jd, cycle, true) end
 			for _, pulse in ipairs(state.pulses) do finishRelease(pulse.release) end
+			if not ids[jd.id] then publishNative(jd, state, nil) end
 			joypadGestures[jd] = nil
 		end
 	end
@@ -1045,7 +1221,9 @@ end
 
 local vanillaPressButton = JoypadControllerData.onPressButton
 function JoypadControllerData:onPressButton(button)
-	if dispatchFocused(self.joypad, button) then return end
+	local jd = self.joypad
+	if jd and jd.gtStockReload and jd.gtStockReload.button == button then jd.gtStockReload = nil end
+	if dispatchFocused(jd, button) then return end
 	return vanillaPressButton(self, button)
 end
 
@@ -1095,12 +1273,7 @@ local function wrapDir(press, release, display, button, elapsed)
 			if not held[heldKey(jd, button)] and (not isGamePaused() or jd.activeWhilePaused) then
 				startStickRadial(jd, button)
 			end
-			local cruise = isCruiseHeld(jd) and getAction("cruise", button)
 			if (not isGamePaused() or jd.activeWhilePaused) and gestureButtonPressed(jd, button, false) then return end
-			if cruise then
-				dispatchAction(jd, button, cruise)
-				return
-			end
 		end
 		pressedDir = button
 		local ok, err = pcall(vanillaPress, self, ...)
@@ -1145,15 +1318,31 @@ wrapDir("onPressDown", "onReleaseDown", "onDisplayDown", Joypad.DPadDown, "dtdow
 wrapDir("onPressLeft", "onReleaseLeft", "onDisplayLeft", Joypad.DPadLeft, "dtleft")
 wrapDir("onPressRight", "onReleaseRight", "onDisplayRight", Joypad.DPadRight, "dtright")
 
--- The cruise speed actions are dispatched above.
+-- Keep the native cruise shortcut and give a configured event first refusal.
+local function adjustCruise(jd, dir, defaultAction, adjust, fallback)
+	if pressedDir ~= dir then return fallback(jd) end
+	if isPaused() or not drivenVehicle(jd) then return false end
+	local context = hasGestures and gestureContext(jd, false)
+	local state = joypadGestures[jd]
+	local signal = state and state.native.CruiseControl
+	if context and context.nativeActions.CruiseControl then
+		if not signal or signal.deadline then return false end
+	else
+		local button = bindingButton(CharacterJoypadButtonBinding.CruiseControl)
+		if not button or not button:isDown(jd.id) then return false end
+	end
+	local action = worldAction(jd, dir)
+	if action and action.id ~= defaultAction then return false end
+	adjust(jd.controller, jd)
+	return true
+end
+
 function ISVehicleRegulator.onJoypadPressUp(jd)
-	if pressedDir then return false end
-	return vanilla.regulatorPressUp(jd)
+	return adjustCruise(jd, Joypad.DPadUp, "vehicleWheel", cruiseFaster, vanilla.regulatorPressUp)
 end
 
 function ISVehicleRegulator.onJoypadPressDown(jd)
-	if pressedDir then return false end
-	return vanilla.regulatorPressDown(jd)
+	return adjustCruise(jd, Joypad.DPadDown, "emoteWheel", cruiseSlower, vanilla.regulatorPressDown)
 end
 
 -- Buttons: the world (no UI focus) part of vanilla onPressButton. Back and Start open the
@@ -1212,8 +1401,11 @@ end
 -- Reload (ReloadWeapon binding) ------------------------------------------------------
 
 function ISFirearmRadialMenu.onJoypadButtonReleased(buttonPrompt, button, jd)
-	local reload = bindingButton(CharacterJoypadButtonBinding.ReloadWeapon)
-	if button == reload then
+	local reload = jd.gtStockReload
+	if not reload or reload.button ~= button then return end
+	jd.gtStockReload = nil
+	local player = getSpecificPlayer(jd.player)
+	if player and player:getPrimaryHandItem() == reload.weapon then
 		return vanilla.firearmReleased(buttonPrompt, Joypad.RBumper, jd)
 	end
 end
@@ -1221,20 +1413,26 @@ end
 function ISFirearmRadialMenu:display()
 	vanilla.firearmDisplay(self)
 	local jd = JoypadState.players[self.playerNum + 1]
-	local reload = bindingButton(CharacterJoypadButtonBinding.ReloadWeapon)
-	if jd and reload then
-		retargetHide(jd, Joypad.RBumper, reload)
-	end
+	local reload = jd and (jd.gtNativeReload or jd.gtStockReload)
+	local button = reload and reload.button or bindingButton(CharacterJoypadButtonBinding.ReloadWeapon)
+	if jd and button then retargetHide(jd, Joypad.RBumper, button) end
 end
 
--- Vanilla: RB down -> firearm radial timer, L3 down -> stick radial timer.
+-- Advance only a reload started by this press, even if layers or aim state change.
 function ISButtonPrompt:update()
 	if not self.player then return end
 	local jd = JoypadState.players[self.player + 1]
 	if not jd or not jd.isActive then return end
-	local reload = bindingButton(CharacterJoypadButtonBinding.ReloadWeapon)
-	if reload and reload:isDown(jd.id) then
-		ISFirearmRadialMenu.onRepeatRBumper(self)
+	local reload = jd.gtNativeReload or jd.gtStockReload
+	if reload and reload.button:isDown(jd.id) then
+		local player = getSpecificPlayer(self.player)
+		if player and player:getPrimaryHandItem() == reload.weapon then
+			ISFirearmRadialMenu.onRepeatRBumper(self)
+		elseif jd.gtNativeReload then
+			jd.gtNativeReload = nil
+		else
+			jd.gtStockReload = nil
+		end
 	end
 	local stick = jd.gtStickButton
 	if stick and stick:isDown(jd.id) then
@@ -1250,6 +1448,12 @@ end
 function JoypadControllerData:onHoldButton(button, time)
 	if button == getButton("uiNavigation") then
 		local jd = self.joypad
+		if hasGestures and jd and jd.focus and isInWorld(jd) then
+			local context = gestureContext(jd, true)
+			local key = context.buttons[button]
+			local group = key and context.groups[key]
+			if group and group.hold then return end
+		end
 		local wasNavigating = jd and jd.isDoingNavigation
 		vanilla.onHoldButton(self, Joypad.RBumper, time)
 		if jd and jd.isDoingNavigation and not wasNavigating then
@@ -1278,9 +1482,11 @@ end
 local releasing = nil
 local cruiseReleased = false
 
-function ISVehicleRegulator.onJoypadReleaseX(jd)
-	if releasing ~= nil and releasing ~= bindingButton(CharacterJoypadButtonBinding.CruiseControl) then
-		return
+function ISVehicleRegulator.onJoypadReleaseX(jd, synthetic)
+	if not synthetic and releasing ~= nil then
+		local state = joypadGestures[jd]
+		if releasing ~= bindingButton(CharacterJoypadButtonBinding.CruiseControl)
+				or (state and state.native.CruiseControl) then return end
 	end
 	cruiseReleased = true
 	return vanilla.regulatorReleaseX(jd)
@@ -1307,8 +1513,9 @@ function JoypadControllerData:onReleaseButton(button)
 
 	if not jd or not jd.player then return end
 	-- vanilla toggles cruise control only on X release
+	local state = joypadGestures[jd]
 	if not cruiseReleased and button == bindingButton(CharacterJoypadButtonBinding.CruiseControl)
-			and ISVehicleRegulator.xPressed[jd.id] then
+			and not (state and state.native.CruiseControl) and ISVehicleRegulator.xPressed[jd.id] then
 		vanilla.regulatorReleaseX(jd)
 	end
 	-- Vanilla forwards only L3/R3 releases to the stick radial.
@@ -1474,8 +1681,12 @@ local function followButtons()
 						and (not isGamePaused() or jd.activeWhilePaused) and worldAction(jd, button) == action
 					if down and hasGestures then
 						local context = gestureContext(jd, false)
-						local inputKey = context.buttons[button]
-						down = not (inputKey and context.groups[inputKey].managed)
+						local inputKey = BindingEvents.inputKey(button)
+						local group = context.groups[inputKey]
+						local state = joypadGestures[jd]
+						local cycle = state and state.cycles[inputKey]
+						local heldByNative = cycle and cycle.down and cycle.fired and cycle.fired.action.native
+						down = not (heldByNative or (group and group.managed))
 					end
 					if (not not down) ~= (followed[key] == true) then
 						followed[key] = down or nil

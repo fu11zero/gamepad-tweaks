@@ -29,7 +29,7 @@ description=[*][b]Wheel without lag.[/b] The wheel follows the stick at a consta
 description=[*][b]Analog gas and brake.[/b] Vanilla LT/RT (L2/R2) are on/off at 70%. Now a light press rolls the car slowly and holds that speed, full pedal = vanilla, no trigger dead zone. Optional: LT brakes to a stop without backing up.
 description=[*][b]Easy driving (splitscreen).[/b] Per player: stick = where to go on screen, triggers = pedals. For a partner new to driving. Servers can forbid it.
 description=[*][b]Smooth map controls.[/b] World and paper maps pan smoothly by stick deflection, triggers zoom by how far you press.
-description=[*][b]Rebindable hardcoded buttons.[/b] The D-pad wheels (vehicle, emotes, weapon/light, zones), the Back wheel, Start, cruise control (X + D-pad), L3 radial and RB-hold UI navigation are hardcoded in vanilla. Each is now an action: rebind or turn it off. Defaults stay vanilla.
+description=[*][b]Rebindable hardcoded buttons.[/b] The D-pad wheels (vehicle, emotes, weapon/light, zones), the Back wheel, Start, cruise control (X + D-pad), L3 radial and RB-hold UI navigation are hardcoded in vanilla. Rebind any of them. Cruise speed uses modifiers in Vehicle.
 description=[*][b]Keyboard-only actions on the controller.[/b] Flashlight, drop items or bag, grab corpse, sharpen, firearm menu, sit, search mode, shout, let go of rope, engine, headlights, heater, horn, switch seat, vehicle info, map, crafting, building, skills, health, hotbar slots 1-8, game speed, move furniture, hide UI, screenshot, PvP, push-to-talk, music, camera pan, animal radial, Shift actions (driver's seat, curtains, fire mode), use tool ahead (chop, dig, water). Unbound by default. Per splitscreen player.
 description=[*][b]Steam Input game actions.[/b] All mod actions appear in the Steam controller configurator: back paddles, long/double press, chords, context layers (one paddle = flashlight on foot, horn in a car). Per player in splitscreen.
 description=[*][b]Gyro aiming.[/b] Bind gyro (or a trackpad) to the Aim analog action in Steam: it moves the reticle with a firearm in hand. Works with half trigger alone. Per player.
@@ -42,7 +42,7 @@ description=[/list]
 description=
 description=[h2]Settings[/h2]
 description=[b]Options -> Mods -> Gamepad Tweaks[/b]: toggle features and tune steering, wheel speed, map controls, Steam Input and vibration. Changes apply during play.
-description=Options -> Controller: contextual mod actions with icons. Assign presses, double presses, holds or chords, with adjustable timing and trigger or stick thresholds.
+description=Options -> Controller: contextual game and mod actions. Set press, double press, hold, chords and axis thresholds.
 description=Advanced: ~/Zomboid/GamepadTweaks.properties.
 description=
 description=[h2]Requirements[/h2]
@@ -57,7 +57,7 @@ description=
 description=[h2]Other languages / Другие языки[/h2]
 description=
 description=[h3]Русский[/h3]
-description=Геймпад в Build 42: исправлено подтверждение рубки, строительства и установки через A (X). Руление, аналоговые педали, вибрация, дрожь от холода, сердцебиение, кашель и чихание. Steam Input и Steam Deck. Слои, значки, двойное нажатие, удержание и модификаторы в игре.
+description=Геймпад в Build 42: исправлено подтверждение рубки, строительства и установки через A (X). Руление, аналоговые педали, вибрация, дрожь от холода, сердцебиение, кашель и чихание. Steam Input и Steam Deck. Слои, значки, двойное нажатие, удержание и модификаторы для ванильных действий и действий мода.
 description=
 description=[h3]Deutsch[/h3]
 description=Fixes und Verbesserungen für Controller in Build 42: A (X) bestätigt Baumfällen, Bauen, Platzieren nicht (42.22); Lenkung, analoges Gas/Bremse, Vibration, Steam Input, Steam Deck.

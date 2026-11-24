@@ -395,6 +395,16 @@ public final class Patches {
         }
     }
 
+    @Patch(className = "zombie.characters.CharacterJoypadButtonBinding", methodName = "isDown")
+    public static class ContextualBindingDown {
+        @Patch.OnExit
+        public static void exit(@Patch.This CharacterJoypadButtonBinding binding,
+                                @Patch.Argument(0) int joypadBind,
+                                @Patch.Return(readOnly = false) boolean down) {
+            down = NativeBindingInput.isDown(binding, joypadBind, down);
+        }
+    }
+
     // Bindings on the walking stick's length (Run: LeftStick at 0.975 and more) read the stick
     // axis itself, not the Movement binding, so they miss the Steam "move" action.
     @Patch(className = "zombie.characters.CharacterJoypadButtonBinding$Axis2dMinMaxBinding", methodName = "isDown")
