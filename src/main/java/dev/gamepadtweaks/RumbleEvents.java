@@ -316,8 +316,9 @@ public final class RumbleEvents {
     // A zombie's scratch, laceration or bite that got through the clothes:
     // BodyDamage.AddRandomDamageFromZombie plays the pain voice right then (also on an MP client,
     // before it sends the hit). A sharp kick plus a high, slowly fading sting (the two pulses mix
-    // by maximum), then the heartbeat (Rumble.lua, GamepadTweaks_rumbleSinceWound). Health loss
-    // alone was easy to miss: the moodles were the only sign.
+    // by maximum). Health loss alone was easy to miss: the moodles were the only sign. The pain
+    // pulsations that follow (Rumble.lua, GamepadTweaks_rumbleSinceWound) are not a heartbeat:
+    // they keep the wound felt after the sting, with no vanilla sound to follow.
     @Patch(className = "zombie.characters.IsoPlayer", methodName = "playerVoiceSound")
     public static class Wound {
         @Patch.OnEnter

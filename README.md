@@ -485,14 +485,14 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   motors. Steam Input can, for every controller Steam handles: `SteamInput.vibrate` calls
   `ISteamInput::TriggerVibrationExtended` (big and small motor, right trigger motor on Xbox
   One / Series pads), so it needs `steamInput.enabled` and the game started from Steam.
-  Lua picks the events and sends pulses (start at full, fade out linearly), Java mixes them per
-  controller (strongest value per motor) and sends the speeds every frame from `pollEvents`.
+  Lua picks the events and sends pulses (start at full, fade out linearly). Java reads the live
+  heartbeat signal from FMOD and mixes it with the pulses per controller (strongest value
+  per motor) and sends the speeds every frame from `pollEvents`.
   Speeds under 0.04 are cut (a motor left that low stalls and spins up by itself, felt as a
   growing buzz), and the stop is sent 3 more times 80 ms apart: a stop right after a speed change
   was sometimes lost and the motors kept going after a shot or a short knock until the next
-  pulse ended. While aiming a firearm, ambient events (heartbeat, thunder, thumps, glass, tools)
-  are scaled by `rumble.aiming` (0.3): the shaking moves a gyro reticle; wounds, falls and shots
-  are not. The events:
+  pulse ended. While aiming a firearm, `rumble.aiming` (0.3 by default) scales heartbeat,
+  thunder, thumps, glass and tool vibration to reduce gyro reticle shake. The events:
   - shot: `OnWeaponSwingHitPoint` with a ranged weapon that isn't dry firing
     (`isRangedWeaponEmpty`), stronger and longer with the gun's sound radius (pistol < rifle < shotgun);
   - melee hit: `OnWeaponHitCharacter`, by damage;
@@ -500,12 +500,15 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     voice (`IsoPlayer.playerVoiceSound` "PainFromScratch / Lacerate / Bite", also "PainFromGlassCut")
     exactly when a scratch, laceration or bite gets through the clothes (also on an MP client,
     before it sends the hit): a sharp kick plus a high, slowly fading sting, longer and stronger
-    for a bite, then a heartbeat (8 s after a scratch or cut, 20 s after a bite). Health loss
-    alone was easy to miss;
+    for a bite, then pain pulsations (8 s for a scratch or cut, 20 s for a bite). The whole
+    sequence uses `rumble.damage`;
   - getting hurt otherwise: health lost in one tick (falls, car crashes, hits in MP; bleeding and
     hunger stay under the threshold);
-  - heartbeat: double beat while panicked (panic moodle 2+) or after a wound, faster and stronger
-    with the level;
+  - heartbeat (`Heartbeat.java`): reads the output peaks of the `HeartBeat` FMOD instance that
+    `IsoPlayer.updateHeartSound` keeps for each local player. Its timeline sustains at 210 ms
+    while the audio continues playing. The low motor follows the peaks, including each thump's
+    strength and changes to the game's HeartBeat and sound effects volumes. `rumble.heartbeat`
+    adjusts the motor gain;
   - thunder: `OnThunderEvent` comes with the flash, the pulse follows with the sound
     (`dist / 300` s, as `ThunderStorm.enqueueThunderEvent`), a crack for a strike, a long roll for
     rumble, by distance, half indoors;

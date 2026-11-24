@@ -14,9 +14,10 @@ import se.krka.kahlua.integration.annotations.LuaMethod;
 // Vanilla has no vibration at all: input goes through GLFW, which can't drive the motors. Steam
 // Input can (ISteamInput::TriggerVibrationExtended), for any controller Steam handles, so the mod
 // vibrates through it (SteamInput) when steamInput.enabled is on and the game runs under Steam.
-// The game events are picked in Lua (Rumble.lua: shots, melee hits, damage, heartbeat) and sent
+// The game events are picked in Lua (Rumble.lua: shots, melee hits, damage) and sent
 // here as short pulses; a pulse starts at full strength and fades out linearly over its
 // duration. Overlapping pulses of a controller mix by taking the strongest value per motor.
+// Heartbeat.java reads the current FMOD signal into the same mix.
 // update() runs every frame from SteamInput.pollEvents, which knows the Steam controller handles.
 public final class Rumble {
     private static final long RESEND_MS = 100;
@@ -25,7 +26,7 @@ public final class Rumble {
     private static final long MIN_SEND_MS = 25;
     // Below this the motors barely turn: a fading tail is cut there. A motor left on such a low
     // speed (a lost stop, see STOP_REPEATS) stalls and spins up by itself, felt as growing.
-    private static final float MIN_SPEED = 0.04f;
+    static final float MIN_SPEED = 0.04f;
     // The stop is sent again STOP_REPEATS times STOP_GAP_MS apart: a stop sent right after a
     // speed change was sometimes lost (the motors kept going after a shot or a short knock, until
     // the next pulse ended).
@@ -70,10 +71,7 @@ public final class Rumble {
             return;
         }
         int player = playerOf((int) controller);
-        float k = Settings.rumbleStrength * Settings.rumbleEvent(event) * Settings.rumblePlayer(player);
-        if (AMBIENT.contains(event) && aimingFirearm(player)) {
-            k *= Settings.rumbleAiming;
-        }
+        float k = gain(event, player);
         if (k <= 0) {
             return;
         }
@@ -92,6 +90,11 @@ public final class Rumble {
             Log.info("rumble: " + event + " player " + player + " controller " + p.controller + " low=" + p.low + " high=" + p.high
                     + " triggers=" + p.leftTrigger + "/" + p.trigger + " " + Math.round(ms) + "ms");
         }
+    }
+
+    private static float gain(String event, int player) {
+        float gain = Settings.rumbleStrength * Settings.rumbleEvent(event) * Settings.rumblePlayer(player);
+        return AMBIENT.contains(event) && aimingFirearm(player) ? gain * Settings.rumbleAiming : gain;
     }
 
     /** True if the local player (0..3) is aiming a firearm (as the Steam "aiming" layer). */
@@ -207,6 +210,16 @@ public final class Rumble {
         float[] test = testValues(now);
         for (int i = 0; i < handles.length; i++) {
             float[] m = test != null ? test : mix.getOrDefault(ids[i], new float[4]);
+            if (test == null && Settings.rumble) {
+                int controller = ids[i] >= 0 ? ids[i] : only;
+                int player = controller >= 0 ? playerOf(controller) : -1;
+                if (player >= 0) {
+                    float heartbeatGain = gain("heartbeat", player);
+                    if (heartbeatGain > 0) {
+                        m[0] = Math.max(m[0], Heartbeat.strength(player, heartbeatGain));
+                    }
+                }
+            }
             if (test == null && (m[2] > 0 || m[3] > 0)
                     && (!Settings.rumbleTriggers || !SteamInput.hasTriggerMotors(handles[i]))) {
                 // no trigger motors: the trigger side goes to the grip of that side

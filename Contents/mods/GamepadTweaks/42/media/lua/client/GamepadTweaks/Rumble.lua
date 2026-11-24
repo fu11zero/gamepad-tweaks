@@ -60,45 +60,36 @@ local function onWeaponHitCharacter(attacker, target, weapon, damage)
 	pulse(attacker, "hit", 0.2 + 0.5 * k, 0.5 + 0.4 * k, 0, 70 + 80 * k)
 end
 
--- Health and panic, per local player: health lost in one tick (fall, car crash, a hit in MP
--- where the wound comes from the server...; bleeding and hunger take far less than the threshold
--- per tick; zombie wounds have their own kick, RumbleEvents.wound), and a heartbeat while
--- panicked or wounded.
+-- Health lost in one tick (fall, car crash, a hit in MP where the wound comes from the server;
+-- bleeding and hunger take far less than the threshold per tick). Zombie wounds have their own
+-- kick in RumbleEvents.wound. Heartbeat.java follows the vanilla HeartBeat audio signal.
 local DAMAGE_MIN = 0.5
-local state = {} -- [playerNum] = { player, health, nextBeat }
+local state = {} -- [playerNum] = { player, health, nextPain, painDub, painDubK }
 
--- A wound (RumbleEvents.wound: scratch, laceration, bite) keeps the heart racing for a while
--- even without panic, so the sting of the wound turns into a heartbeat: level 3 for 8 s after a
--- scratch or cut, 4 for 20 s after a bite, starting once the sting has faded a bit.
-local function woundLevel(player)
-	if not GamepadTweaks_rumbleSinceWound then return 0 end
+-- Pain pulsations after a wound are not a heartbeat: there is no vanilla sound to follow.
+-- RumbleEvents.wound records the wound time (negative for a bite). The sting turns into throbs
+-- for 8 s after a scratch or cut, 20 s after a bite, starting once the sting has faded a bit.
+local function pain(player, s, now)
+	if not GamepadTweaks_rumbleSinceWound then return end
 	local since = GamepadTweaks_rumbleSinceWound(player:getPlayerNum())
-	if since == 0 then return 0 end
+	if since == 0 then return end
 	local bite = since < 0
 	since = math.abs(since)
-	if since < 400 then return 0 end
-	if bite and since < 20000 then return 4 end
-	if not bite and since < 8000 then return 3 end
-	return 0
-end
-
-local function heartbeat(player, s, now)
-	local level = math.max(player:getMoodles():getMoodleLevel(MoodleType.PANIC), woundLevel(player))
-	if level < 2 then
-		s.nextBeat = nil
+	local limit = bite and 20000 or 8000
+	if since < 400 or since >= limit then
+		s.nextPain = nil
 		return
 	end
-	if s.nextBeat and now < s.nextBeat then return end
-	-- panic 2..4: 70..110 bpm feel, stronger with the level
-	local period = ({ [2] = 850, [3] = 680, [4] = 540 })[level] or 540
-	local k = 0.35 + 0.2 * (level - 2)
-	if s.nextBeat == nil then s.nextBeat = now end
-	s.nextBeat = s.nextBeat + period
-	if s.nextBeat < now then s.nextBeat = now + period end
-	-- "lub" now, "dub" 150 ms later
-	pulse(player, "heartbeat", k, 0, 0, 110)
-	s.dub = now + 150
-	s.dubK = k * 0.7
+	if s.nextPain and now < s.nextPain then return end
+	local period = bite and 540 or 680
+	local k = bite and 0.75 or 0.55
+	if s.nextPain == nil then s.nextPain = now end
+	s.nextPain = s.nextPain + period
+	if s.nextPain < now then s.nextPain = now + period end
+	-- a throb and a smaller echo, felt as the wound rather than heard as a heart
+	pulse(player, "damage", k, 0, 0, 110)
+	s.painDub = now + 150
+	s.painDubK = k * 0.7
 end
 
 -- Thunder: OnThunderEvent(x, y, strike, lightning, rumble) comes with the flash, the sound
@@ -171,11 +162,11 @@ local function onTick()
 				pulse(player, "damage", 0.4 + d / 15, 0.3 + d / 20, 0, 150 + math.min(300, d * 20))
 			end
 			s.health = health
-			if s.dub and now >= s.dub then
-				pulse(player, "heartbeat", s.dubK, 0, 0, 90)
-				s.dub = nil
+			if s.painDub and now >= s.painDub then
+				pulse(player, "damage", s.painDubK, 0, 0, 90)
+				s.painDub = nil
 			end
-			heartbeat(player, s, now)
+			pain(player, s, now)
 		else
 			state[i] = nil
 		end

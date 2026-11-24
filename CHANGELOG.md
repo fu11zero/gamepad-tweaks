@@ -5,6 +5,9 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Fixed: heartbeat vibration follows the game's live heartbeat audio, including its rhythm and volume.
+- Changed: the lingering throb after a scratch, cut or bite follows the damage vibration setting.
+
 ## Update: 23 Nov @ 1:58am
 
 - Fixed: A and B no longer get swallowed when navigating submenus — the delayed-press suppression is now armed only when a context menu actually closes.

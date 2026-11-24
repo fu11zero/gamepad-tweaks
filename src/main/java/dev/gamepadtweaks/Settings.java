@@ -205,7 +205,8 @@ public final class Settings {
             # Strength per event, 0 = off:
             # shot - firing a gun (by the gun); hit - melee hit on a target (by damage);
             # damage - getting hurt: a zombie's scratch, laceration or bite (a sharp kick,
-            # a fading sting, then a heartbeat), health lost, hit reactions, burns; bump -
+            # a fading sting, then pain pulsations for a while), health lost, hit reactions,
+            # burns; bump -
             # pushed, running into a wall; fall - tripping, knocked down, falling, hands on
             # a fence or window frame and the landing after it (with the animation);
             # vehicle - crash (by impact and side), running someone over (by speed),
@@ -218,7 +219,7 @@ public final class Settings {
             # of quiet) and on your vehicle; thunder - by distance, with the
             # sound; scare - the jump scare sting
             # (a zombie suddenly right next to you, follows the game's jump scare volume);
-            # heartbeat - while panicked, and for a while after a wound.
+            # heartbeat - follows the live audio level of the game's HeartBeat event.
             rumble.shot=1.0
             rumble.hit=1.0
             rumble.damage=1.0
