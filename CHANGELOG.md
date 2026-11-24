@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Added: icons for native bindings and layer tabs in the controller editor.
+
 - Added: context layers and button events for native gamepad actions, with existing controller presets as the fallback.
 - Fixed: a held Aim binding stays active across aiming-layer changes. The same press cannot start camera pan or the reload radial.
 - Changed: cruise speed actions are available under Vehicle and can use regular modifiers. The separate Cruise tab was removed.

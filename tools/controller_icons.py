@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the in-game action icons from steam_actions.txt using Pillow and Noto Color Emoji."""
+"""Render controller action and layer icons using Pillow and Noto Color Emoji."""
 
 import argparse
 from pathlib import Path
@@ -12,7 +12,19 @@ from steam_input import MOD, lua_actions, read_actions_file
 OUTPUT = MOD / "media/textures/GamepadTweaks/actions"
 SIZE = 32
 # These modifier actions are only assignable in the in-game editor.
-NATIVE_ONLY = {"stickRadial": "🕹️", "uiNavigation": "🧭", "uiNavigateParent": "↩️"}
+NATIVE_ONLY = {
+    "stickRadial": "🕹️", "uiNavigation": "🧭", "uiNavigateParent": "↩️",
+    "native_PrecisionAim": "🔍", "native_WalkTo": "📍", "native_Loot": "📦",
+    "native_Movement": "🕹️", "native_Aiming": "🕹️🎯",
+}
+LAYER_ICONS = {
+    "layer_world": "🎮",
+    "layer_onfoot": "🚶",
+    "layer_vehicle": "🚗",
+    "layer_aiming": "🎯",
+    "layer_ui": "🪟",
+    "layer_inventory": "🎒",
+}
 
 
 def render(icon, font):
@@ -43,7 +55,12 @@ def main():
     _, _, entries = read_actions_file()
     steam_icons = {action: icon for action, _, icon, _, _ in entries}
     icons = {action: steam_icons[action] for action, category, _, _ in lua_actions() if category != "vanilla"}
+    icons.update({
+        f"native_{action.removeprefix('vanilla')}": icon
+        for action, icon in steam_icons.items() if action.startswith("vanilla")
+    })
     icons.update(NATIVE_ONLY)
+    icons.update(LAYER_ICONS)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     for action, icon in icons.items():
         if icon:

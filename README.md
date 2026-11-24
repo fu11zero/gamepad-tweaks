@@ -325,9 +325,9 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   - Each tab offers actions suited to its context. Shared actions can be assigned on General
     or overridden on foot or in a vehicle. Existing assignments remain editable even if the
     action is no longer offered on that tab.
-  - Mod actions show icons on the diagram and in the action lists. After changing their Steam
-    symbols, regenerate the bundled PNGs with `python3 tools/controller_icons.py /path/to/NotoColorEmoji.ttf`
-    (requires Pillow).
+  - Game and mod actions show icons on the diagram and in the action lists. Layer tabs also have
+    icons. Regenerate the bundled PNGs with `python3 tools/controller_icons.py /path/to/NotoColorEmoji.ttf`
+    after changing the icon mappings (requires Pillow).
   - In the world, Aiming (aiming or looking out of a vehicle) has priority, then On foot or
     Vehicle, then General. Vehicle includes passengers.
   - When a panel has controller focus, Inventory (inventory or loot window) takes priority over

@@ -157,6 +157,40 @@ local function describe(binding)
 	return Bindings.getLabel(binding.action) .. " · " .. table.concat(parts, " ")
 end
 
+local function addLabelIcon(label, texture)
+	if not texture then return end
+	local height = math.floor(label:getHeight())
+	local width = iconWidth(texture, height)
+	local inset = width + iconGap(height)
+	local drawText = label.drawText
+	function label:drawText(str, x, y, r, g, b, a, font)
+		self:drawTextureScaled(texture, x, (self:getHeight() - height) / 2, width, height, 1, 1, 1, 1)
+		drawText(self, str, x + inset, y, r, g, b, a, font)
+	end
+	label:setWidth(label:getWidth() + inset)
+end
+
+local function addVanillaLabelIcons(row)
+	local border = row.borderSpacing
+	local width = row:getWidth()
+	local index = 0
+	local function decorate(actions)
+		for _, action in ipairs(actions) do
+			index = index + 1
+			local label = row.entries[index]
+			if label then
+				addLabelIcon(label, actionIcon("native_" .. tostring(action)))
+				width = math.max(width, label:getRight() + border)
+			end
+		end
+	end
+	decorate(CharacterJoypadButtonBinding.findBindings(row.bindingKey))
+	if instanceof(row.bindingKey, "JoypadAxis2d") then
+		decorate(CharacterJoypadAxis2dBinding.findBindings(row.bindingKey))
+	end
+	row:setWidth(width)
+end
+
 -- Read-only row ----------------------------------------------------------------------
 
 local function addReadOnly(row)
@@ -176,18 +210,7 @@ local function addReadOnly(row)
 	row:removeChild(row.selectButton)
 	for _, binding in ipairs(actions) do
 		local label = ISLabel:new(x, y, fontHgt, describe(binding), MOD_COLOR.r, MOD_COLOR.g, MOD_COLOR.b, 1, font, true)
-		local texture = actionIcon(binding.action.id)
-		if texture then
-			local height = math.floor(fontHgt)
-			local iconW = iconWidth(texture, height)
-			local inset = iconW + iconGap(height)
-			local labelDrawText = label.drawText
-			function label:drawText(str, textX, textY, r, g, b, a, textFont)
-				self:drawTextureScaled(texture, textX, (self:getHeight() - height) / 2, iconW, height, 1, 1, 1, 1)
-				labelDrawText(self, str, textX + inset, textY, r, g, b, a, textFont)
-			end
-			label:setWidth(label:getWidth() + inset)
-		end
+		addLabelIcon(label, actionIcon(binding.action.id))
 		label:initialise()
 		row:addChild(label)
 		table.insert(row.entries, label)
@@ -223,6 +246,7 @@ local vanillaReadOnly = CharacterJoypadBindingUIRow.populateWithReadOnlyLabels
 function CharacterJoypadBindingUIRow:populateWithReadOnlyLabels(...)
 	if selectedLayer(self) == "world" then
 		vanillaReadOnly(self, ...)
+		addVanillaLabelIcons(self)
 	else
 		populateLayerRow(self)
 		if supportsEvents(self) then self:addChild(self.selectButton) end
@@ -263,15 +287,19 @@ local function eventBox(row, x, y, height, event, native, available)
 	return box
 end
 
+local function drawSelectedIcon(box)
+	local drawText = box.drawText
+	function box:drawText(str, x, y, r, g, b, a, font)
+		x = drawOptionIcon(self, self.options[self.selected], x, y, font)
+		drawText(self, str, x, y, r, g, b, a, font)
+	end
+end
+
 local function actionBox(row, x, y, height)
 	local box = ISComboBox:new(x, y, height, height)
 	box.choicesColor = { r = 1, g = 1, b = 1, a = 1 }
 	box.textColor = MOD_COLOR
-	local drawText = box.drawText
-	function box:drawText(str, textX, textY, r, g, b, a, font)
-		textX = drawOptionIcon(self, self.options[self.selected], textX, textY, font)
-		drawText(self, str, textX, textY, r, g, b, a, font)
-	end
+	drawSelectedIcon(box)
 	box:initialise()
 	row:addChild(box)
 	return box
@@ -523,7 +551,19 @@ if vanillaBindingCombo then
 			end)
 			x = combo:getRight() + self:getStyle().borderSpacing
 		end
-		return vanillaBindingCombo(self, input, charBinding, excluded, x, y, width, height)
+		local box = vanillaBindingCombo(self, input, charBinding, excluded, x, y, width, height)
+		drawSelectedIcon(box)
+		local populate = box.populate
+		function box:populate()
+			populate(self)
+			for _, option in ipairs(self.options) do
+				if option.data ~= ADD_NEW and option.data ~= REMOVE then
+					option.gtIcon = actionIcon("native_" .. tostring(option.data))
+				end
+			end
+			self:setWidth(math.max(self:getWidth(), comboWidth(self, self:getStyle())))
+		end
+		return box
 	end
 end
 
@@ -573,8 +613,15 @@ function GameOptionControllerTab:initControllerCustomizationPanel(...)
 	local font = style:getFont("Small")
 	for _, layer in ipairs(Bindings.layers) do
 		local title = getText("UI_GamepadTweaks_tab_" .. layer)
+		local icon = actionIcon("layer_" .. layer)
+		local iconHeight = getTextManager():getFontHeight(font)
 		local width = getTextManager():MeasureStringX(font, title) + spacing * 4
+		if icon then width = width + iconHeight + 5 end
 		local button = ISButton:new(0, firstY, width, height, title, panel, selectLayer)
+		if icon then
+			button.iconTexture = icon
+			button.joypadTextureWH = iconHeight
+		end
 		button.gtLayer = layer
 		button:setFont(font)
 		button:setTooltip(getText("UI_GamepadTweaks_tab_help_" .. layer))
