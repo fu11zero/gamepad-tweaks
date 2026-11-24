@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+## Update: 25 Nov @ 2:11am
+
 - Added: icons in Steam Input layer names.
 
 - Added: icons for native bindings and layer tabs in the controller editor.
