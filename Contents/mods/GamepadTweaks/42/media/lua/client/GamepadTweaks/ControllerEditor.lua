@@ -39,11 +39,11 @@ local function selectedLayer(row)
 	return editorPanel(row).gtLayer or "world"
 end
 
--- All actions by category, then registration order.
-local function sortedActions(layer)
+-- Keep the current assignment in the list even if it predates context filtering.
+local function sortedActions(layer, current)
 	local list = {}
 	for i, action in ipairs(Bindings.actions) do
-		if Bindings.canBindIn(action, layer) then
+		if action == current or Bindings.canBindIn(action, layer) then
 			table.insert(list, { action = action, index = i })
 		end
 	end
@@ -113,7 +113,7 @@ function ISComboBoxPopup:drawText(str, x, y, r, g, b, a, font)
 end
 
 local function addActionOption(box, action)
-	box:addOptionWithData(Bindings.getLabel(action, true), PREFIX .. action.id)
+	box:addOptionWithData(Bindings.getLabel(action), PREFIX .. action.id)
 	box.options[#box.options].gtIcon = actionIcon(action.id)
 end
 
@@ -224,7 +224,7 @@ end
 -- Options: the action itself, the actions not on this button, "< Remove >".
 local function fillActionBox(box, layer, button, current, style)
 	box:clear()
-	for _, action in ipairs(sortedActions(layer)) do
+	for _, action in ipairs(sortedActions(layer, current)) do
 		if action == current or Bindings.canReplace(layer, current, action, button) then
 			addActionOption(box, action)
 		end

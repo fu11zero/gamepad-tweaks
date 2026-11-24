@@ -116,7 +116,7 @@ end
 
 -- id: key in the settings file; button: the vanilla button (default, and what the vanilla
 -- code assumes, e.g. for setHideWhenButtonReleased); category: section in the settings panel
--- (UI_GamepadTweaks_cat_*); label: name translation key (default UI_GamepadTweaks_action_<id>).
+-- (also used to sort editor choices); label: translation key (default UI_GamepadTweaks_action_<id>).
 -- layer: the action's default context (and its only context for special actions).
 -- hold, uiHold and navigation use separate input phases from ordinary button presses.
 -- run(controller, joypadData) for press layers; repeat: also on D-pad auto-repeat;
@@ -202,11 +202,37 @@ local function defaultLayer(action)
 	return EDITOR_LAYER[action.layer] or action.layer
 end
 
-function Bindings.canBindIn(action, layer)
+-- Preserve bindings and preset copies made before the editor filtered new assignments.
+local function canStoreIn(action, layer)
 	if action.steamOnly then return false end
 	if action.layer ~= "world" then return layer == defaultLayer(action) end
 	return layer == "world" or layer == "onfoot" or layer == "vehicle" or layer == "aiming"
 		or layer == "ui" or layer == "inventory" or layer == "cruise"
+end
+
+-- Shared world actions are available in General and can be overridden on foot or in a
+-- vehicle. The Steam action sections guide which actions are specific to those contexts.
+local ON_FOOT = {
+	firearmRadial = true, fireMode = true, sharpenWeapon = true, useTool = true,
+	curtain = true, lightSource = true, grabCorpse = true, dropPrimary = true,
+	dropSecondary = true, dropBothHands = true, dropBag = true, dropHandsAndBag = true,
+	sitOnGround = true, searchMode = true, releaseRope = true, animalRadial = true,
+	moveFurniture = true, rotateBuilding = true, buildingMenu = true,
+}
+local VEHICLE = { engine = true, headlights = true, heater = true, horn = true }
+-- These actions can also be used next to a vehicle or from the passenger seat.
+local ON_FOOT_OR_VEHICLE = { switchSeat = true, vehicleInfo = true, shout = true }
+local AIMING = { fireMode = true, lightSource = true }
+
+function Bindings.canBindIn(action, layer)
+	if action.steamOnly then return false end
+	if action.layer ~= "world" then return layer == defaultLayer(action) end
+	local id = action.id
+	if layer == "aiming" then return AIMING[id] == true end
+	if ON_FOOT[id] then return layer == "onfoot" end
+	if VEHICLE[id] then return layer == "vehicle" end
+	if ON_FOOT_OR_VEHICLE[id] then return layer == "onfoot" or layer == "vehicle" end
+	return layer == "world" or layer == "onfoot" or layer == "vehicle"
 end
 
 -- Hold and release bindings have their own slots on a button in the same editor tab.
@@ -314,7 +340,7 @@ function Bindings.reload()
 		if not action.steamOnly then
 			local home = defaultLayer(action)
 			for _, layer in ipairs(Bindings.layers) do
-				if Bindings.canBindIn(action, layer) then
+				if canStoreIn(action, layer) then
 					local button
 					if editable then button = readBinding(preset, action, layer) end
 					if button ~= nil then
@@ -337,7 +363,7 @@ function Bindings.copyPreset(from, to)
 	if not GamepadTweaks_setSetting or not Bindings.isPresetEditable(from) then return end
 	for _, action in ipairs(Bindings.actions) do
 		for _, layer in ipairs(Bindings.layers) do
-			if Bindings.canBindIn(action, layer) then
+			if canStoreIn(action, layer) then
 				local value = bindingValue(from, action, layer)
 				if value then
 					GamepadTweaks_setSetting(presetKey(to, action.id, layer), value)
@@ -470,14 +496,10 @@ end
 
 local LAYER_NOTE = { hold = true, uiHold = true, navigation = true }
 
--- "[Category] Name (context)" for lists.
-function Bindings.getLabel(action, withCategory)
+function Bindings.getLabel(action)
 	local text = getText(action.label or ("UI_GamepadTweaks_action_" .. action.id))
 	if LAYER_NOTE[action.layer] then
 		text = text .. " " .. getText("UI_GamepadTweaks_layer_" .. action.layer)
-	end
-	if withCategory then
-		text = "[" .. getText("UI_GamepadTweaks_cat_" .. (action.category or "misc")) .. "] " .. text
 	end
 	return text
 end
@@ -519,7 +541,12 @@ end
 -- one first, as vanilla does).
 function Bindings.set(layer, id, button)
 	local action = actionById[id]
-	if not action or not Bindings.canBindIn(action, layer) or not Bindings.canEdit() then return false end
+	if not action or not Bindings.canEdit() then return false end
+	if button then
+		if not Bindings.canBindIn(action, layer) then return false end
+	elseif not canStoreIn(action, layer) then
+		return false
+	end
 	refresh()
 	local preset = Bindings.currentPreset()
 	if not Bindings.isPresetEditable(preset) then return false end
