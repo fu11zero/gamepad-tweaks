@@ -5,6 +5,8 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Added: icons in Steam Input layer names.
+
 - Added: icons for native bindings and layer tabs in the controller editor.
 
 - Added: context layers and button events for native gamepad actions, with existing controller presets as the fallback.

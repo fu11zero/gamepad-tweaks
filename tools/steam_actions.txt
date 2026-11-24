@@ -32,7 +32,7 @@
 #     is not (ids come from the Lua code).
 # Every action of the mod must be listed; the script names missing and unknown ones.
 
-revision 2.16
+revision 2.17
 
 [set]
 vanillaInteract         👆          Interact | Взаимодействие
@@ -76,7 +76,7 @@ toggleMusic             🎵          Music | Музыка
 displayFps              📊          FPS | FPS
 pvp                     ⚔️          PvP | PvP
 
-[onfoot] On foot | Пешком
+[onfoot] 🚶 On foot | 🚶 Пешком
 move                    🚶          Move | Ход
 vanillaAim              🎯          Aim | Прицел
 vanillaAttack           💥          Attack | Атака
@@ -110,7 +110,7 @@ animalRadial            🐄          Animals | Животные
 moveFurniture           🪑          Furniture | Мебель
 rotateBuilding          ↪️          Rotate | Повернуть
 
-[vehicle] Vehicle | Машина
+[vehicle] 🚗 Vehicle | 🚗 Машина
 steer                   🛞          Steer | Руль
 gasPedal                🟢          Gas | Газ
 brakePedal              🛑          Brake | Тормоз
@@ -127,15 +127,15 @@ switchSeat              💺          Seat | Пересесть
 vehicleInfo             🔧          Vehicle | Машина
 
 # aiming: only with a firearm in hand (Bindings.lua playerLayers), not in melee / unarmed.
-[aiming] Aiming | Прицел
+[aiming] 🎯 Aiming | 🎯 Прицел
 aim                     🎯          Aim | Прицел
 
-[ui] Window | Окно
+[ui] 🪟 Window | 🪟 Окно
 vanillaClosePanel       ❌          Close | Закрыть
 vanillaCycleTabsLeft    ◀️          Tab left | Вкладка влево
 vanillaCycleTabsRight   ▶️          Tab right | Вкладка вправо
 
-[inventory] Inventory | Инвентарь
+[inventory] 🎒 Inventory | 🎒 Инвентарь
 vanillaTransferItem     ↔️          Transfer | Переложить
 vanillaCycleInventory   🎒🔁        Bags | Сумки
 vanillaCycleLoot        📦🔁        Loot | Добыча
@@ -149,6 +149,6 @@ invTransferOne          ☝️          One | Одну
 invUse                  👆          Use | Использовать
 invUnpack               📤          Unpack | Распаковать
 
-[map] Map | Карта
+[map] 🗺️ Map | 🗺️ Карта
 
-[menu] Menu | Меню
+[menu] 🏠 Menu | 🏠 Меню

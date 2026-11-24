@@ -376,6 +376,7 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
     the set or a layer, order, icon, English / Russian title, revision; its header says how to
     edit it), checked against the Lua action lists, and the local Steam templates. A new action
     in the Lua code has to be added there, the script names the missing ones.
+  Layer names use the same icons as the matching in-game tabs.
 
 - **Inventory and loot window actions** (`InventoryActions.lua`, layer `inventory` in
   `Bindings.lua`). With a mouse the buttons above the item list are one click (Transfer All /
