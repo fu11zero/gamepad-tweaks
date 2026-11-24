@@ -4,16 +4,17 @@
 require "ISUI/Gamepad/CharacterJoypadBindingUIRow"
 require "ISUI/Gamepad/GameOptionControllerTab"
 require "ISUI/ISComboBox"
+require "ISUI/ISTextEntryBox"
 require "GamepadTweaks/Bindings"
 require "GamepadTweaks/KeyActions"
 require "GamepadTweaks/InventoryActions"
 
 local Bindings = GamepadTweaks.Bindings
+local BindingEvents = GamepadTweaks.BindingEvents
 
 local MOD_COLOR = { r = 0.45, g = 0.72, b = 0.95, a = 1 }
 local REMOVE = "!RemoveEntry!"
 local ADD_NEW = "!AddNewEntry!"
-local PREFIX = "gt:"
 local ICON_PATH = "media/textures/GamepadTweaks/actions/"
 local actionIcons = {}
 
@@ -27,8 +28,8 @@ local function log(msg)
 	print("[GamepadTweaks] " .. msg)
 end
 
-local function isButtonRow(row)
-	return instanceof(row.bindingKey, "JoypadButton")
+local function supportsEvents(row)
+	return BindingEvents.hasInput(row.bindingKey)
 end
 
 local function editorPanel(row)
@@ -113,7 +114,7 @@ function ISComboBoxPopup:drawText(str, x, y, r, g, b, a, font)
 end
 
 local function addActionOption(box, action)
-	box:addOptionWithData(Bindings.getLabel(action), PREFIX .. action.id)
+	box:addOptionWithData(Bindings.getLabel(action), action)
 	box.options[#box.options].gtIcon = actionIcon(action.id)
 end
 
@@ -130,6 +131,30 @@ local function comboWidth(box, style)
 	end
 	-- The popup has its own left padding and may have a vertical scrollbar.
 	return width + math.max(10 + 13 + 8, style.borderSpacing * 2 + style.buttonHeight)
+end
+
+local function eventLabel(event)
+	return getText("UI_GamepadTweaks_event_" .. event)
+end
+
+local function inputLabel(input)
+	if input == JoypadButton.Guide then return getText("UI_GamepadTweaks_buttonGuide") end
+	return getText(input:getNameTranslationKey())
+end
+
+local function describe(binding)
+	if binding.event == "native" or (binding.event == "press" and not binding.threshold) then
+		return Bindings.getLabel(binding.action)
+	end
+	local parts = { eventLabel(binding.event) }
+	if binding.threshold then table.insert(parts, binding.threshold .. "%") end
+	if binding.delay then table.insert(parts, binding.delay .. " " .. getText("UI_GamepadTweaks_ms")) end
+	if binding.modifier then
+		local label = inputLabel(binding.modifier)
+		if binding.modifierThreshold then label = label .. " " .. binding.modifierThreshold .. "%" end
+		table.insert(parts, label)
+	end
+	return Bindings.getLabel(binding.action) .. " · " .. table.concat(parts, " ")
 end
 
 -- Read-only row ----------------------------------------------------------------------
@@ -149,9 +174,9 @@ local function addReadOnly(row)
 	local width = row:getWidth() - border
 	-- the select button covers the row and must stay on top
 	row:removeChild(row.selectButton)
-	for _, action in ipairs(actions) do
-		local label = ISLabel:new(x, y, fontHgt, Bindings.getLabel(action), MOD_COLOR.r, MOD_COLOR.g, MOD_COLOR.b, 1, font, true)
-		local texture = actionIcon(action.id)
+	for _, binding in ipairs(actions) do
+		local label = ISLabel:new(x, y, fontHgt, describe(binding), MOD_COLOR.r, MOD_COLOR.g, MOD_COLOR.b, 1, font, true)
+		local texture = actionIcon(binding.action.id)
 		if texture then
 			local height = math.floor(fontHgt)
 			local iconW = iconWidth(texture, height)
@@ -182,7 +207,7 @@ local function populateLayerRow(row)
 	local font = style:getFont("Small")
 	local height = style:getFontHeight("Small") * 0.8
 	local border = style.borderSpacing
-	local label = ISLabel:new(border, 0, height, getText(row.bindingKey:getNameTranslationKey()),
+	local label = ISLabel:new(border, 0, height, inputLabel(row.bindingKey),
 		1, 1, 1, 1, font, true)
 	label:initialise()
 	row:addChild(label)
@@ -200,9 +225,9 @@ function CharacterJoypadBindingUIRow:populateWithReadOnlyLabels(...)
 		vanillaReadOnly(self, ...)
 	else
 		populateLayerRow(self)
-		if isButtonRow(self) then self:addChild(self.selectButton) end
+		if supportsEvents(self) then self:addChild(self.selectButton) end
 	end
-	if isButtonRow(self) then
+	if supportsEvents(self) then
 		local ok, err = pcall(addReadOnly, self)
 		if not ok then log("ERROR: controller editor (read-only row): " .. tostring(err)) end
 	end
@@ -221,156 +246,268 @@ end
 
 -- Editable row ---------------------------------------------------------------------
 
--- Options: the action itself, the actions not on this button, "< Remove >".
-local function fillActionBox(box, layer, button, current, style)
-	box:clear()
-	for _, action in ipairs(sortedActions(layer, current)) do
-		if action == current or Bindings.canReplace(layer, current, action, button) then
-			addActionOption(box, action)
-		end
-	end
-	box:addOptionWithData("< Remove >", REMOVE, "Remove this entry")
-	box:setWidth(comboWidth(box, style))
-	box:setSelectedData(PREFIX .. current.id)
+local function eventOption(box, event)
+	box:addOptionWithData(eventLabel(event), event, getText("UI_GamepadTweaks_event_help_" .. event))
 end
 
-function CharacterJoypadBindingUIRow:onGamepadTweaksActionChanged(box, currentId)
-	local data = box:getSelectedData()
-	local layer = selectedLayer(self)
-	if data == REMOVE and editablePreset(self) then
-		Bindings.set(layer, currentId, false)
-	elseif type(data) == "string" and data:sub(1, #PREFIX) == PREFIX then
-		local id = data:sub(#PREFIX + 1)
-		if id ~= currentId and editablePreset(self) then
-			Bindings.set(layer, id, self.bindingKey)
+local function eventBox(row, x, y, height, event, native, available)
+	local box = ISComboBox:new(x, y, height, height)
+	box:initialise()
+	row:addChild(box)
+	for _, option in ipairs(BindingEvents.order) do
+		if not available or available[option] then eventOption(box, option) end
+	end
+	if native and (not available or available.native) then eventOption(box, "native") end
+	box:setSelectedData(event)
+	box:setWidth(comboWidth(box, row:getStyle()))
+	return box
+end
+
+local function actionBox(row, x, y, height)
+	local box = ISComboBox:new(x, y, height, height)
+	box.choicesColor = { r = 1, g = 1, b = 1, a = 1 }
+	box.textColor = MOD_COLOR
+	local drawText = box.drawText
+	function box:drawText(str, textX, textY, r, g, b, a, font)
+		textX = drawOptionIcon(self, self.options[self.selected], textX, textY, font)
+		drawText(self, str, textX, textY, r, g, b, a, font)
+	end
+	box:initialise()
+	row:addChild(box)
+	return box
+end
+
+local function saveAssignment(row, binding, options, action)
+	local layer = selectedLayer(row)
+	local id = action and action.id or binding.action.id
+	if options and editablePreset(row) then
+		Bindings.set(layer, id, row.bindingKey, options, binding)
+	end
+	refreshAll(row)
+end
+
+local function copyOptions(binding)
+	local options = {}
+	for key, value in pairs(binding) do options[key] = value end
+	return options
+end
+
+local function modifierFor(input)
+	for _, other in ipairs(BindingEvents.inputs) do
+		if other ~= input then return other end
+	end
+end
+
+local function optionsFor(input, options, defaultEvent)
+	if options.event == "modifier" and not options.modifier then options.modifier = modifierFor(input) end
+	return BindingEvents.assignment(input, options, defaultEvent)
+end
+
+local function availableEvents(layer, binding)
+	local result = { [binding.event] = binding }
+	local input, action = binding.input, binding.action
+	for _, event in ipairs({ "press", "double", "hold", "native" }) do
+		if not result[event] and (event ~= "native" or (Bindings.defaultEvent(action) == "native" and not binding.threshold)) then
+			local options = { input = input, event = event, threshold = binding.threshold }
+			if Bindings.canUseEvent(layer, action, options, binding) then result[event] = options end
 		end
 	end
-	refreshAll(self)
+	if not result.modifier then
+		for _, modifier in ipairs(BindingEvents.inputs) do
+			local options = { input = input, event = "modifier", threshold = binding.threshold, modifier = modifier }
+			if Bindings.canUseEvent(layer, action, options, binding) then
+				result.modifier = options
+				break
+			end
+		end
+	end
+	return result
+end
+
+local function addNumber(row, x, y, height, key, value, minimum, maximum, update)
+	local font = row:getStyle():getFont("Small")
+	local label = ISLabel:new(x, y, height, getText(key), 1, 1, 1, 1, font, true)
+	label:initialise()
+	row:addChild(label)
+	local width = getTextManager():MeasureStringX(font, "99999") + row:getStyle().borderSpacing
+	local entry = ISTextEntryBox:new(tostring(value), label:getRight() + row:getStyle().borderSpacing, y, width, height)
+	entry:setFont(font)
+	entry:initialise()
+	row:addChild(entry)
+	entry:setOnlyNumbers(true)
+	local function commit()
+		local number = BindingEvents.number(entry:getText(), minimum, maximum, value)
+		if number ~= value and update(number) then value = number end
+		entry:setText(tostring(value))
+	end
+	function entry:onCommandEntered() commit() end
+	function entry:onLostFocus() commit() end
+	return entry
+end
+
+local function addParameters(row, x, y, height, spacing, binding, update)
+	local right = x
+	local function number(key, label, min, max)
+		local entry = addNumber(row, x, y, height, label, binding[key], min, max, function(value)
+			local options = copyOptions(binding)
+			options[key] = value
+			return update(options, false)
+		end)
+		right, y = math.max(right, entry:getRight()), entry:getBottom() + spacing
+	end
+	if binding.threshold then number("threshold", "UI_GamepadTweaks_threshold", 1, 100) end
+	if binding.delay then number("delay", "UI_GamepadTweaks_delay", 1, 9999) end
+	if binding.modifier then
+		local box = ISComboBox:new(x, y, height, height)
+		box:initialise()
+		row:addChild(box)
+		for _, input in ipairs(BindingEvents.inputs) do
+			if input ~= row.bindingKey then box:addOptionWithData(inputLabel(input), input) end
+		end
+		box:setSelectedData(binding.modifier)
+		box:setWidth(comboWidth(box, row:getStyle()))
+		box:setOnChange(row, function(_, sender)
+			local options = copyOptions(binding)
+			options.modifier = sender:getSelectedData()
+			update(options, true)
+		end)
+		right, y = math.max(right, box:getRight()), box:getBottom() + spacing
+		if binding.modifierThreshold then number("modifierThreshold", "UI_GamepadTweaks_modifierThreshold", 1, 100) end
+	end
+	return right, y
+end
+
+local function hasRegularHere(action, layer, input)
+	for _, binding in ipairs(Bindings.getAssignments(action, layer)) do
+		if binding.event ~= "modifier" and binding.input == input then return true end
+	end
+	return false
 end
 
 local function addEditable(row)
-	local addNew
-	for _, child in pairs(row:getChildren()) do
-		if child.selectedCharBinding == ADD_NEW then
-			addNew = child
-		end
-	end
-	if not addNew then return end
-	local actions = Bindings.getActionsOn(selectedLayer(row), row.bindingKey)
-	if #actions == 0 then return end
+	local layer, input = selectedLayer(row), row.bindingKey
 	local style = row:getStyle()
-	local spacing = style:getFontHeight("Small") * 0.6 / 15
 	local border = style.borderSpacing
-	local height = addNew:getHeight()
-	local x = addNew:getX()
-	-- vanilla puts "< Add New >" two spacings below the last entry
-	local y = addNew:getY() - spacing * 2
-	local width = addNew:getWidth()
-	for _, action in ipairs(actions) do
-		local box = ISComboBox:new(x, y, height, height)
-		box.choicesColor = { r = 1, g = 1, b = 1, a = 1 }
-		box.textColor = MOD_COLOR
-		local comboDrawText = box.drawText
-		function box:drawText(str, textX, textY, r, g, b, a, font)
-			textX = drawOptionIcon(self, self.options[self.selected], textX, textY, font)
-			comboDrawText(self, str, textX, textY, r, g, b, a, font)
+	local height = row.bindingLabel:getHeight() * 1.1
+	local spacing = style:getFontHeight("Small") * 0.6 / 15
+	local x = row.bindingLabel:getLeft() + row.bindingLabel:getHeight() / 2
+	local y = row.bindingLabel:getBottom() + spacing
+	if layer == "world" then
+		for _, child in pairs(row:getChildren()) do
+			if child.selectedCharBinding == ADD_NEW then y = child:getBottom() + border end
 		end
-		box:initialise()
-		row:addChild(box)
+	end
+
+	local right = row:getWidth() - border
+	for _, assignment in ipairs(Bindings.getActionsOn(layer, input)) do
+		local binding = copyOptions(assignment)
+		local current = binding.action
+		local native = Bindings.defaultEvent(current) == "native" and not binding.threshold
+		local choices = availableEvents(layer, binding)
+		local event = eventBox(row, x, y, height, binding.event, native, choices)
+		local box = actionBox(row, event:getRight() + border, y, height)
 		if Bindings.canEdit() then
-			fillActionBox(box, selectedLayer(row), row.bindingKey, action, style)
-			box:setOnChange(row, row.onGamepadTweaksActionChanged, action.id)
+			for _, action in ipairs(sortedActions(layer, current)) do
+				if action == current or ((binding.event == "modifier" or not hasRegularHere(action, layer, input))
+						and Bindings.canUseEvent(layer, action, binding, binding)
+						and (binding.event ~= "native" or action.layer == current.layer)) then
+					addActionOption(box, action)
+				end
+			end
+			box:addOptionWithData(getText("UI_GamepadTweaks_bindingRemove"), REMOVE)
+			box:setOnChange(row, function(_, sender)
+				local selected = sender:getSelectedData()
+				if selected == REMOVE then
+					if editablePreset(row) then Bindings.set(layer, current.id, false, nil, binding) end
+					refreshAll(row)
+				elseif selected ~= current then
+					saveAssignment(row, binding, binding, selected)
+				end
+			end)
+			event:setOnChange(row, function(_, sender)
+				local options = availableEvents(layer, binding)[sender:getSelectedData()]
+				saveAssignment(row, binding, options)
+			end)
 		else
-			addActionOption(box, action)
-			box:setWidth(comboWidth(box, style))
+			addActionOption(box, current)
 			box:setEnabled(false)
+			event:setEnabled(false)
 		end
-		width = math.max(width, box:getWidth())
-		y = box:getBottom() + spacing
-	end
-	addNew:setY(y + spacing * 2)
-	-- same width for every list in the row, as vanilla does
-	for _, child in pairs(row:getChildren()) do
-		if child.Type == "ISComboBox" then
-			child:setWidth(width)
+		box:setSelectedData(current)
+		box:setWidth(comboWidth(box, style))
+		right, y = math.max(right, box:getRight()), box:getBottom() + spacing
+		if Bindings.canEdit() then
+			local paramRight
+			paramRight, y = addParameters(row, x, y, height, spacing, binding, function(options, reflow)
+				local ok = editablePreset(row) and Bindings.set(layer, current.id, input, options, binding)
+				if ok then
+					for key, value in pairs(options) do binding[key] = value end
+				end
+				if reflow then refreshAll(row) end
+				return ok
+			end)
+			right = math.max(right, paramRight)
 		end
+		y = y + spacing
 	end
-	row:setWidth(math.max(row:getWidth(), x + width + border))
-	row:setHeight(addNew:getBottom() + border * 2)
+	if Bindings.canEdit() then
+		local draft = row.gtEventDraft
+		if not draft or draft.layer ~= layer then
+			draft = { layer = layer, event = "press" }
+			row.gtEventDraft = draft
+		end
+		local event = eventBox(row, x, y, height, draft.event, false)
+		event:setOnChange(row, function(_, sender)
+			draft.event, draft.delay = sender:getSelectedData(), nil
+			row:rePopulate()
+		end)
+		local box = actionBox(row, event:getRight() + border, y, height)
+		local options = optionsFor(input, draft, "press")
+		local function populateChoices()
+			box:clear()
+			for _, action in ipairs(sortedActions(layer)) do
+				if (options.event == "modifier" or not hasRegularHere(action, layer, input))
+						and Bindings.canUseEvent(layer, action, options) then
+					addActionOption(box, action)
+				end
+			end
+			box:addOptionWithData(getText("UI_GamepadTweaks_bindingAdd"), ADD_NEW)
+			box:setSelectedData(ADD_NEW)
+			box:setWidth(comboWidth(box, style))
+			box:setEnabled(#box.options > 1)
+		end
+		populateChoices()
+		box:setOnChange(row, function(_, sender)
+			local selected = sender:getSelectedData()
+			if selected ~= ADD_NEW then saveAssignment(row, nil, options, selected) end
+		end)
+		right, y = math.max(right, box:getRight()), box:getBottom() + spacing
+		local paramRight
+		paramRight, y = addParameters(row, x, y, height, spacing, options, function(updated, reflow)
+			updated.layer = layer
+			row.gtEventDraft = updated
+			for key, value in pairs(updated) do options[key] = value end
+			if reflow then row:rePopulate() else populateChoices() end
+			return true
+		end)
+		right = math.max(right, paramRight)
+	end
+	row:setWidth(right + border)
+	row:setHeight(y + border)
 end
 
 local vanillaEditable = CharacterJoypadBindingUIRow.populateWithEditableElements
 function CharacterJoypadBindingUIRow:populateWithEditableElements(...)
 	if selectedLayer(self) == "world" then
+		self.entries = {}
 		vanillaEditable(self, ...)
 	else
 		populateLayerRow(self)
-		if not isButtonRow(self) then return end
-		local label = self.bindingLabel
-		local style = self:getStyle()
-		local spacing = style:getFontHeight("Small") * 0.6 / 15
-		local height = label:getHeight() * 1.1
-		local box = self:createJoypadButtonBindingCBox(self.bindingKey, ADD_NEW, {},
-			label:getLeft() + self.indentWidth, label:getBottom() + spacing * 3, height, height)
-		self:addChild(box)
-		box:populate()
-		box:setOnChange(self, self.onAddNewJoypadBindingChanged, self.bindingKey)
-		self:setWidth(math.max(self:getWidth(), box:getRight() + style.borderSpacing))
-		self:setHeight(box:getBottom() + style.borderSpacing * 2)
 	end
-	if isButtonRow(self) then
+	if supportsEvents(self) then
 		local ok, err = pcall(addEditable, self)
 		if not ok then log("ERROR: controller editor (edit row): " .. tostring(err)) end
 	end
-end
-
--- "< Add New >" ----------------------------------------------------------------------
-
-local function appendToAddNew(box, layer, button)
-	local addEntry = table.remove(box.options)
-	if Bindings.canEdit() then
-		for _, action in ipairs(sortedActions(layer)) do
-			if Bindings.getActionButton(action, layer) ~= button then
-				addActionOption(box, action)
-			end
-		end
-	end
-	table.insert(box.options, addEntry)
-	box:setWidth(comboWidth(box, box:getStyle()))
-	box:setSelectedData(ADD_NEW)
-	if #box.options == 1 then box:setEnabled(false) end
-end
-
-local vanillaCreateBox = CharacterJoypadBindingUIRow.createJoypadButtonBindingCBox
-function CharacterJoypadBindingUIRow:createJoypadButtonBindingCBox(bindingKey, selected, ...)
-	local box = vanillaCreateBox(self, bindingKey, selected, ...)
-	if selected == ADD_NEW and instanceof(bindingKey, "JoypadButton") then
-		local layer = selectedLayer(self)
-		local vanillaPopulate = box.populate
-		function box:populate()
-			if layer == "world" then
-				vanillaPopulate(self)
-			else
-				self:clear()
-				self:addOptionWithData("< Add New >", ADD_NEW, "Add new entry")
-			end
-			appendToAddNew(self, layer, bindingKey)
-		end
-	end
-	return box
-end
-
-local vanillaAddNewChanged = CharacterJoypadBindingUIRow.onAddNewJoypadBindingChanged
-function CharacterJoypadBindingUIRow:onAddNewJoypadBindingChanged(senderBox, bindingKey, ...)
-	local data = senderBox:getSelectedData()
-	if type(data) == "string" and data:sub(1, #PREFIX) == PREFIX then
-		if editablePreset(self) then
-			Bindings.set(selectedLayer(self), data:sub(#PREFIX + 1), bindingKey)
-		end
-		refreshAll(self)
-		return
-	end
-	return vanillaAddNewChanged(self, senderBox, bindingKey, ...)
 end
 
 -- Layer tabs sit in the vanilla preset header, above the scrollable controller diagram.

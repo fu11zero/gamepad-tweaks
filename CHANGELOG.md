@@ -5,6 +5,7 @@ change notes when the mod is updated. Keep it in English, short, one line per ch
 
 ## Unreleased
 
+- Added: press, double press, hold and chord assignments for mod actions in the controller editor, with editable timing, trigger or stick thresholds, and multiple chords per action.
 - Fixed: controller action lists offer new bindings by context and use plain action names beside their icons.
 - Added: action icons on controller binding rows and in action lists, matching their Steam Input symbols.
 - Added: context layers in Options -> Controller, so a button can use different mod actions on foot, in a vehicle, while aiming or in a panel.

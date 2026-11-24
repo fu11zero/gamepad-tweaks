@@ -621,6 +621,16 @@ Java mod for Project Zomboid B42 (ZombieBuddy) that fixes gamepad handling.
   The cruise layer is dispatched before vanilla `onPressUp/...`, so mods wrapping `onDisplayUp`
   (Smart Radial Menu opens its menu when the vehicle radial stays empty) don't see those presses.
 
+- **Button events for mod actions** in **Options → Controller**. Use **Add mod action** to put
+  a press, double press, hold or chord on a button, trigger or stick in the selected layer.
+  Double press defaults to 190 ms from the first press, with a release in between. Hold defaults
+  to 300 ms. Timing and axis thresholds are editable per assignment. Stick thresholds use the
+  amount of deflection, and each threshold has its own press and release. An ordinary press runs
+  immediately unless a competing event needs time to resolve. A modifier's short press runs on
+  release when the modifier was unused. Its own hold can still run alongside the chord. Add both
+  chord directions to trigger the same action with either button order.
+  Existing presets and the game's own bindings retain their original settings.
+
 Settings live in `~/Zomboid/GamepadTweaks.properties` (created with defaults on first
 launch, re-read while the game runs).
 
